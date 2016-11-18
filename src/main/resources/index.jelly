@@ -1,0 +1,6 @@
+<!--
+  This view is used to render the installed plugins page.
+-->
+<div>
+  This plugin monitors the CI exchange and submits jenkins jobs as needed.
+</div>

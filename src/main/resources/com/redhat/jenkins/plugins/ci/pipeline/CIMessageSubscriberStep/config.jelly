@@ -1,0 +1,11 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry title="${%JMS selector}" field="selector">
+        <f:textbox name="selector"/>
+    </f:entry>
+    <f:entry title="${%Variable}" field="variable">
+        <f:textbox name="variable"/>
+    </f:entry>
+    <f:entry title="${%Timeout}" field="timeout">
+        <f:textbox name="timeout" default="${descriptor.getDefaultTimeout()}"/>
+    </f:entry>
+</j:jelly>

@@ -1,0 +1,15 @@
+<div>
+  <p>Subscribe to the CI message bus and wait for a message matching the specified JMS selector.</p>
+  <p>The timeout value specifies the maximum number of minutes to wait for a message matching the JMS selector to appear.</p>
+  <p>This step returns the value of the Message content as a string</p>
+  <p><pre>
+node {
+  def messageContent = waitForCIMessage selector: "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+  // The message content is now available as a variable
+  echo messageContent
+  // The message content is set as an environment variable
+  env.messageContent = messageContent
+  sh 'path/to/a/script.sh'
+}
+</pre></p>
+</div>
