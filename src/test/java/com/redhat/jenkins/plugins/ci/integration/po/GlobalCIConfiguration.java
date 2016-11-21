@@ -27,29 +27,29 @@ import org.jenkinsci.test.acceptance.po.Control;
 import org.jenkinsci.test.acceptance.po.JenkinsConfig;
 import org.jenkinsci.test.acceptance.po.PageAreaImpl;
 
-public class RedhatCIPluginGlobalConfig extends PageAreaImpl {
+public class GlobalCIConfiguration extends PageAreaImpl {
     public final Control broker     = control("broker");
     public final Control topic      = control("topic");
     public final Control user       = control("user");
     public final Control password   = control("password");
 
-    public RedhatCIPluginGlobalConfig(JenkinsConfig context) {
+    public GlobalCIConfiguration(JenkinsConfig context) {
         super(context, "/com-redhat-jenkins-plugins-ci-GlobalCIConfiguration");
     }
 
-    public RedhatCIPluginGlobalConfig broker(String brokerVal) {
+    public GlobalCIConfiguration broker(String brokerVal) {
         broker.set(brokerVal);
         return this;
     }
-    public RedhatCIPluginGlobalConfig topic(String topicVal) {
+    public GlobalCIConfiguration topic(String topicVal) {
         topic.set(topicVal);
         return this;
     }
-    public RedhatCIPluginGlobalConfig user(String userVal) {
+    public GlobalCIConfiguration user(String userVal) {
         user.set(userVal);
         return this;
     }
-    public RedhatCIPluginGlobalConfig password(String passwordVal) {
+    public GlobalCIConfiguration password(String passwordVal) {
         password.set(passwordVal);
         return this;
     }

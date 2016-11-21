@@ -2,7 +2,7 @@ package com.redhat.jenkins.plugins.ci.pipeline;
 
 import javax.inject.Inject;
 
-import com.redhat.jenkins.plugins.Messages;
+import com.redhat.jenkins.plugins.ci.Messages;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;

@@ -34,7 +34,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.redhat.jenkins.plugins.Messages;
 import com.redhat.utils.MessageUtils;
 
 public class CIMessageSubscriberBuilder extends Builder {

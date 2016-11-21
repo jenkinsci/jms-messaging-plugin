@@ -4,8 +4,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
-import java.io.IOException;
-
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
@@ -21,7 +19,7 @@ import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContain
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.RedhatCIPluginGlobalConfig;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 
 @WithPlugins("amq-messaging-plugin")
 @WithDocker
@@ -34,7 +32,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @Before public void setUp() throws Exception {
         amq = docker.get();
         jenkins.configure();
-        RedhatCIPluginGlobalConfig ciPluginConfig = new RedhatCIPluginGlobalConfig(jenkins.getConfigPage());
+        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         ciPluginConfig.broker(amq.getBroker())
             .topic("CI")
             .user("admin")
@@ -45,7 +43,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     private void ensureConnected() throws Exception {
         jenkins.configure();
         elasticSleep(5000);
-        RedhatCIPluginGlobalConfig ciPluginConfig = new RedhatCIPluginGlobalConfig(jenkins.getConfigPage());
+        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         int counter = 0;
         boolean connected = false;
         while (counter < INIT_WAIT) {

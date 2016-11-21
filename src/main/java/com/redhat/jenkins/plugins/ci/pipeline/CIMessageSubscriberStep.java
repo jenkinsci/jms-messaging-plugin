@@ -1,7 +1,7 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
-import com.redhat.jenkins.plugins.Messages;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
+import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 import hudson.Extension;

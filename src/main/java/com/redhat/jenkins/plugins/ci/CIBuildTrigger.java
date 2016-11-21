@@ -23,8 +23,6 @@ import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import com.redhat.jenkins.plugins.Messages;
-
 public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 	private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
