@@ -20,44 +20,10 @@
     </properties>
 
     <scm>
-        <connection>scm:git:ssh://ci-ops-jenkins@code.engineering.redhat.com:22/ci-ops-tools</connection>
-        <developerConnection>scm:git:ssh://ci-ops-jenkins@code.engineering.redhat.com:22/ci-ops-tools</developerConnection>
-        <url>https://mojo.redhat.com/docs/DOC-986839</url>
+        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
-
-    <distributionManagement>
-        <repository>
-            <id>ci-ops-releases-local</id>
-            <name>artifactory.rhev-ci-vms.eng.rdu2.redhat.com-releases</name>
-            <url>http://artifactory.rhev-ci-vms.eng.rdu2.redhat.com:8081/artifactory/ci-ops-releases-local</url>
-        </repository>
-        <snapshotRepository>
-            <id>ci-ops-staging-local</id>
-            <name>artifactory.rhev-ci-vms.eng.rdu2.redhat.com-snapshots</name>
-            <url>http://artifactory.rhev-ci-vms.eng.rdu2.redhat.com:8081/artifactory/ci-ops-staging-local</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <id>ci-ops-releases-local</id>
-            <name>artifactory.rhev-ci-vms.eng.rdu2.redhat.com-releases</name>
-            <url>http://artifactory.rhev-ci-vms.eng.rdu2.redhat.com:8081/artifactory/ci-ops-releases-local</url>
-        </repository>
-        <repository>
-            <id>project.local</id>
-            <name>project</name>
-            <url>file:${project.basedir}/repo</url>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>ci-ops-releases-local</id>
-            <name>artifactory.rhev-ci-vms.eng.rdu2.redhat.com-releases</name>
-            <url>http://artifactory.rhev-ci-vms.eng.rdu2.redhat.com:8081/artifactory/ci-ops-releases-local</url>
-        </pluginRepository>
-    </pluginRepositories>
 
     <dependencies>
         <dependency>

@@ -25,7 +25,7 @@ import com.redhat.jenkins.plugins.ci.integration.po.RedhatCIPluginGlobalConfig;
 
 @WithPlugins("amq-messaging-plugin")
 @WithDocker
-public class RedhatCIPluginTest extends AbstractJUnitTest {
+public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @Inject private DockerContainerHolder<JBossAMQContainer> docker;
 
     private JBossAMQContainer amq = null;

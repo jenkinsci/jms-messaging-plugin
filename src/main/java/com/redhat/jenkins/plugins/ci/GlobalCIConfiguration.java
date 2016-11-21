@@ -36,10 +36,10 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     private static final Logger log = Logger.getLogger(GlobalCIConfiguration.class.getName());
 
-    private String broker = "tcp://ci-bus.lab.eng.rdu2.redhat.com:61616";
+    private String broker;
     private String topic = "CI";
-    private String user = "ci-ops-central-jenkins";
-    private Secret password = Secret.fromString("tQrYdOHhBqOMJi/k");
+    private String user;
+    private Secret password;
 
     @DataBoundConstructor
     public GlobalCIConfiguration(String broker, String topic, String user, Secret password) {
