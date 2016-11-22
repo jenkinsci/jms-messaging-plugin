@@ -9,6 +9,9 @@
     <artifactId>amq-messaging-plugin</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
+    <name>Active MQ Messaging Plugin</name>
+    <description>Plugin to listen and emit messages during the Continuous Integration process.</description>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/ActiveMQ+Messaging+Plugin</url>
 
     <properties>
         <!-- override this value to test another version other
@@ -204,10 +207,4 @@
             </plugins>
         </pluginManagement>
     </build>
-    <name>Active MQ Messaging Plugin</name>
-    <description>Plugin to listen and emit messages during the Continuous Integration process.</description>
-    <organization>
-        <name>Red Hat, Inc.</name>
-        <url>http://www.redhat.com</url>
-    </organization>
 </project>
