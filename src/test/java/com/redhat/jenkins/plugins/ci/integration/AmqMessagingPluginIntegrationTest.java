@@ -21,7 +21,7 @@ import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 
-@WithPlugins("amq-messaging")
+@WithPlugins("activemq-messaging")
 @WithDocker
 public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @Inject private DockerContainerHolder<JBossAMQContainer> docker;
