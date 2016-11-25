@@ -35,7 +35,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     private static final Logger log = Logger.getLogger(GlobalCIConfiguration.class.getName());
 
     private String broker;
-    private String topic = "CI";
+    private String topic;
     private String user;
     private Secret password;
 
@@ -66,14 +66,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         try {
 	        if (isValidURL(broker) && testConnection(broker, topic, user, password)) {
 	            save();
-//	            for (String fullname : CIBuildTrigger.triggerInfo.keySet()) {
-//	                CIBuildTrigger trigger = CIBuildTrigger.findTrigger(fullname);
-//	                if (trigger != null) {
-//	                    trigger.connect();
-//	                } else {
-//	                    log.warning("Unable to find CIBuildTrigger for '" + fullname + "'.");
-//	                }
-//	            }
 	            return true;
 	        }
         } catch (Exception e) {

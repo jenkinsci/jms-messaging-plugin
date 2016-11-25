@@ -8,6 +8,7 @@ import hudson.model.TaskListener;
 import hudson.model.AbstractBuild;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.StringReader;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
@@ -119,45 +120,53 @@ public class MessageUtils {
 
         try {
             String user = config.getUser();
-            String password = config.getPassword().getPlainText();
+            String password = null;
+            if (config.getPassword() != null) {
+                password = config.getPassword().getPlainText();
+            }
             String broker = config.getBroker();
             String topic = config.getTopic();
 
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, broker);
-            connection = connectionFactory.createConnection();
-            connection.start();
+            if (user != null && config.getPassword() != null && topic != null && broker != null) {
+                ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, broker);
+                connection = connectionFactory.createConnection();
+                connection.start();
 
-            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination destination = session.createTopic(topic);
-            publisher = session.createProducer(destination);
+                session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                Destination destination = session.createTopic(topic);
+                publisher = session.createProducer(destination);
 
-            TextMessage message;
-            message = session.createTextMessage("");
-            message.setJMSType(JSON_TYPE);
+                TextMessage message;
+                message = session.createTextMessage("");
+                message.setJMSType(JSON_TYPE);
 
-            message.setStringProperty("CI_NAME", build.getParent().getName());
-            message.setStringProperty("CI_TYPE", type.getMessage());
-            if (!build.isBuilding()) {
-                message.setStringProperty("CI_STATUS", (build.getResult()== Result.SUCCESS ? "passed" : "failed"));
-            }
-
-            StrSubstitutor sub = new StrSubstitutor(build.getEnvironment(listener));
-
-            if (props != null && !props.trim().equals("")) {
-                Properties p = new Properties();
-                p.load(new StringReader(props));
-                @SuppressWarnings("unchecked")
-                Enumeration<String> e = (Enumeration<String>) p.propertyNames();
-                while (e.hasMoreElements()) {
-                    String key = e.nextElement();
-                    message.setStringProperty(key, sub.replace(p.getProperty(key)));
+                message.setStringProperty("CI_NAME", build.getParent().getName());
+                message.setStringProperty("CI_TYPE", type.getMessage());
+                if (!build.isBuilding()) {
+                    message.setStringProperty("CI_STATUS", (build.getResult()== Result.SUCCESS ? "passed" : "failed"));
                 }
+
+                StrSubstitutor sub = new StrSubstitutor(build.getEnvironment(listener));
+
+                if (props != null && !props.trim().equals("")) {
+                    Properties p = new Properties();
+                    p.load(new StringReader(props));
+                    @SuppressWarnings("unchecked")
+                    Enumeration<String> e = (Enumeration<String>) p.propertyNames();
+                    while (e.hasMoreElements()) {
+                        String key = e.nextElement();
+                        message.setStringProperty(key, sub.replace(p.getProperty(key)));
+                    }
+                }
+
+                message.setText(sub.replace(content));
+
+                publisher.send(message);
+                log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "':\n" + MessageUtils.formatMessage(message));
+            } else {
+                log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
+                return false;
             }
-
-            message.setText(sub.replace(content));
-
-            publisher.send(message);
-            log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "':\n" + MessageUtils.formatMessage(message));
 
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception in perform.", e);
@@ -273,26 +282,37 @@ public class MessageUtils {
         return sb.toString();
     }
 
+
     public static Message waitForMessage(Integer timeout, String selector) {
+        return waitForMessage(timeout, null, selector);
+    }
+
+    private static void logIfPossible(PrintStream stream, String logMessage) {
+        if (stream != null) stream.println(logMessage);
+    }
+
+    public static Message waitForMessage(Integer timeout, PrintStream stream, String selector) {
 
         String ip = null;
         try {
             ip = Inet4Address.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
             log.severe("Unable to get localhost IP address.");
+            logIfPossible(stream, "Unable to get localhost IP address.");
         }
 
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
         if (config != null) {
             String user = config.getUser();
-            String password = config.getPassword().getPlainText();
             String broker = config.getBroker();
             String topic = config.getTopic();
 
-            if (ip != null && user != null && password != null && topic != null && broker != null) {
+            if (ip != null && user != null && config.getPassword() != null && topic != null && broker != null) {
                 log.info("Waiting for message with selector: " + selector);
+                logIfPossible(stream, "Waiting for message with selector: " + selector);
                 Connection connection = null;
                 MessageConsumer consumer = null;
+                String password = config.getPassword().getPlainText();
                 try {
                     ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, broker);
                     connection = connectionFactory.createConnection();
@@ -305,13 +325,17 @@ public class MessageUtils {
 
                     Message message = consumer.receive(timeout*60*1000);
                     if (message == null) {
-                        log.info("Timed out waiting for message!");
+                        log.warning("Timed out waiting for message!");
+                        logIfPossible(stream, "Warning: Timed out waiting for message!");
                     } else {
                         log.info("Message received with selector: " + selector);
+                        logIfPossible(stream, "Message received with selector: " + selector);
                     }
                     return message;
                 } catch (Exception e) {
                     log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
+                    logIfPossible(stream, "Error: Unhandled exception " +
+                            "waiting for message." + e.getMessage());
                 } finally {
                     if (consumer != null) {
                         try {
@@ -328,6 +352,7 @@ public class MessageUtils {
                 }
             } else {
                 log.severe("One or more of the following is invalid (null): ip, user, password, topic, broker.");
+                logIfPossible(stream, "Error: One or more of the following is invalid (null): ip, user, password, topic, broker.");
             }
         }
         return null;
