@@ -1,11 +1,15 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,6 +31,10 @@ import org.kohsuke.stapler.StaplerRequest;
 public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     private static final String PLUGIN_NAME = Messages.PluginName();
+
+    public static final GlobalCIConfiguration EMPTY_CONFIG =
+            new GlobalCIConfiguration(Collections.<MessagingProvider>emptyList());
+    private List<MessagingProvider> configs = new ArrayList<MessagingProvider>();
     /**
      * The string in global configuration that indicates content is empty.
      */
@@ -53,6 +61,20 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     public GlobalCIConfiguration() {
         load();
     }
+
+    public GlobalCIConfiguration(List<MessagingProvider> configs) {
+        this.configs = configs;
+    }
+
+    @SuppressWarnings("unused")
+    public void setConfigs(List<MessagingProvider> configs) {
+        this.configs = configs;
+    }
+
+    public List<MessagingProvider> getConfigs() {
+        return configs;
+    }
+
 
     @Override
     public String getDisplayName() {
