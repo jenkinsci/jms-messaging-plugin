@@ -1,4 +1,5 @@
 package com.redhat.jenkins.plugins.ci;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ParameterValue;
@@ -10,6 +11,8 @@ import hudson.model.StringParameterValue;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,21 +21,31 @@ import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 	private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
 	private String selector;
+	private String providerName;
 	public static final transient WeakHashMap<String, Thread> triggerInfo = new WeakHashMap<String, Thread>();
+	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
-	public CIBuildTrigger(String selector) {
+	public CIBuildTrigger(String selector, String providerName) {
 		super();
 		this.selector = StringUtils.stripToNull(selector);
+        this.providerName = providerName;
+	}
+
+	@DataBoundSetter
+	public void setProviderName(String providerName) {
+		this.providerName = providerName;
 	}
 
 	@Override
@@ -41,19 +54,60 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 		startTriggerThread();
 	}
 
+	public static CIBuildTrigger findTrigger(String fullname) {
+		Jenkins jenkins = Jenkins.getInstance();
+		AbstractProject<?, ?> p = jenkins.getItemByFullName(fullname, AbstractProject.class);
+		if (p != null) {
+			return p.getTrigger(CIBuildTrigger.class);
+		}
+		return null;
+	}
+
 	@Override
+	protected Object readResolve() throws ObjectStreamException {
+		if (providerName == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+			log.info("provider is null and migration in progress for providers");
+			MessagingProvider provider = GlobalCIConfiguration.get()
+					.getConfigs().get(0);
+			if (provider != null) {
+				providerName = provider.getName();
+				providerUpdated = true;
+				this.getDescriptor().save();
+				try {
+					if (job != null) {
+						job.save();
+					}
+				} catch (IOException e) {
+					log.warning("Exception while trying to save job: " + e.getMessage());
+				}
+			}
+		}
+		return this;
+	}
+
+    @Override
 	public void stop() {
 		super.stop();
 		stopTriggerThread();
 	}
 
 	private void startTriggerThread() {
-        if (job.isDisabled()) {
+		if (providerUpdated) {
+			log.info("Saving job since messaging provider was migrated...");
+			try {
+				job.save();
+			} catch (IOException e) {
+				log.warning("Exception while trying to save job: " + e.getMessage());
+			}
+		}
+		if (job.isDisabled()) {
             log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
         } else {
             try {
                 stopTriggerThread();
-                Thread thread = new Thread(new CITriggerThread(job.getFullName(), selector));
+	            MessagingProvider provider = GlobalCIConfiguration.get()
+			            .getProvider(providerName);
+                Thread thread = new Thread(new CITriggerThread(provider, job.getFullName(), selector));
                 thread.start();
                 triggerInfo.put(job.getFullName(), thread);
             } catch (Exception e) {
@@ -119,14 +173,25 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 	    return parameters;
 	}
 
-
 	@Override
 	public CIBuildTriggerDescriptor getDescriptor() {
 	    return (CIBuildTriggerDescriptor) Jenkins.getInstance().getDescriptor(getClass());
 	}
 
-	@Extension
+    public String getProviderName() {
+        return providerName;
+    }
+
+    @Extension
 	public static class CIBuildTriggerDescriptor extends TriggerDescriptor {
+
+        public ListBoxModel doFillProviderNameItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+                items.add(provider.getName());
+            }
+            return items;
+        }
 
 	    public CIBuildTriggerDescriptor() {
 	        super(CIBuildTrigger.class);

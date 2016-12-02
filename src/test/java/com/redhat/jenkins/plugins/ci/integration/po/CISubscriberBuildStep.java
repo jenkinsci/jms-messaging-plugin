@@ -9,6 +9,7 @@ import org.jenkinsci.test.acceptance.po.Job;
 @Describable("CI Subscriber")
 public class CISubscriberBuildStep extends AbstractStep implements BuildStep {
 
+    public final Control providerName = control("providerName");
     public final Control selector = control("selector");
     public final Control variable = control("variable");
     public final Control timeout = control("timeout");

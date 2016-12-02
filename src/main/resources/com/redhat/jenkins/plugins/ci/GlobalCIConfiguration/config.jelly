@@ -13,19 +13,6 @@
   -->
   <?jelly escape-by-default='true'?>
   <f:section title="${%CI Monitor}">
-    <f:entry title="${%CI Broker URL}" field="broker">
-      <f:textbox />
-    </f:entry>
-    <f:entry title="${%Topic name}" field="topic">
-      <f:textbox />
-    </f:entry>
-    <f:entry title="${%User name}" field="user">
-      <f:textbox />
-    </f:entry>
-    <f:entry title="${%Password}" field="password">
-      <f:password />
-    </f:entry>
-    <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="broker,topic,user,password" />
   </f:section>
   <f:section title="Messaging Providers">
       <f:block>

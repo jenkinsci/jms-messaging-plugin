@@ -1,6 +1,7 @@
 package com.redhat.jenkins.plugins.ci;
 
-import hudson.EnvVars;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingWorker;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -13,28 +14,15 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.UUID;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.jms.Connection;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.Session;
-import javax.jms.Topic;
-
+import hudson.util.ListBoxModel;
 import net.sf.json.JSONObject;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-
-import com.redhat.utils.MessageUtils;
 
 public class CIMessageSubscriberBuilder extends Builder {
     private static final Logger log = Logger.getLogger(CIMessageSubscriberBuilder.class.getName());
@@ -43,20 +31,36 @@ public class CIMessageSubscriberBuilder extends Builder {
 
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
+    private String providerName;
     private String selector;
     private String variable;
     private Integer timeout;
 
     @DataBoundConstructor
-    public CIMessageSubscriberBuilder(String selector, String variable, Integer timeout) {
+    public CIMessageSubscriberBuilder(String providerName,
+                                      String selector,
+                                      String variable,
+                                      Integer timeout) {
+        this.providerName = providerName;
         this.selector = selector;
         this.variable = variable;
         this.timeout = timeout;
     }
 
-    public CIMessageSubscriberBuilder(String selector, Integer timeout) {
+    public CIMessageSubscriberBuilder(String providerName,
+                                      String selector, Integer timeout) {
+        this.providerName = providerName;
         this.selector = selector;
         this.timeout = timeout;
+    }
+
+    @DataBoundSetter
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
+    }
+
+    public String getProviderName() {
+        return providerName;
     }
 
     @DataBoundSetter
@@ -88,66 +92,11 @@ public class CIMessageSubscriberBuilder extends Builder {
 
 
     public String waitforCIMessage(Run<?, ?> build, Launcher launcher, TaskListener listener) {
-        String ip = null;
-        try {
-            ip = Inet4Address.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            log.severe("Unable to get localhost IP address.");
-        }
-
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
-        if (config != null) {
-            String user = config.getUser();
-            String password = config.getPassword().getPlainText();
-            String broker = config.getBroker();
-            String topic = config.getTopic();
-
-            if (ip != null && user != null && password != null && topic != null && broker != null) {
-                log.info("Waiting for message with selector: " + selector);
-                Connection connection = null;
-                MessageConsumer consumer = null;
-                try {
-                    ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, broker);
-                    connection = connectionFactory.createConnection();
-                    connection.setClientID(ip + "_" + UUID.randomUUID().toString());
-                    connection.start();
-                    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    Topic destination = session.createTopic(topic);
-
-                    consumer = session.createConsumer(destination, selector);
-
-                    Message message = consumer.receive(timeout*60*1000);
-                    if (message != null) {
-                        String value = MessageUtils.getMessageBody(message);
-                        if (StringUtils.isNotEmpty(variable)) {
-                            EnvVars vars = new EnvVars();
-                            vars.put(variable, value);
-                            build.addAction(new CIEnvironmentContributingAction(vars));
-                        }
-                        return value;
-                    }
-                    log.info("Timed out waiting for message!");
-                } catch (Exception e) {
-                    log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
-                } finally {
-                    if (consumer != null) {
-                        try {
-                            consumer.close();
-                        } catch (Exception e) {
-                        }
-                    }
-                    if (connection != null) {
-                        try {
-                            connection.close();
-                        } catch (Exception e) {
-                        }
-                    }
-                }
-            } else {
-                log.severe("One or more of the following is invalid (null): ip, user, password, topic, broker.");
-            }
-        }
-        return null;
+        MessagingWorker worker =
+                config.getProvider(getProviderName()).createWorker(build
+                        .getParent().getName());
+        return worker.waitForMessage(build, selector, variable, timeout);
     }
 
     @Override
@@ -175,7 +124,19 @@ public class CIMessageSubscriberBuilder extends Builder {
             if (jo.getString("timeout") != null && !jo.getString("timeout").isEmpty()) {
                 timeout = jo.getInt("timeout");
             }
-            return new CIMessageSubscriberBuilder(jo.getString("selector"), jo.getString("variable"), timeout);
+            return new CIMessageSubscriberBuilder(
+                    jo.getString("providerName"),
+                    jo.getString("selector"),
+                    jo.getString("variable"),
+                    timeout);
+        }
+
+        public ListBoxModel doFillProviderNameItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+                items.add(provider.getName());
+            }
+            return items;
         }
 
         @Override

@@ -11,6 +11,9 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
+  <f:entry title="${%Choose a Message Provider}" field="providerName">
+      <f:select/>
+  </f:entry>
   <f:entry title="${%JMS selector}" field="selector">
     <f:expandableTextbox />
   </f:entry>

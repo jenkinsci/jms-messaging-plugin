@@ -24,13 +24,22 @@ package com.redhat.jenkins.plugins.ci.integration.po;
  * THE SOFTWARE.
  */
 import org.jenkinsci.test.acceptance.po.Control;
+import org.jenkinsci.test.acceptance.po.Jenkins;
 import org.jenkinsci.test.acceptance.po.JenkinsConfig;
 import org.jenkinsci.test.acceptance.po.PageAreaImpl;
+import org.jenkinsci.test.acceptance.po.PageObject;
 
-public class GlobalCIConfiguration extends PageAreaImpl {
+public abstract class MessagingProvider extends PageAreaImpl {
 
-    public GlobalCIConfiguration(JenkinsConfig context) {
+    public MessagingProvider(PageObject parent, String path) {
+        super(parent, path);
+    }
+
+    public MessagingProvider(GlobalCIConfiguration context) {
         super(context, "/com-redhat-jenkins-plugins-ci-GlobalCIConfiguration");
     }
+
+    public abstract MessagingProvider addMessagingProvider();
+
 
 }

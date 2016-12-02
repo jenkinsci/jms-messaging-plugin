@@ -21,12 +21,16 @@ import javax.inject.Inject;
 
 public class CIMessageSubscriberStep extends AbstractStepImpl {
 
+    private String providerName;
     private String selector;
     private Integer timeout;
 
     @DataBoundConstructor
-    public CIMessageSubscriberStep(final String selector, final Integer timeout) {
+    public CIMessageSubscriberStep(final String providerName,
+                                   final String selector,
+                                   final Integer timeout) {
         super();
+        this.providerName = providerName;
         this.selector = selector;
         this.timeout = timeout;
     }
@@ -45,6 +49,14 @@ public class CIMessageSubscriberStep extends AbstractStepImpl {
 
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
+    }
+
+    public String getProviderName() {
+        return providerName;
+    }
+
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
     }
 
     /**
@@ -66,11 +78,16 @@ public class CIMessageSubscriberStep extends AbstractStepImpl {
 
         @Override
         protected String run() throws Exception {
+            if (step.getProviderName() == null) {
+                throw new Exception("providerName not specified!");
+            }
             int timeout = CIMessageSubscriberBuilder.DEFAULT_TIMEOUT_IN_MINUTES;
             if (step.getTimeout() != null && step.getTimeout() > 0) {
                 timeout = step.getTimeout();
             }
-            CIMessageSubscriberBuilder builder = new CIMessageSubscriberBuilder(step.getSelector(), timeout);
+            CIMessageSubscriberBuilder builder = new CIMessageSubscriberBuilder(step.getProviderName(),
+                    step.getSelector(),
+                    timeout);
             return builder.waitforCIMessage(build, launcher, listener);
         }
 

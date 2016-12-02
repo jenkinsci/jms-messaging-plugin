@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -22,6 +23,7 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
 public class CIMessageBuilder extends Builder {
 
+    private String providerName;
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
@@ -46,8 +48,12 @@ public class CIMessageBuilder extends Builder {
     }
 
     @DataBoundConstructor
-    public CIMessageBuilder(final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent) {
+    public CIMessageBuilder(final String providerName,
+                            final MESSAGE_TYPE messageType,
+                            final String messageProperties,
+                            final String messageContent) {
         super();
+        this.providerName = providerName;
         this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
@@ -55,11 +61,24 @@ public class CIMessageBuilder extends Builder {
 
     @Override
     public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return MessageUtils.sendMessage(build, listener, getMessageType(), getMessageProperties(), getMessageContent());
+        return MessageUtils.sendMessage(build, listener,
+                getProviderName(),
+                getMessageType(),
+                getMessageProperties(),
+                getMessageContent());
+    }
+
+    public String getProviderName() {
+        return providerName;
+    }
+
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
     }
 
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+        private String providerName;
         private MESSAGE_TYPE messageType;
         private String messageProperties;
         private String messageContent;
@@ -101,16 +120,23 @@ public class CIMessageBuilder extends Builder {
 
         @Override
         public CIMessageBuilder newInstance(StaplerRequest sr, JSONObject jo) {
-            return new CIMessageBuilder(MESSAGE_TYPE.fromString(jo.getString("messageType")), jo.getString("messageProperties"), jo.getString("messageContent"));
+            return new CIMessageBuilder(jo.getString("providerName"),
+                    MESSAGE_TYPE.fromString(jo.getString("messageType")),
+                    jo.getString("messageProperties"),
+                    jo.getString("messageContent"));
         }
 
         @Override
         public boolean configure(StaplerRequest sr, JSONObject formData) throws FormException {
+            setProviderName(formData.optString("providerName"));
             setMessageType(MESSAGE_TYPE.fromString(formData.optString("messageType")));
             setMessageProperties(formData.optString("messageProperties"));
             setMessageContent(formData.optString("messageContent"));
             try {
-                new CIMessageNotifier(getMessageType(), getMessageProperties(), getMessageContent());
+                new CIMessageNotifier(getProviderName(),
+                        getMessageType(),
+                        getMessageProperties(),
+                        getMessageContent());
             } catch (Exception e) {
                 throw new FormException("Failed to initialize notifier - check your global notifier configuration settings", e, "");
             }
@@ -123,6 +149,14 @@ public class CIMessageBuilder extends Builder {
             return "CI Notifier";
         }
 
+        public ListBoxModel doFillProviderNameItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+                items.add(provider.getName());
+            }
+            return items;
+        }
+
         public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
             MESSAGE_TYPE current = MESSAGE_TYPE.fromString(messageType);
             ListBoxModel items = new ListBoxModel();
@@ -130,6 +164,14 @@ public class CIMessageBuilder extends Builder {
                 items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
             }
             return items;
+        }
+
+        public String getProviderName() {
+            return providerName;
+        }
+
+        public void setProviderName(String providerName) {
+            this.providerName = providerName;
         }
     }
 }
