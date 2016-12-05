@@ -1,10 +1,8 @@
-package com.redhat.utils;
+package com.redhat.jenkins.plugins.ci.messaging;
 
-import hudson.EnvVars;
-
-import java.util.logging.Logger;
-
-import org.apache.commons.lang.text.StrSubstitutor;
+import com.redhat.utils.MessageUtils;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 
 /*
  * The MIT License
@@ -28,14 +26,24 @@ import org.apache.commons.lang.text.StrSubstitutor;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class PluginUtils {
+ */
+public abstract class MessagingWorker {
+    public String jobname;
 
-    private static final Logger log = Logger.getLogger(PluginUtils.class.getName());
+    public abstract boolean subscribe(String jobname, String selector);
+    public abstract void unsubscribe(String jobname);
+    public abstract void receive(String jobname, long timeoutInMs);
+    public abstract boolean connect() throws Exception;
+    public abstract boolean isConnected();
+    public abstract void disconnect();
 
-    public static String getSubstitutedValue(String id, EnvVars env) {
-        String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); //replace $VAR instances with ${VAR}.
-        StrSubstitutor sub1 = new StrSubstitutor(env);
+    public abstract boolean sendMessage(Run<?, ?> build,
+                                     TaskListener listener,
+                                     MessageUtils.MESSAGE_TYPE type,
+                                     String props,
+                                     String content);
 
-        return sub1.replace(text).trim();
-    }
+    public abstract String waitForMessage(Run<?, ?> build, String selector,
+                                          String variable, Integer timeout);
 }
+

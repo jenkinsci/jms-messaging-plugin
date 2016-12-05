@@ -19,14 +19,41 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.inject.Inject;
 
+/*
+ * The MIT License
+ *
+ * Copyright (c) Red Hat, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 public class CIMessageSubscriberStep extends AbstractStepImpl {
 
+    private String providerName;
     private String selector;
     private Integer timeout;
 
     @DataBoundConstructor
-    public CIMessageSubscriberStep(final String selector, final Integer timeout) {
+    public CIMessageSubscriberStep(final String providerName,
+                                   final String selector,
+                                   final Integer timeout) {
         super();
+        this.providerName = providerName;
         this.selector = selector;
         this.timeout = timeout;
     }
@@ -45,6 +72,14 @@ public class CIMessageSubscriberStep extends AbstractStepImpl {
 
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
+    }
+
+    public String getProviderName() {
+        return providerName;
+    }
+
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
     }
 
     /**
@@ -66,11 +101,16 @@ public class CIMessageSubscriberStep extends AbstractStepImpl {
 
         @Override
         protected String run() throws Exception {
+            if (step.getProviderName() == null) {
+                throw new Exception("providerName not specified!");
+            }
             int timeout = CIMessageSubscriberBuilder.DEFAULT_TIMEOUT_IN_MINUTES;
             if (step.getTimeout() != null && step.getTimeout() > 0) {
                 timeout = step.getTimeout();
             }
-            CIMessageSubscriberBuilder builder = new CIMessageSubscriberBuilder(step.getSelector(), timeout);
+            CIMessageSubscriberBuilder builder = new CIMessageSubscriberBuilder(step.getProviderName(),
+                    step.getSelector(),
+                    timeout);
             return builder.waitforCIMessage(build, launcher, listener);
         }
 

@@ -7,6 +7,7 @@ import org.jenkinsci.test.acceptance.po.PageAreaImpl;
 
 @Describable("CI event")
 public class CIEventTrigger extends PageAreaImpl {
+    public final Control providerName = control("providerName");
     public final Control selector = control("selector");
 
     public CIEventTrigger(Job parent) {

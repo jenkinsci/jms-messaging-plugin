@@ -4,6 +4,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
+import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
@@ -12,6 +13,7 @@ import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.inject.Inject;
@@ -32,23 +34,21 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @Before public void setUp() throws Exception {
         amq = docker.get();
         jenkins.configure();
+        jenkins.ensureConfigPage();
+        elasticSleep(5000);
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
-        ciPluginConfig.broker(amq.getBroker())
+        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
+        msgConfig.name("test")
+            .broker(amq.getBroker())
             .topic("CI")
             .user("admin")
             .password("redhat");
-        jenkins.save();
-    }
 
-    private void ensureConnected() throws Exception {
-        jenkins.configure();
-        elasticSleep(5000);
-        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         int counter = 0;
         boolean connected = false;
         while (counter < INIT_WAIT) {
             try {
-                ciPluginConfig.testConnection();
+                msgConfig.testConnection();
                 waitFor(driver, hasContent("Successfully connected to " + amq.getBroker()), 5);
                 connected = true;
                 break;
@@ -66,14 +66,11 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
     @Test
     public void testGlobalConfigTestConnection() throws Exception {
-        ensureConnected();
     }
 
     @WithPlugins("workflow-aggregator@1.2")
     @Test
     public void testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
-        ensureConnected();
-
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
@@ -83,6 +80,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         WorkflowJob job = jenkins.jobs.create(WorkflowJob.class);
         job.script.set("node('master') {\n sendCIMessage " +
+                " providerName: 'test', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}");
@@ -97,10 +95,9 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @WithPlugins("workflow-aggregator@1.2")
     @Test
     public void testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
-        ensureConnected();
-
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
-        wait.script.set("node('master') {\n def scott = waitForCIMessage selector: " +
+        wait.script.set("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
+                " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}");
         wait.save();
         wait.startBuild();
@@ -122,16 +119,16 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
-        ensureConnected();
-
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
-        wait.script.set("node('master') {\n def scott = waitForCIMessage selector: " +
+        wait.script.set("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
+                "selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}");
         wait.save();
         wait.startBuild();
 
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
         send.script.set("node('master') {\n sendCIMessage" +
+                " providerName: 'test', " +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}");
@@ -146,13 +143,13 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
     @Test
     public void testSimpleCIEventTrigger() throws Exception {
-        ensureConnected();
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
         ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.save();
+        elasticSleep(1000);
 
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
@@ -169,7 +166,6 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
     @Test
     public void testSimpleCIEventSubscribe() throws Exception, InterruptedException {
-        ensureConnected();
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
@@ -196,7 +192,6 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
     @Test
     public void testSimpleCIEventTriggerWithParamOverride() throws Exception, InterruptedException {
-        ensureConnected();
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
@@ -229,7 +224,6 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @Test
     public void testSimpleCIEventSubscribeWithNoParamOverride() throws Exception, InterruptedException {
         // Job parameters are NOT overridden when the subscribe build step is used.
-        ensureConnected();
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
 

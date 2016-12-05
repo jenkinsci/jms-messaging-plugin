@@ -1,15 +1,9 @@
-package com.redhat.utils;
-
-import hudson.EnvVars;
-
-import java.util.logging.Logger;
-
-import org.apache.commons.lang.text.StrSubstitutor;
+package com.redhat.jenkins.plugins.ci.integration.po;
 
 /*
  * The MIT License
  *
- * Copyright (c) Red Hat, Inc.
+ * Copyright (c) 2016 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,14 +22,24 @@ import org.apache.commons.lang.text.StrSubstitutor;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class PluginUtils {
+ */
+import org.jenkinsci.test.acceptance.po.Control;
+import org.jenkinsci.test.acceptance.po.Jenkins;
+import org.jenkinsci.test.acceptance.po.JenkinsConfig;
+import org.jenkinsci.test.acceptance.po.PageAreaImpl;
+import org.jenkinsci.test.acceptance.po.PageObject;
 
-    private static final Logger log = Logger.getLogger(PluginUtils.class.getName());
+public abstract class MessagingProvider extends PageAreaImpl {
 
-    public static String getSubstitutedValue(String id, EnvVars env) {
-        String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); //replace $VAR instances with ${VAR}.
-        StrSubstitutor sub1 = new StrSubstitutor(env);
-
-        return sub1.replace(text).trim();
+    public MessagingProvider(PageObject parent, String path) {
+        super(parent, path);
     }
+
+    public MessagingProvider(GlobalCIConfiguration context) {
+        super(context, "/com-redhat-jenkins-plugins-ci-GlobalCIConfiguration");
+    }
+
+    public abstract MessagingProvider addMessagingProvider();
+
+
 }

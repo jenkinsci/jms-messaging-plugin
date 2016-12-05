@@ -23,13 +23,24 @@
      * THE SOFTWARE.
      */
   -->
-  <?jelly escape-by-default='true'?>
-  <f:section title="${%CI Monitor}">
-  </f:section>
-  <f:section title="Messaging Providers">
-      <f:block>
-          <f:repeatableHeteroProperty field="configs" hasHeader="true"/>
-      </f:block>
+    <?jelly escape-by-default='true'?>
+    <f:section title="Connection Properties">
+    <f:entry title="Name" field="name">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%CI Broker URL}" field="broker">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%Topic name}" field="topic">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%User name}" field="user">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%Password}" field="password">
+      <f:password />
+    </f:entry>
+    <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="broker,topic,user,password" />
   </f:section>
 </j:jelly>
 

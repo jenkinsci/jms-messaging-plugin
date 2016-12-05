@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -20,8 +21,32 @@ import org.kohsuke.stapler.StaplerRequest;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
+/*
+ * The MIT License
+ *
+ * Copyright (c) Red Hat, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 public class CIMessageBuilder extends Builder {
 
+    private String providerName;
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
@@ -46,8 +71,12 @@ public class CIMessageBuilder extends Builder {
     }
 
     @DataBoundConstructor
-    public CIMessageBuilder(final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent) {
+    public CIMessageBuilder(final String providerName,
+                            final MESSAGE_TYPE messageType,
+                            final String messageProperties,
+                            final String messageContent) {
         super();
+        this.providerName = providerName;
         this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
@@ -55,11 +84,24 @@ public class CIMessageBuilder extends Builder {
 
     @Override
     public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return MessageUtils.sendMessage(build, listener, getMessageType(), getMessageProperties(), getMessageContent());
+        return MessageUtils.sendMessage(build, listener,
+                getProviderName(),
+                getMessageType(),
+                getMessageProperties(),
+                getMessageContent());
+    }
+
+    public String getProviderName() {
+        return providerName;
+    }
+
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
     }
 
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+        private String providerName;
         private MESSAGE_TYPE messageType;
         private String messageProperties;
         private String messageContent;
@@ -101,16 +143,23 @@ public class CIMessageBuilder extends Builder {
 
         @Override
         public CIMessageBuilder newInstance(StaplerRequest sr, JSONObject jo) {
-            return new CIMessageBuilder(MESSAGE_TYPE.fromString(jo.getString("messageType")), jo.getString("messageProperties"), jo.getString("messageContent"));
+            return new CIMessageBuilder(jo.getString("providerName"),
+                    MESSAGE_TYPE.fromString(jo.getString("messageType")),
+                    jo.getString("messageProperties"),
+                    jo.getString("messageContent"));
         }
 
         @Override
         public boolean configure(StaplerRequest sr, JSONObject formData) throws FormException {
+            setProviderName(formData.optString("providerName"));
             setMessageType(MESSAGE_TYPE.fromString(formData.optString("messageType")));
             setMessageProperties(formData.optString("messageProperties"));
             setMessageContent(formData.optString("messageContent"));
             try {
-                new CIMessageNotifier(getMessageType(), getMessageProperties(), getMessageContent());
+                new CIMessageNotifier(getProviderName(),
+                        getMessageType(),
+                        getMessageProperties(),
+                        getMessageContent());
             } catch (Exception e) {
                 throw new FormException("Failed to initialize notifier - check your global notifier configuration settings", e, "");
             }
@@ -123,6 +172,14 @@ public class CIMessageBuilder extends Builder {
             return "CI Notifier";
         }
 
+        public ListBoxModel doFillProviderNameItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+                items.add(provider.getName());
+            }
+            return items;
+        }
+
         public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
             MESSAGE_TYPE current = MESSAGE_TYPE.fromString(messageType);
             ListBoxModel items = new ListBoxModel();
@@ -130,6 +187,14 @@ public class CIMessageBuilder extends Builder {
                 items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
             }
             return items;
+        }
+
+        public String getProviderName() {
+            return providerName;
+        }
+
+        public void setProviderName(String providerName) {
+            this.providerName = providerName;
         }
     }
 }

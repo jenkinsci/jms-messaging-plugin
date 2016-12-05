@@ -6,12 +6,12 @@
         <version>2.12</version>
     </parent>
 
-    <artifactId>activemq-messaging</artifactId>
+    <artifactId>ci-messaging</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
-    <name>Active MQ Messaging Plugin</name>
+    <name>CI Messaging Plugin</name>
     <description>Plugin to listen and emit messages during the Continuous Integration process.</description>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/ActiveMQ+Messaging+Plugin</url>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/CI+Messaging+Plugin</url>
 
     <licenses>
         <license>

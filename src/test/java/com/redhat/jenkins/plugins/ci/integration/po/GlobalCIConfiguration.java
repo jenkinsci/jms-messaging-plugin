@@ -28,33 +28,9 @@ import org.jenkinsci.test.acceptance.po.JenkinsConfig;
 import org.jenkinsci.test.acceptance.po.PageAreaImpl;
 
 public class GlobalCIConfiguration extends PageAreaImpl {
-    public final Control broker     = control("broker");
-    public final Control topic      = control("topic");
-    public final Control user       = control("user");
-    public final Control password   = control("password");
 
     public GlobalCIConfiguration(JenkinsConfig context) {
         super(context, "/com-redhat-jenkins-plugins-ci-GlobalCIConfiguration");
     }
 
-    public GlobalCIConfiguration broker(String brokerVal) {
-        broker.set(brokerVal);
-        return this;
-    }
-    public GlobalCIConfiguration topic(String topicVal) {
-        topic.set(topicVal);
-        return this;
-    }
-    public GlobalCIConfiguration user(String userVal) {
-        user.set(userVal);
-        return this;
-    }
-    public GlobalCIConfiguration password(String passwordVal) {
-        password.set(passwordVal);
-        return this;
-    }
-
-    public void testConnection() {
-        clickButton("Test Connection");
-    }
 }
