@@ -23,7 +23,7 @@ import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 
-@WithPlugins("ci-messaging")
+@WithPlugins("jms-messaging")
 @WithDocker
 public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @Inject private DockerContainerHolder<JBossAMQContainer> docker;
@@ -34,7 +34,6 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     @Before public void setUp() throws Exception {
         amq = docker.get();
         jenkins.configure();
-        jenkins.ensureConfigPage();
         elasticSleep(5000);
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();

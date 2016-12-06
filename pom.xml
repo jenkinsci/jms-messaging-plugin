@@ -6,12 +6,12 @@
         <version>2.12</version>
     </parent>
 
-    <artifactId>ci-messaging</artifactId>
+    <artifactId>jms-messaging</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
-    <name>CI Messaging Plugin</name>
-    <description>Plugin to listen and emit messages during the Continuous Integration process.</description>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/CI+Messaging+Plugin</url>
+    <name>JMS Messaging Plugin</name>
+    <description>Plugin to listen and emit messages during the build process using a JMS Messaging Provider.</description>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/JMS+Messaging+Plugin</url>
 
     <licenses>
         <license>

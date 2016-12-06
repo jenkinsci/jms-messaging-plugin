@@ -26,7 +26,7 @@
   <?jelly escape-by-default='true'?>
   <f:section title="${%CI Monitor}">
   </f:section>
-  <f:section title="Messaging Providers">
+  <f:section title="JMS Messaging Providers">
       <f:block>
           <f:repeatableHeteroProperty field="configs" hasHeader="true"/>
       </f:block>

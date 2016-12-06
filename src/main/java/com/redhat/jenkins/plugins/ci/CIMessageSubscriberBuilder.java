@@ -1,7 +1,7 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -115,7 +115,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
     public String waitforCIMessage(Run<?, ?> build, Launcher launcher, TaskListener listener) {
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
-        MessagingWorker worker =
+        JMSMessagingWorker worker =
                 config.getProvider(getProviderName()).createWorker(build
                         .getParent().getName());
         return worker.waitForMessage(build, selector, variable, timeout);
@@ -155,7 +155,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
         public ListBoxModel doFillProviderNameItems() {
             ListBoxModel items = new ListBoxModel();
-            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
                 items.add(provider.getName());
             }
             return items;

@@ -4,7 +4,7 @@ import javax.inject.Inject;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
@@ -146,7 +146,7 @@ public class CIMessageSenderStep extends AbstractStepImpl {
 
         public ListBoxModel doFillProviderNameItems() {
             ListBoxModel items = new ListBoxModel();
-            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
                 items.add(provider.getName());
             }
             return items;

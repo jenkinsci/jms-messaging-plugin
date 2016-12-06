@@ -1,6 +1,6 @@
 package com.redhat.utils;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
@@ -109,7 +109,7 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
                                       String content) throws InterruptedException, IOException {
         log.info("Sending CI message for job '" + build.getParent().getName() + "'.");
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
-        MessagingWorker worker =
+        JMSMessagingWorker worker =
                 config.getProvider(providerName).createWorker(build.getParent
                         ().getName());
         return worker.sendMessage(build,

@@ -66,7 +66,7 @@ import static com.redhat.utils.MessageUtils.JSON_TYPE;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class ActiveMqMessagingWorker extends MessagingWorker {
+public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
 
 

@@ -1,6 +1,6 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -197,7 +197,7 @@ import com.redhat.utils.PluginUtils;
 
         public ListBoxModel doFillProviderNameItems() {
             ListBoxModel items = new ListBoxModel();
-            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
                 items.add(provider.getName());
             }
             return items;

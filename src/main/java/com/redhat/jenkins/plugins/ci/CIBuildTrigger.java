@@ -1,5 +1,5 @@
 package com.redhat.jenkins.plugins.ci;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ParameterValue;
@@ -90,7 +90,7 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 	protected Object readResolve() throws ObjectStreamException {
 		if (providerName == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
 			log.info("Provider is null and migration is in progress for providers...");
-			MessagingProvider provider = GlobalCIConfiguration.get()
+			JMSMessagingProvider provider = GlobalCIConfiguration.get()
 					.getConfigs().get(0);
 			if (provider != null) {
 				providerName = provider.getName();
@@ -128,7 +128,7 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
         } else {
             try {
                 stopTriggerThread();
-	            MessagingProvider provider = GlobalCIConfiguration.get()
+	            JMSMessagingProvider provider = GlobalCIConfiguration.get()
 			            .getProvider(providerName);
                 Thread thread = new Thread(new CITriggerThread(provider, job.getFullName(), selector));
                 thread.start();
@@ -210,7 +210,7 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
         public ListBoxModel doFillProviderNameItems() {
             ListBoxModel items = new ListBoxModel();
-            for (MessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
                 items.add(provider.getName());
             }
             return items;

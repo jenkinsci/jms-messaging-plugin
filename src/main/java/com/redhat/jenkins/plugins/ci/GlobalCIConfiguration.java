@@ -1,7 +1,7 @@
 package com.redhat.jenkins.plugins.ci;
 
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,8 +49,8 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     private static final String PLUGIN_NAME = Messages.PluginName();
 
     public static final GlobalCIConfiguration EMPTY_CONFIG =
-            new GlobalCIConfiguration(Collections.<MessagingProvider>emptyList());
-    private List<MessagingProvider> configs = new ArrayList<MessagingProvider>();
+            new GlobalCIConfiguration(Collections.<JMSMessagingProvider>emptyList());
+    private List<JMSMessagingProvider> configs = new ArrayList<JMSMessagingProvider>();
     public static final String DEFAULT_PROVIDER = "default";
 
     public boolean isMigrationInProgress() {
@@ -69,7 +69,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     private static final Logger log = Logger.getLogger(GlobalCIConfiguration.class.getName());
 
-    public GlobalCIConfiguration(List<MessagingProvider> configs) {
+    public GlobalCIConfiguration(List<JMSMessagingProvider> configs) {
         this.configs = configs;
     }
 
@@ -99,16 +99,16 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     @SuppressWarnings("unused")
     @DataBoundSetter
-    public void setConfigs(List<MessagingProvider> configs) {
+    public void setConfigs(List<JMSMessagingProvider> configs) {
         this.configs = configs;
     }
 
-    public List<MessagingProvider> getConfigs() {
+    public List<JMSMessagingProvider> getConfigs() {
         return configs;
     }
 
-    public MessagingProvider getProvider(String name) {
-        for (MessagingProvider provider: configs) {
+    public JMSMessagingProvider getProvider(String name) {
+        for (JMSMessagingProvider provider: configs) {
             if (provider.getName().equals(name)) {
                 return provider;
             }

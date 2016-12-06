@@ -1,8 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.utils.MessageUtils;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
@@ -14,23 +12,13 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
 import javax.jms.Session;
-import javax.jms.Topic;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.jms.Connection;
 import javax.jms.TopicSubscriber;
 import javax.security.auth.login.LoginException;
 import javax.servlet.ServletException;
-
-import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
 
 /*
  * The MIT License
@@ -55,7 +43,7 @@ import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class ActiveMqMessagingProvider extends MessagingProvider {
+public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     private String broker;
     private String topic;
@@ -104,7 +92,7 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
     }
 
     @Override
-    public Descriptor<MessagingProvider> getDescriptor() {
+    public Descriptor<JMSMessagingProvider> getDescriptor() {
         return Jenkins.getInstance().getDescriptorByType(ActiveMqMessagingProviderDescriptor.class);
     }
 
@@ -125,7 +113,7 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
     }
 
     @Override
-    public MessagingWorker createWorker(String jobname) {
+    public JMSMessagingWorker createWorker(String jobname) {
         return new ActiveMqMessagingWorker(this, jobname);
     }
 

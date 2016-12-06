@@ -1,14 +1,10 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import hudson.Extension;
 import hudson.ExtensionList;
-import hudson.model.AbstractDescribableImpl;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.jms.JMSException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,17 +34,17 @@ import java.util.logging.Logger;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public abstract class MessagingProvider implements Describable<MessagingProvider>, Serializable {
+public abstract class JMSMessagingProvider implements Describable<JMSMessagingProvider>, Serializable {
 
     protected String name;
-    private static final Logger log = Logger.getLogger(MessagingProvider.class.getName());
+    private static final Logger log = Logger.getLogger(JMSMessagingProvider.class.getName());
     public final static String DEFAULT_PROVIDERNAME = "default";
 
     public String getName() {
         return name;
     }
 
-    public abstract MessagingWorker createWorker(String jobname);
+    public abstract JMSMessagingWorker createWorker(String jobname);
 
     public static boolean isValidURL(String url) {
         try {
@@ -60,7 +56,7 @@ public abstract class MessagingProvider implements Describable<MessagingProvider
         return true;
     }
 
-    public abstract static class MessagingProviderDescriptor extends Descriptor<MessagingProvider> {
+    public abstract static class MessagingProviderDescriptor extends Descriptor<JMSMessagingProvider> {
 
         public static ExtensionList<MessagingProviderDescriptor> all() {
             return Jenkins.getInstance().getExtensionList(MessagingProviderDescriptor.class);

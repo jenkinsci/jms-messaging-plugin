@@ -27,7 +27,7 @@ import hudson.model.TaskListener;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public abstract class MessagingWorker {
+public abstract class JMSMessagingWorker {
     public String jobname;
 
     public abstract boolean subscribe(String jobname, String selector);

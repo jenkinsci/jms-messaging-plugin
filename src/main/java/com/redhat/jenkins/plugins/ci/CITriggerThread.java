@@ -1,7 +1,7 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import hudson.security.ACL;
 
 import java.util.logging.Logger;
@@ -37,11 +37,11 @@ import org.acegisecurity.context.SecurityContextHolder;
     private static final Integer WAIT_HOURS = 1;
     private static final Integer WAIT_SECONDS = 2;
 
-    private final MessagingWorker messagingWorker;
+    private final JMSMessagingWorker messagingWorker;
     private final String jobname;
     private final String selector;
 
-    public CITriggerThread(MessagingProvider messagingProvider,
+    public CITriggerThread(JMSMessagingProvider messagingProvider,
                            String jobname, String selector) {
         this.jobname = jobname;
         this.selector = selector;
