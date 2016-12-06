@@ -102,8 +102,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                                 .createDurableSubscriber(destination, jobname,
                                         selector, false);
                         log.info("Successfully subscribed job '" + jobname + "' to " + provider.getTopic() + " topic with selector: " + selector);
-                        return true;
+                    } else {
+                        log.fine("Already subscribed to " + provider.getTopic() + " topic with selector: " + selector + " for job '" + jobname);
                     }
+                    return true;
                 } catch (JMSException ex) {
 
                     // Either we were interrupted, or something else went
