@@ -24,7 +24,7 @@
      */
   -->
 
-    <f:entry title="${%Choose a Message Provider}" field="providerName">
+    <f:entry title="${%Messaging Provider}" field="providerName">
         <f:select/>
     </f:entry>
     <f:entry title="${%Message type}" field="messageType">
