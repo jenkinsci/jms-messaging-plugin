@@ -95,7 +95,6 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 			if (provider != null) {
 				providerName = provider.getName();
 				providerUpdated = true;
-				this.getDescriptor().save();
 				try {
 					if (job != null) {
 						job.save();
