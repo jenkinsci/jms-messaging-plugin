@@ -155,8 +155,12 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             connectiontmp = connectionFactory
                     .createConnection();
+            String url = "";
+            if (Jenkins.getInstance() != null) {
+                url = Jenkins.getInstance().getRootUrl();
+            }
             connectiontmp.setClientID(provider.getName() + "_"
-                    + Jenkins.getInstance().getRootUrl() + "_" + ip + "_" + jobname);
+                    + url + "_" + ip + "_" + jobname);
             connectiontmp.start();
         } catch (JMSException e) {
             log.severe("Unable to connect to " + provider.getBroker() + " " + e.getMessage());

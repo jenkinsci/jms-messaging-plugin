@@ -28,6 +28,26 @@
         </developer>
     </developers>
 
+    <distributionManagement>
+        <repository>
+            <id>repo.jenkins-ci.org</id>
+            <url>https://repo.jenkins-ci.org/releases</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <properties>
         <!-- override this value to test another version other
@@ -98,8 +118,20 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>org.jenkins-ci.main</groupId>
+                    <artifactId>remoting</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.sonatype.sisu</groupId>
                     <artifactId>sisu-guice</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.jclouds</groupId>
+                    <artifactId>jclouds-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.jclouds.driver</groupId>
+                    <artifactId>jclouds-enterprise</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
