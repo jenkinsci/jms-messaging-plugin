@@ -28,7 +28,6 @@
         </developer>
     </developers>
 
-
     <properties>
         <!-- override this value to test another version other
              than the parent version above
@@ -98,8 +97,20 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>org.jenkins-ci.main</groupId>
+                    <artifactId>remoting</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.sonatype.sisu</groupId>
                     <artifactId>sisu-guice</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.jclouds</groupId>
+                    <artifactId>jclouds-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.jclouds.driver</groupId>
+                    <artifactId>jclouds-enterprise</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
