@@ -7,7 +7,6 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
-import hudson.model.AbstractProject;
 import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Project;
 import jenkins.model.Jenkins;
@@ -43,58 +42,71 @@ public class MessageProviderMigrator {
 
     private static final Logger log = Logger.getLogger(MessageProviderMigrator.class.getName());
 
-    private static void updateCIMessageBuilder(Project p, CIMessageBuilder builder) {
+    private static boolean updateCIMessageBuilder(Project p, CIMessageBuilder builder) {
         if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
                 p.save();
+                return true;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        return false;
     }
 
-    private static void updateCIMessageNotifier(Project p, CIMessageNotifier builder) {
+    private static boolean updateCIMessageNotifier(Project p, CIMessageNotifier builder) {
         if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
                 p.save();
+                return true;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        return false;
     }
-    private static void updateCIMessageSubscriberBuilder(Project p, CIMessageSubscriberBuilder builder) {
+    private static boolean updateCIMessageSubscriberBuilder(Project p, CIMessageSubscriberBuilder builder) {
         if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
                 p.save();
+                return true;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        return false;
     }
 
     @Initializer(after = InitMilestone.JOB_LOADED)
     public static void migrateCIMessageBuilders() {
         Jenkins instance = Jenkins.getInstance();
         if (instance == null) { return; }
-        log.info("Attempting to migrate all CIMessageBuilders and CIMessageSubscriberBuilders are valid.");
+        int updatedCount = 0;
+        log.info("Attempting to migrate all CIMessageBuilders, CIMessageNotifier and CIMessageSubscriberBuilders build/publish steps");
         for (BuildableItemWithBuildWrappers item : instance.getItems(BuildableItemWithBuildWrappers.class)) {
             Project p = (Project) item.asProject();
             for (Object builderObj : (p.getBuildersList().getAll(CIMessageBuilder.class))) {
-                updateCIMessageBuilder(p, (CIMessageBuilder)builderObj);
+                if (updateCIMessageBuilder(p, (CIMessageBuilder)builderObj)) {
+                    updatedCount++;
+                }
             }
             for (Object notifierObj : (p.getPublishersList().getAll(CIMessageNotifier.class))) {
-                updateCIMessageNotifier(p, (CIMessageNotifier)notifierObj);
+                if (updateCIMessageNotifier(p, (CIMessageNotifier)notifierObj)) {
+                    updatedCount++;
+                }
             }
             for (Object builderObj : (p.getBuildersList().getAll(CIMessageSubscriberBuilder.class))) {
-                updateCIMessageSubscriberBuilder(p, (CIMessageSubscriberBuilder)builderObj);
+                if (updateCIMessageSubscriberBuilder(p, (CIMessageSubscriberBuilder)builderObj)) {
+                    updatedCount++;
+                }
             }
         }
-        log.info("Done");
+        log.info("Updated " + updatedCount + " build/publish step(s)");
     }
 }
