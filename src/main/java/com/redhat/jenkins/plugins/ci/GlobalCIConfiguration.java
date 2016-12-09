@@ -5,11 +5,15 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
+import hudson.model.Failure;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundSetter;
@@ -104,7 +108,16 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     public List<JMSMessagingProvider> getConfigs() {
-        return configs;
+        return Collections.unmodifiableList(configs);
+    }
+
+    public boolean addMessageProvider(JMSMessagingProvider provider) {
+        if (configs == null) configs = new ArrayList<JMSMessagingProvider>();
+        if (configs.contains(provider)) {
+            throw new Failure("Attempt to add a duplicate message provider");
+        }
+        configs.add(provider);
+        return true;
     }
 
     public JMSMessagingProvider getProvider(String name) {
@@ -118,6 +131,21 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
+        HashMap<String, String> names = new HashMap<>();
+        Object obj = json.get("configs");
+        if (obj instanceof JSONArray) {
+            JSONArray arr = (JSONArray) obj;
+            Iterator it = arr.iterator();
+            while (it.hasNext()) {
+                Object obj2 = it.next();
+                JSONObject providerObj = (JSONObject) obj2;
+                String name = providerObj.getString("name");
+                if (names.containsKey(name)) {
+                    throw new Failure("Attempt to add a duplicate JMS Message Provider - " + name);
+                }
+                names.put(name, name);
+            }
+        }
         req.bindJSON(this, json);
         save();
         return true;

@@ -114,7 +114,7 @@
         <dependency>
             <groupId>org.jenkins-ci</groupId>
             <artifactId>acceptance-test-harness</artifactId>
-            <version>1.45-SNAPSHOT</version>
+            <version>1.43</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
