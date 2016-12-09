@@ -89,6 +89,21 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     public void testGlobalConfigTestConnection() throws Exception {
     }
 
+    @Test
+    public void testAddDuplicateMessageProvider() throws Exception {
+        jenkins.configure();
+        elasticSleep(5000);
+        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
+        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
+        msgConfig.name("test")
+                .broker(amq.getBroker())
+                .topic("CI")
+                .user("admin")
+                .password("redhat");
+        jenkins.save();
+        assertThat(driver, hasContent("Attempt to add a duplicate JMS Message Provider - test"));
+    }
+
     @WithPlugins("workflow-aggregator@1.2")
     @Test
     public void testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
