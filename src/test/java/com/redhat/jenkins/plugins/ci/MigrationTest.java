@@ -2,8 +2,11 @@ package com.redhat.jenkins.plugins.ci;
 
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import hudson.matrix.MatrixProject;
 import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
+import hudson.model.Item;
+import hudson.model.TopLevelItem;
 import hudson.triggers.Trigger;
 import org.junit.Rule;
 import org.junit.Test;
@@ -11,6 +14,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.recipes.LocalData;
 
 import static junit.framework.TestCase.assertNotNull;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -20,6 +24,21 @@ public class MigrationTest {
 
     @Rule
     public final JenkinsRule j = new JenkinsRule();
+
+    @LocalData
+    @Test
+    public void testOtherJobTypes() throws Exception {
+        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
+        assertNotNull(j.getInstance().getItem("maven"));
+        Item matrixItem = j.getInstance().getItem
+                ("matrix");
+        assertNotNull(matrixItem);
+        MatrixProject matrixJob = (MatrixProject)matrixItem;
+        CIMessageBuilder builder = matrixJob.getBuildersList().get(CIMessageBuilder.class);
+        assertNotNull(builder);
+        assertEquals("Message Provider name should be default",
+                "default", builder.getProviderName());
+    }
 
     @LocalData
     @Test
