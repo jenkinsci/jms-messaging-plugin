@@ -7,7 +7,10 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
+import hudson.matrix.MatrixProject;
+import hudson.model.AbstractProject;
 import hudson.model.BuildableItemWithBuildWrappers;
+import hudson.model.Job;
 import hudson.model.Project;
 import jenkins.model.Jenkins;
 
@@ -56,6 +59,20 @@ public class MessageProviderMigrator {
         return false;
     }
 
+    private static boolean updateCIMessageBuilder(MatrixProject p, CIMessageBuilder builder) {
+        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+            builder.setProviderName(GlobalCIConfiguration.get()
+                    .getConfigs().get(0).getName());
+            try {
+                p.save();
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
     private static boolean updateCIMessageNotifier(Project p, CIMessageNotifier builder) {
         if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
             builder.setProviderName(GlobalCIConfiguration.get()
@@ -69,7 +86,36 @@ public class MessageProviderMigrator {
         }
         return false;
     }
+
+    private static boolean updateCIMessageNotifier(MatrixProject p, CIMessageNotifier builder) {
+        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+            builder.setProviderName(GlobalCIConfiguration.get()
+                    .getConfigs().get(0).getName());
+            try {
+                p.save();
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
     private static boolean updateCIMessageSubscriberBuilder(Project p, CIMessageSubscriberBuilder builder) {
+        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+            builder.setProviderName(GlobalCIConfiguration.get()
+                    .getConfigs().get(0).getName());
+            try {
+                p.save();
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    private static boolean updateCIMessageSubscriberBuilder(MatrixProject p, CIMessageSubscriberBuilder builder) {
         if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
@@ -90,20 +136,41 @@ public class MessageProviderMigrator {
         int updatedCount = 0;
         log.info("Attempting to migrate all CIMessageBuilders, CIMessageNotifier and CIMessageSubscriberBuilders build/publish steps");
         for (BuildableItemWithBuildWrappers item : instance.getItems(BuildableItemWithBuildWrappers.class)) {
-            Project p = (Project) item.asProject();
-            for (Object builderObj : (p.getBuildersList().getAll(CIMessageBuilder.class))) {
-                if (updateCIMessageBuilder(p, (CIMessageBuilder)builderObj)) {
-                    updatedCount++;
+            Job job = (Job) item;
+            if (job instanceof Project) {
+                Project p = (Project) item.asProject();
+                for (Object builderObj : (p.getBuildersList().getAll(CIMessageBuilder.class))) {
+                    if (updateCIMessageBuilder(p, (CIMessageBuilder)builderObj)) {
+                        updatedCount++;
+                    }
+                }
+                for (Object notifierObj : (p.getPublishersList().getAll(CIMessageNotifier.class))) {
+                    if (updateCIMessageNotifier(p, (CIMessageNotifier)notifierObj)) {
+                        updatedCount++;
+                    }
+                }
+                for (Object builderObj : (p.getBuildersList().getAll(CIMessageSubscriberBuilder.class))) {
+                    if (updateCIMessageSubscriberBuilder(p, (CIMessageSubscriberBuilder)builderObj)) {
+                        updatedCount++;
+                    }
                 }
             }
-            for (Object notifierObj : (p.getPublishersList().getAll(CIMessageNotifier.class))) {
-                if (updateCIMessageNotifier(p, (CIMessageNotifier)notifierObj)) {
-                    updatedCount++;
+            if (job instanceof MatrixProject) {
+                MatrixProject p = (MatrixProject) item.asProject();
+                for (Object builderObj : (p.getBuildersList().getAll(CIMessageBuilder.class))) {
+                    if (updateCIMessageBuilder(p, (CIMessageBuilder)builderObj)) {
+                        updatedCount++;
+                    }
                 }
-            }
-            for (Object builderObj : (p.getBuildersList().getAll(CIMessageSubscriberBuilder.class))) {
-                if (updateCIMessageSubscriberBuilder(p, (CIMessageSubscriberBuilder)builderObj)) {
-                    updatedCount++;
+                for (Object notifierObj : (p.getPublishersList().getAll(CIMessageNotifier.class))) {
+                    if (updateCIMessageNotifier(p, (CIMessageNotifier)notifierObj)) {
+                        updatedCount++;
+                    }
+                }
+                for (Object builderObj : (p.getBuildersList().getAll(CIMessageSubscriberBuilder.class))) {
+                    if (updateCIMessageSubscriberBuilder(p, (CIMessageSubscriberBuilder)builderObj)) {
+                        updatedCount++;
+                    }
                 }
             }
         }
