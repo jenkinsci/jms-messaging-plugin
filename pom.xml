@@ -53,7 +53,7 @@
         <!-- override this value to test another version other
              than the parent version above
         -->
-        <jenkins.version>1.651.3</jenkins.version>
+        <jenkins.version>1.642.1</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
 
