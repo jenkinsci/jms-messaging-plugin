@@ -29,3 +29,6 @@ To run tests:
 * Docker
 * Firefox
 
+## CI
+
+This plugin is currently built on [ci.jenkins.io](https://ci.jenkins.io/job/Plugins/job/jms-messaging-plugin/).
