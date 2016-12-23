@@ -53,7 +53,7 @@
         <!-- override this value to test another version other
              than the parent version above
         -->
-        <jenkins.version>1.642.1</jenkins.version>
+        <jenkins.version>1.651.3</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
 
@@ -62,6 +62,7 @@
         <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
+
 
     <dependencies>
         <dependency>
@@ -85,6 +86,26 @@
             <version>5.9.0</version>
         </dependency>
         <dependency>
+            <groupId>org.zeromq</groupId>
+            <artifactId>jeromq</artifactId>
+            <version>0.3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.zeromq</groupId>
+            <artifactId>jeromq-jms</artifactId>
+            <version>1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.tools</groupId>
+                    <artifactId>jconsole</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.tools</groupId>
+                    <artifactId>tools</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>2.7.1</version>
@@ -93,6 +114,16 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.7.1-1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>1.9.13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.13</version>
         </dependency>
         <dependency>
             <groupId>xml-apis</groupId>
@@ -146,6 +177,19 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.jenkins-ci.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <version>1.120</version>
+                <configuration>
+                    <systemProperties>
+                    <systemProperty>
+                        <name>hudson.model.ParametersAction.keepUndefinedParameters</name>
+                        <value>true</value>
+                    </systemProperty>
+                    </systemProperties>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>

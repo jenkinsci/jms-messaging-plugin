@@ -56,7 +56,7 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
 	private String selector;
 	private String providerName;
-	public static final transient WeakHashMap<String, Thread> triggerInfo = new WeakHashMap<String, Thread>();
+	public static final transient WeakHashMap<String, CITriggerThread> triggerInfo = new WeakHashMap<String, CITriggerThread>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
@@ -129,9 +129,12 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
                 stopTriggerThread();
 	            JMSMessagingProvider provider = GlobalCIConfiguration.get()
 			            .getProvider(providerName);
-                Thread thread = new Thread(new CITriggerThread(provider, job.getFullName(), selector));
-                thread.start();
-                triggerInfo.put(job.getFullName(), thread);
+                CITriggerThread trigger = new CITriggerThread(provider, job
+                        .getFullName(), selector);
+                trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+	            trigger.setDaemon(true);
+                trigger.start();
+                triggerInfo.put(job.getFullName(), trigger);
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in trigger start.", e);
             }
@@ -139,11 +142,10 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 	}
 
 	private void stopTriggerThread() {
-	    Thread thread = triggerInfo.get(job.getFullName());
+        CITriggerThread thread = triggerInfo.get(job.getFullName());
         if (thread != null) {
             try {
-                thread.interrupt();
-                thread.join();
+                thread.sendInterrupt();
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
             }
