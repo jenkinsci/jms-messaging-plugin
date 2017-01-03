@@ -17,9 +17,6 @@ node('docker') {
 
         docker.image('maven:3.3-jdk-7').inside(containerArgs) {
             timestamps {
-                sh 'mvn install:install-file -Duser.home=/var/maven ' +
-                        ' -DgroupId=org.zeromq -DartifactId=jeromq-jms ' +
-                        ' -Dversion=1.0 -Dpackaging=jar -Dfile=lib/jeromq-jms-1.0.jar'
                 sh 'mvn -B -U -e -Dmaven.test.failure.ignore=true -Duser.home=/var/maven clean install -DskipTests'
             }
         }
