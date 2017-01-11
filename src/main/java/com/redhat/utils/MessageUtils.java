@@ -1,14 +1,14 @@
 package com.redhat.utils;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.model.Run;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.logging.Logger;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 
 /*
  * The MIT License
@@ -32,7 +32,8 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class MessageUtils {
+ */
+public class MessageUtils {
 
     private static final Logger log = Logger.getLogger(MessageUtils.class.getName());
 

@@ -23,21 +23,20 @@
      * THE SOFTWARE.
      */
   -->
-    <?jelly escape-by-default='true'?>
-    <f:section title="Connection Properties">
-    <f:entry title="Name" field="name">
-      <f:textbox />
-    </f:entry>
-    <f:entry title="${%CI Broker URL}" field="broker">
-      <f:textbox />
-    </f:entry>
-    <f:entry title="${%Topic name}" field="topic">
-      <f:textbox />
-    </f:entry>
-    <f:descriptorRadioList title="${%Authentication Method}"
-                         descriptors="${descriptor.getAuthenticationMethodDescriptors()}"
-                         instance="${instance.authenticationMethod}"
-                         varName="authenticationMethod"/>
-  </f:section>
+      <f:nested>
+        <f:entry title="${%Key store}" field="keystore">
+          <f:textbox />
+        </f:entry>
+        <f:entry title="${%Key store password}" field="keypwd">
+          <f:password />
+        </f:entry>
+        <f:entry title="${%Trust store}" field="truststore">
+          <f:textbox />
+        </f:entry>
+        <f:entry title="${%Trust store password}" field="trustpwd">
+          <f:password />
+        </f:entry>
+        <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="broker,keystore,keypwd,truststore,trustpwd" />
+      </f:nested>
 </j:jelly>
 

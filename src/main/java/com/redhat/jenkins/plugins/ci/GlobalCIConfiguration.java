@@ -1,8 +1,9 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
+import hudson.model.Failure;
+import hudson.util.Secret;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,14 +11,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
-import hudson.model.Failure;
-import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
+
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 
 /*
  * The MIT License
@@ -89,7 +92,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                 if (getProvider(DEFAULT_PROVIDER)==null) {
                     log.info("There is no default Message Provider.");
                     configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER,
-                            broker, topic, user, password));
+                            broker, topic, new UsernameAuthenticationMethod(user, password)));
                     log.info("Added default Message Provider using deprecated configuration.");
                     setMigrationInProgress(true);
                     save();
@@ -101,14 +104,13 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         return this;
     }
 
-    @SuppressWarnings("unused")
     @DataBoundSetter
     public void setConfigs(List<JMSMessagingProvider> configs) {
         this.configs = configs;
     }
 
     public List<JMSMessagingProvider> getConfigs() {
-        return Collections.unmodifiableList(configs);
+        return Collections.unmodifiableList(this.configs);
     }
 
     public boolean addMessageProvider(JMSMessagingProvider provider) {
@@ -121,7 +123,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     public JMSMessagingProvider getProvider(String name) {
-        for (JMSMessagingProvider provider: configs) {
+        for (JMSMessagingProvider provider: getConfigs()) {
             if (provider.getName().equals(name)) {
                 return provider;
             }
