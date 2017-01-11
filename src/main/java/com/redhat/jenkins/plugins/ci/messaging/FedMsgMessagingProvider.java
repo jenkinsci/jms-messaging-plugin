@@ -34,30 +34,52 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class FedMsgMessagingProvider extends JMSMessagingProvider {
 
-    private String hubAddr;
-    private String pubAddr;
-    private String topic;
+    private String  hubAddr;
+    private String  pubAddr;
+    private String  topic;
+    private boolean shouldSign;
+    private String  certificateFile;
+    private String  keystoreFile;
 
     @DataBoundConstructor
     public FedMsgMessagingProvider(String name, String hubAddr,
-                                   String pubAddr, String topic) {
+                                   String pubAddr, String topic,
+                                   boolean shouldSign,
+                                   String certificateFile,
+                                   String keystoreFile) {
         this.name = name;
         this.hubAddr = hubAddr;
         this.pubAddr = pubAddr;
         this.topic = topic;
+        this.shouldSign = shouldSign;
+        this.certificateFile = certificateFile;
+        this.keystoreFile = keystoreFile;
+    }
+
+    public boolean getShouldSign() {
+        return shouldSign;
     }
 
     public String getHubAddr() {
         return hubAddr;
     }
 
-    public String petHubAddr() {
-        return pubAddr;
-    }
-
     public String getTopic() {
         return topic;
     }
+
+    public String getPubAddr() {
+        return pubAddr;
+    }
+
+    public String getCertificateFile() {
+        return certificateFile;
+    }
+
+    public String getKeystoreFile() {
+        return keystoreFile;
+    }
+
 
     @Override
     public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
@@ -67,10 +89,6 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     @Override
     public Descriptor<JMSMessagingProvider> getDescriptor() {
         return Jenkins.getInstance().getDescriptorByType(FedMsgMessagingProviderDescriptor.class);
-    }
-
-    public String getPubAddr() {
-        return pubAddr;
     }
 
     @Extension

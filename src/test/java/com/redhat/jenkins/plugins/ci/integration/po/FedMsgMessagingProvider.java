@@ -30,10 +30,13 @@ import org.jenkinsci.test.acceptance.po.PageObject;
 @Describable("FedMsg")
 public class FedMsgMessagingProvider extends MessagingProvider {
 
-    public final Control name     = control("name");
-    public final Control hubAddr  = control("hubAddr");
-    public final Control pubAddr  = control("pubAddr");
-    public final Control topic    = control("topic");
+    public final Control name       = control("name");
+    public final Control hubAddr    = control("hubAddr");
+    public final Control pubAddr    = control("pubAddr");
+    public final Control topic      = control("topic");
+    public final Control shouldSign = control("shouldSign");
+    public final Control certificate = control("certificateFile");
+    public final Control keystoreFile = control("keystoreFile");
 
     public FedMsgMessagingProvider(PageObject parent, String path) {
         super(parent, path);
@@ -57,6 +60,18 @@ public class FedMsgMessagingProvider extends MessagingProvider {
     }
     public FedMsgMessagingProvider topic(String topicVal) {
         topic.set(topicVal);
+        return this;
+    }
+    public FedMsgMessagingProvider shouldSign(boolean shouldSignVal) {
+        shouldSign.check(shouldSignVal);
+        return this;
+    }
+    public FedMsgMessagingProvider certificate(String certificateVal) {
+        certificate.set(certificateVal);
+        return this;
+    }
+    public FedMsgMessagingProvider keystoreFile(String keystoreFileVal) {
+        keystoreFile.set(keystoreFileVal);
         return this;
     }
     public void testConnection() {

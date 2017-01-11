@@ -25,7 +25,7 @@ here = os.getcwd()
 
 config = dict(
     sign_messages=False,
-    validate_signatures=False,
+    validate_signatures=True,
 
     # Use these implementations to sign and validate messages
     crypto_backend='x509',
