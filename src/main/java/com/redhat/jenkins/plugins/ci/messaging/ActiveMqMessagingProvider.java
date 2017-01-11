@@ -1,11 +1,13 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Descriptor;
 
 import java.util.logging.Logger;
 
+import hudson.util.Secret;
 import jenkins.model.Jenkins;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -43,6 +45,9 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     private String broker;
     private String topic;
+    private transient String user;
+    private transient Secret password;
+    private transient boolean migrationInProgress = false;
     private ActiveMQAuthenticationMethod authenticationMethod;
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
 
@@ -54,7 +59,17 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         this.authenticationMethod = authenticationMethod;
     }
 
-    @DataBoundSetter
+    protected Object readResolve() {
+        if (user != null) {
+            log.info("Legacy Message Provider username value is not null.");
+            authenticationMethod = new UsernameAuthenticationMethod(user, password);
+            log.info("Added default username/password authentication method using deprecated configuration.");
+            setMigrationInProgress(true);
+        }
+        return this;
+    }
+
+        @DataBoundSetter
     public void setBroker(String broker) {
         this.broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
     }
@@ -97,6 +112,14 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     @Override
     public JMSMessagingWorker createWorker(String jobname) {
         return new ActiveMqMessagingWorker(this, jobname);
+    }
+
+    public boolean IsMigrationInProgress() {
+        return migrationInProgress;
+    }
+
+    private void setMigrationInProgress(boolean migrationInProgress) {
+        this.migrationInProgress = migrationInProgress;
     }
 
     @Extension

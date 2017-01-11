@@ -101,6 +101,18 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                 }
             }
         }
+        // Examine providers
+        if (configs != null) {
+            for (JMSMessagingProvider config: configs) {
+                if (config instanceof ActiveMqMessagingProvider) {
+                    ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
+                    if (aconfig.IsMigrationInProgress()) {
+                        log.info("Migration in progress for ActiveMqMessagingProvider " + aconfig.getName());
+                        save();
+                    }
+                }
+            }
+        }
         return this;
     }
 

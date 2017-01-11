@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.matrix.MatrixProject;
@@ -15,6 +16,7 @@ import org.jvnet.hudson.test.recipes.LocalData;
 
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -25,6 +27,25 @@ public class MigrationTest {
     @Rule
     public final JenkinsRule j = new JenkinsRule();
 
+    @LocalData
+    @Test
+    public void testUpgradeFromOnlyUserBaseAuth() throws Exception {
+        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
+
+        JMSMessagingProvider config =
+                GlobalCIConfiguration.get().getConfigs().get(0);
+        ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
+        assertNotNull(aconfig.getAuthenticationMethod());
+        assertTrue(aconfig.getAuthenticationMethod() instanceof UsernameAuthenticationMethod);
+        UsernameAuthenticationMethod authMethod = (UsernameAuthenticationMethod) aconfig.getAuthenticationMethod();
+        assertEquals("username should be scott", "scott", authMethod.getUsername());
+
+        GlobalCIConfiguration newGlobalConfig = new GlobalCIConfiguration();
+        JMSMessagingProvider config2 = newGlobalConfig.getConfigs().get(0);
+        ActiveMqMessagingProvider aconfig2 = (ActiveMqMessagingProvider) config2;
+        assertNotNull(aconfig2.getAuthenticationMethod());
+    }
+    
     @LocalData
     @Test
     public void testOtherJobTypes() throws Exception {

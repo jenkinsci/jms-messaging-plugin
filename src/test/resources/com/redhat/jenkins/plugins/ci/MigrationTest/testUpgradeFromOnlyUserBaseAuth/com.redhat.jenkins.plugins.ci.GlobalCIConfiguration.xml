@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<com.redhat.jenkins.plugins.ci.GlobalCIConfiguration plugin="jms-messaging@1.0.5-SNAPSHOT">
+    <configs>
+        <com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
+            <name>default</name>
+            <broker>tcp://ci-bus.lab.eng.rdu2.redhat.com:61616</broker>
+            <topic>CI</topic>
+            <user>scott</user>
+            <password>SwplaNKdduIZ1jnUpKoiaWJd6Rw1IhgdvVBPy428I9I=</password>
+        </com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
+    </configs>
+</com.redhat.jenkins.plugins.ci.GlobalCIConfiguration>
