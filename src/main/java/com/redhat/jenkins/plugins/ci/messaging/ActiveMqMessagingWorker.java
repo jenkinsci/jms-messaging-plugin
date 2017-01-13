@@ -70,15 +70,13 @@ import com.redhat.utils.MessageUtils;
  * THE SOFTWARE.
  */
 public class ActiveMqMessagingWorker extends JMSMessagingWorker {
-    private transient static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
+    private static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
 
 
     private final ActiveMqMessagingProvider provider;
 
     private Connection connection;
     private TopicSubscriber subscriber;
-    private static final Integer RETRY_MINUTES = 1;
-
 
     public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, String jobname) {
         this.provider = provider;
@@ -233,14 +231,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     params.put(s, message.getObjectProperty(s).toString());
                 }
             }
-
-            CIBuildTrigger trigger = findTrigger(jobname);
-            if (trigger != null) {
-                log.info("Scheduling job '" + jobname + "' based on message:\n" + formatMessage(message));
-                trigger.scheduleBuild(params);
-            } else {
-                log.log(Level.WARNING, "Unable to find CIBuildTrigger for '" + jobname + "'.");
-            }
+           super.trigger(jobname, formatMessage(message), params);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception processing message:\n" + formatMessage(message), e);
         }
@@ -421,6 +412,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 log.severe("One or more of the following is invalid (null): ip, user, password, topic, broker.");
             }
         return null;
+    }
+
+    @Override
+    public void prepareForInterrupt() {
     }
 
     private static String formatHeaders (Message message) {

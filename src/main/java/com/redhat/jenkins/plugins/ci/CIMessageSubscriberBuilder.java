@@ -130,7 +130,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
     @Override
     public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        if (waitforCIMessage(build, launcher, listener)== null) {
+        if (waitforCIMessage(build, launcher, listener) == null) {
             return false;
         }
         return true;

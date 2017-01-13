@@ -20,8 +20,12 @@ node('docker') {
                 sh 'mvn -B -U -e -Dmaven.test.failure.ignore=true -Duser.home=/var/maven clean install -DskipTests'
             }
         }
-        sh 'docker build --build-arg=uid=$(id -u) --build-arg=gid=$(id -g) ' +
-                '-t jenkins/ath src/test/resources/ath-container'
+        def uid = sh returnStdout: true, script: "id -u | tr '\n' ' '"
+        def gid = sh returnStdout: true, script: "id -g | tr '\n' ' '"
+
+        def buildArgs = "--build-arg=uid=${uid} --build-arg=gid=${gid} src/test/resources/ath-container"
+        docker.build('jenkins/ath', buildArgs)
+
     }
 
     stage('Test') {

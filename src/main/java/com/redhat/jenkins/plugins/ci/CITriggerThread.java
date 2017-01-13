@@ -31,7 +31,7 @@ import org.acegisecurity.context.SecurityContextHolder;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class CITriggerThread implements Runnable {
+ */public class CITriggerThread extends Thread {
     private static final Logger log = Logger.getLogger(CITriggerThread.class.getName());
 
     private static final Integer WAIT_HOURS = 1;
@@ -46,6 +46,16 @@ import org.acegisecurity.context.SecurityContextHolder;
         this.jobname = jobname;
         this.selector = selector;
         this.messagingWorker = messagingProvider.createWorker(this.jobname);
+    }
+
+    public void sendInterrupt() {
+        messagingWorker.prepareForInterrupt();
+        this.interrupt();
+        try {
+            this.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void run() {

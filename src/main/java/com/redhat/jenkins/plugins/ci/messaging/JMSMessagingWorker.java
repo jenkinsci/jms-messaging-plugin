@@ -1,8 +1,15 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.utils.MessageUtils;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
 
 /*
  * The MIT License
@@ -29,6 +36,8 @@ import hudson.model.TaskListener;
  */
 public abstract class JMSMessagingWorker {
     public String jobname;
+    private static final Logger log = Logger.getLogger(JMSMessagingWorker.class.getName());
+    public static final Integer RETRY_MINUTES = 1;
 
     public abstract boolean subscribe(String jobname, String selector);
     public abstract void unsubscribe(String jobname);
@@ -45,5 +54,18 @@ public abstract class JMSMessagingWorker {
 
     public abstract String waitForMessage(Run<?, ?> build, String selector,
                                           String variable, Integer timeout);
+
+    public void trigger(String jobname, String messageSummary,
+                        Map<String, String> params) {
+        CIBuildTrigger trigger = findTrigger(jobname);
+        if (trigger != null) {
+            log.info("Scheduling job '" + jobname + "' based on message:\n" + messageSummary);
+            trigger.scheduleBuild(params);
+        } else {
+            log.log(Level.WARNING, "Unable to find CIBuildTrigger for '" + jobname + "'.");
+        }
+    }
+
+    public abstract void prepareForInterrupt();
 }
 
