@@ -129,6 +129,11 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
                 stopTriggerThread();
 	            JMSMessagingProvider provider = GlobalCIConfiguration.get()
 			            .getProvider(providerName);
+	            if (provider == null) {
+					log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
+							+ providerName + ". You must update the job configuration. Trigger not started.");
+					return;
+				}
                 CITriggerThread trigger = new CITriggerThread(provider, job
                         .getFullName(), selector);
                 trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());

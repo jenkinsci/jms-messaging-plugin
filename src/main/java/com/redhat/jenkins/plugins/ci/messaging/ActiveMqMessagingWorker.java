@@ -1,19 +1,23 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.utils.MessageUtils;
+import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
+import static com.redhat.utils.MessageUtils.JSON_TYPE;
 import hudson.EnvVars;
 import hudson.model.Result;
-import hudson.model.Run;
 import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.text.StrSubstitutor;
-import org.apache.commons.lang3.StringUtils;
+import hudson.model.Run;
+
+import java.io.StringReader;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.sql.Time;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -28,20 +32,19 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
-import java.io.StringReader;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.sql.Time;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
-import static com.redhat.utils.MessageUtils.JSON_TYPE;
+import jenkins.model.Jenkins;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.utils.MessageUtils;
 
 /*
  * The MIT License
@@ -139,9 +142,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean connect() {
         connection = null;
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(provider.getUser(),
-                provider.getPassword().getPlainText(),
-                provider.getBroker());
+        ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
 
         String ip = null;
         try {
@@ -286,21 +287,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         MessageProducer publisher = null;
 
         try {
-            String user = provider.getUser();
-            String password = null;
-            if (provider.getPassword() != null) {
-                password = provider.getPassword().getPlainText();
-            }
-            String broker = provider.getBroker();
-            String topic = provider.getTopic();
-
-            if (user != null && password != null && topic != null && broker != null) {
-                ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, broker);
+            if (provider.getAuthenticationMethod() != null && provider.getTopic() != null && provider.getBroker() != null) {
+                ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
                 connection.start();
 
                 session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                Destination destination = session.createTopic(topic);
+                Destination destination = session.createTopic(provider.getTopic());
                 publisher = session.createProducer(destination);
 
                 TextMessage message;
@@ -363,10 +356,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> build, String selector, String variable, Integer timeout) {
-        String user = provider.getUser(); //config.getUser();
-        String password = provider.getPassword().getPlainText();
-        String broker = provider.getBroker();
-        String topic = provider.getTopic();
         String ip = null;
         try {
             ip = Inet4Address.getLocalHost().getHostAddress();
@@ -374,17 +363,17 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             log.severe("Unable to get localhost IP address.");
         }
 
-        if (ip != null && user != null && password != null && topic != null && broker != null) {
+        if (ip != null && provider.getAuthenticationMethod() != null && provider.getTopic() != null && provider.getBroker() != null) {
                 log.info("Waiting for message with selector: " + selector);
                 Connection connection = null;
                 MessageConsumer consumer = null;
                 try {
-                    ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, broker);
+                    ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                     connection = connectionFactory.createConnection();
                     connection.setClientID(ip + "_" + UUID.randomUUID().toString());
                     connection.start();
                     Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    Topic destination = session.createTopic(topic);
+                    Topic destination = session.createTopic(provider.getTopic());
 
                     consumer = session.createConsumer(destination, selector);
 
@@ -399,6 +388,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
                             }
                         }
+                        log.info("Received message with selector: " + selector + "\n" + formatMessage(message));
                         return value;
                     }
                     log.info("Timed out waiting for message!");

@@ -1,10 +1,13 @@
-package com.redhat.jenkins.plugins.ci.messaging;
+package com.redhat.jenkins.plugins.ci.authentication;
 
 import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import jenkins.model.Jenkins;
@@ -32,38 +35,24 @@ import jenkins.model.Jenkins;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public abstract class JMSMessagingProvider implements Describable<JMSMessagingProvider>, Serializable {
+public abstract class AuthenticationMethod implements Describable<AuthenticationMethod>, Serializable  {
 
-    protected String name;
-    private static final Logger log = Logger.getLogger(JMSMessagingProvider.class.getName());
-    public final static String DEFAULT_PROVIDERNAME = "default";
+    private static final long serialVersionUID = -6077120270692721571L;
+    private transient static final Logger log = Logger.getLogger(AuthenticationMethod.class.getName());
 
-    public String getName() {
-        return name;
-    }
+    public abstract static class AuthenticationMethodDescriptor extends Descriptor<AuthenticationMethod> {
+        public static ExtensionList<AuthenticationMethodDescriptor> all() {
+            return Jenkins.getInstance().getExtensionList(AuthenticationMethodDescriptor.class);
+        }
 
-    public abstract JMSMessagingWorker createWorker(String jobname);
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        JMSMessagingProvider that = (JMSMessagingProvider) o;
-
-        return name != null ? name.equals(that.name) : that.name == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        return name != null ? name.hashCode() : 0;
-    }
-
-    public abstract static class MessagingProviderDescriptor extends Descriptor<JMSMessagingProvider> {
-
-        public static ExtensionList<MessagingProviderDescriptor> all() {
-            return Jenkins.getInstance().getExtensionList(MessagingProviderDescriptor.class);
+        public static boolean isValidURL(String url) {
+            try {
+                new URI(url);
+            } catch (URISyntaxException e) {
+                log.log(Level.SEVERE, "URISyntaxException, returning false.");
+                return false;
+            }
+            return true;
         }
     }
 }

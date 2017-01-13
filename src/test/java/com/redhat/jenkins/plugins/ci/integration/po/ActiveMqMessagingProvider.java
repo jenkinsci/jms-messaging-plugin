@@ -2,8 +2,6 @@ package com.redhat.jenkins.plugins.ci.integration.po;
 
 import org.jenkinsci.test.acceptance.po.Control;
 import org.jenkinsci.test.acceptance.po.Describable;
-import org.jenkinsci.test.acceptance.po.Jenkins;
-import org.jenkinsci.test.acceptance.po.JenkinsConfig;
 import org.jenkinsci.test.acceptance.po.PageObject;
 
 /*
@@ -35,8 +33,6 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
     public final Control name       = control("name");
     public final Control broker     = control("broker");
     public final Control topic      = control("topic");
-    public final Control user       = control("user");
-    public final Control password   = control("password");
 
     public ActiveMqMessagingProvider(PageObject parent, String path) {
         super(parent, path);
@@ -58,14 +54,6 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
         topic.set(topicVal);
         return this;
     }
-    public ActiveMqMessagingProvider user(String userVal) {
-        user.set(userVal);
-        return this;
-    }
-    public ActiveMqMessagingProvider password(String passwordVal) {
-        password.set(passwordVal);
-        return this;
-    }
 
     public void testConnection() {
         clickButton("Test Connection");
@@ -81,4 +69,24 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
         return new ActiveMqMessagingProvider(getPage(), path);
     }
 
+    public ActiveMqMessagingProvider userNameAuthentication(String user, String password) {
+        Control radio = control("/authenticationMethod[1]");
+        radio.click();
+        control("/authenticationMethod[1]/username").set(user);
+        control("/authenticationMethod[1]/password").set(password);
+        return this;
+    }
+
+    public ActiveMqMessagingProvider sslCertAuthentication(String keystore,
+                                                           String keystorePass,
+                                                           String trustStore,
+                                                           String trustStorePass) {
+        Control radio = control("/authenticationMethod[0]");
+        radio.click();
+        control("/authenticationMethod[0]/keystore").set(keystore);
+        control("/authenticationMethod[0]/keypwd").set(keystorePass);
+        control("/authenticationMethod[0]/truststore").set(trustStore);
+        control("/authenticationMethod[0]/trustpwd").set(trustStorePass);
+        return this;
+    }
 }

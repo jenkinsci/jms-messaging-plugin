@@ -1,9 +1,13 @@
-package com.redhat.jenkins.plugins.ci.integration.po;
+package com.redhat.jenkins.plugins.ci.authentication.activemq;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
+
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
 
 /*
  * The MIT License
  *
- * Copyright (c) 2016 Red Hat, Inc.
+ * Copyright (c) Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,21 +27,9 @@ package com.redhat.jenkins.plugins.ci.integration.po;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod {
 
-import org.jenkinsci.test.acceptance.po.PageAreaImpl;
-import org.jenkinsci.test.acceptance.po.PageObject;
+    private static final long serialVersionUID = -6077120270692721571L;
 
-public abstract class MessagingProvider extends PageAreaImpl {
-
-    public MessagingProvider(PageObject parent, String path) {
-        super(parent, path);
-    }
-
-    public MessagingProvider(GlobalCIConfiguration context) {
-        super(context, "/com-redhat-jenkins-plugins-ci-GlobalCIConfiguration");
-    }
-
-    public abstract MessagingProvider addMessagingProvider();
-
-
+    public abstract ActiveMQConnectionFactory getConnectionFactory(String broker);
 }

@@ -1,8 +1,7 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
 import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures
-        .JBossAMQContainer;
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
@@ -62,8 +61,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         msgConfig.name("test")
             .broker(amq.getBroker())
             .topic("CI")
-            .user("admin")
-            .password("redhat");
+            .userNameAuthentication("admin", "redhat");
 
         int counter = 0;
         boolean connected = false;
@@ -98,8 +96,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         msgConfig.name("test")
                 .broker(amq.getBroker())
                 .topic("CI")
-                .user("admin")
-                .password("redhat");
+                .userNameAuthentication("admin", "redhat");
         jenkins.save();
         assertThat(driver, hasContent("Attempt to add a duplicate JMS Message Provider - test"));
     }

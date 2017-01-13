@@ -1,24 +1,22 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.Descriptor;
-import hudson.util.FormValidation;
+
+import java.util.logging.Logger;
+
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
+
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 
-import javax.jms.Session;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.jms.Connection;
-import javax.jms.TopicSubscriber;
-import javax.security.auth.login.LoginException;
-import javax.servlet.ServletException;
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod.AuthenticationMethodDescriptor;
+import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod;
 
 /*
  * The MIT License
@@ -47,26 +45,31 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     private String broker;
     private String topic;
-    private String user;
-    private Secret password;
+    private transient String user;
+    private transient Secret password;
+    private transient boolean migrationInProgress = false;
+    private ActiveMQAuthenticationMethod authenticationMethod;
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
 
-    private transient Connection connection;
-    private transient TopicSubscriber subscriber;
-    private transient static final Integer RETRY_MINUTES = 1;
-
-
     @DataBoundConstructor
-    public ActiveMqMessagingProvider(String name, String broker, String topic, String user,
-                                     Secret password) {
+    public ActiveMqMessagingProvider(String name, String broker, String topic, ActiveMQAuthenticationMethod authenticationMethod) {
         this.name = name;
         this.broker = broker;
         this.topic = topic;
-        this.user = user;
-        this.password = password;
+        this.authenticationMethod = authenticationMethod;
     }
 
-    @DataBoundSetter
+    protected Object readResolve() {
+        if (user != null) {
+            log.info("Legacy Message Provider username value is not null.");
+            authenticationMethod = new UsernameAuthenticationMethod(user, password);
+            log.info("Added default username/password authentication method using deprecated configuration.");
+            setMigrationInProgress(true);
+        }
+        return this;
+    }
+
+        @DataBoundSetter
     public void setBroker(String broker) {
         this.broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
     }
@@ -77,18 +80,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     @DataBoundSetter
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    @DataBoundSetter
-    public void setPassword(Secret password) {
-        this.password = password;
-    }
-
-    @DataBoundSetter
-    public void setPassword(String password) {
-        this.password = Secret.fromString(password);
+    public void setAuthenticationMethod(ActiveMQAuthenticationMethod method) {
+        this.authenticationMethod = method;
     }
 
     @Override
@@ -104,17 +97,29 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         return topic;
     }
 
-    public String getUser() {
-        return user;
+    public ActiveMQAuthenticationMethod getAuthenticationMethod() {
+        return authenticationMethod;
     }
 
-    public Secret getPassword() {
-        return password;
+    public ActiveMQConnectionFactory getConnectionFactory() {
+        return getConnectionFactory(getBroker(), getAuthenticationMethod());
+    }
+
+    public ActiveMQConnectionFactory getConnectionFactory(String broker, ActiveMQAuthenticationMethod authenticationMethod) {
+        return authenticationMethod.getConnectionFactory(broker);
     }
 
     @Override
     public JMSMessagingWorker createWorker(String jobname) {
         return new ActiveMqMessagingWorker(this, jobname);
+    }
+
+    public boolean IsMigrationInProgress() {
+        return migrationInProgress;
+    }
+
+    private void setMigrationInProgress(boolean migrationInProgress) {
+        this.migrationInProgress = migrationInProgress;
     }
 
     @Extension
@@ -126,39 +131,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
             return "Active MQ";
         }
 
-        public FormValidation doTestConnection(@QueryParameter("broker") String broker,
-                                               @QueryParameter("topic") String topic,
-                                               @QueryParameter("user") String user,
-                                               @QueryParameter("password") Secret password) throws ServletException {
-            broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
-            if (broker != null && isValidURL(broker)) {
-                try {
-                    if (testConnection(broker, topic, user, password)) {
-                        return FormValidation.ok(Messages.SuccessBrokerConnect(broker));
-                    }
-                } catch (LoginException e) {
-                    return FormValidation.error(Messages.AuthFailure());
-                } catch (Exception e) {
-                    log.log(Level.SEVERE, "Unhandled exception in doTestConnection: ", e);
-                    return FormValidation.error(Messages.Error() + ": " + e);
-                }
-            }
-            return FormValidation.error(Messages.InvalidURI());
+        public ExtensionList<AuthenticationMethodDescriptor> getAuthenticationMethodDescriptors() {
+            return AuthenticationMethodDescriptor.all();
         }
-
-        private boolean testConnection(String broker, String topic, String user, Secret password) throws Exception {
-            broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
-            if (broker != null && isValidURL(broker)) {
-                ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password.getPlainText(), broker);
-                Connection connection = connectionFactory.createConnection();
-                connection.start();
-                Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                session.close();
-                connection.close();
-                return true;
-            }
-            return false;
-        }
-
     }
 }

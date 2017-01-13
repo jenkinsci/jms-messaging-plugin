@@ -115,8 +115,15 @@ import org.kohsuke.stapler.StaplerRequest;
 
     public String waitforCIMessage(Run<?, ?> build, Launcher launcher, TaskListener listener) {
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
+        JMSMessagingProvider provider = config.getProvider(providerName);
+        if (provider == null) {
+            listener.error("Failed to locate JMSMessagingProvider with name "
+                    + providerName + ". You must update the job configuration.");
+            return null;
+        }
+
         JMSMessagingWorker worker =
-                config.getProvider(getProviderName()).createWorker(build
+                provider.createWorker(build
                         .getParent().getName());
         return worker.waitForMessage(build, selector, variable, timeout);
     }
