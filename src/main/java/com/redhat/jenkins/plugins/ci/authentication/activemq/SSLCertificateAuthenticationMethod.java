@@ -1,28 +1,26 @@
 package com.redhat.jenkins.plugins.ci.authentication.activemq;
 
+import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+import com.redhat.utils.PluginUtils;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.jms.Connection;
-import javax.jms.Session;
-import javax.servlet.ServletException;
-
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-
 import org.apache.activemq.ActiveMQSslConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+import javax.jms.Connection;
+import javax.jms.Session;
+import javax.servlet.ServletException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*
  * The MIT License
@@ -65,7 +63,10 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
     }
 
     public String getKeystore() {
-        return keystore;
+        EnvVars vars = new EnvVars();
+        vars.put("JENKINS_HOME", Jenkins.getInstance().getRootDir().toString());
+        String expandedKeystore = PluginUtils.getSubstitutedValue(keystore, vars);
+        return expandedKeystore;
     }
 
     public void setKeystore(String keystore) {
@@ -81,7 +82,10 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
     }
 
     public String getTruststore() {
-        return truststore;
+        EnvVars vars = new EnvVars();
+        vars.put("JENKINS_HOME", Jenkins.getInstance().getRootDir().toString());
+        String expandedTruststore = PluginUtils.getSubstitutedValue(truststore, vars);
+        return expandedTruststore;
     }
 
     public void setTruststore(String truststore) {
