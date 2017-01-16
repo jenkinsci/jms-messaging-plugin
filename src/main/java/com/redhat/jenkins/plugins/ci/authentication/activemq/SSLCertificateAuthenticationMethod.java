@@ -63,10 +63,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
     }
 
     public String getKeystore() {
-        EnvVars vars = new EnvVars();
-        vars.put("JENKINS_HOME", Jenkins.getInstance().getRootDir().toString());
-        String expandedKeystore = PluginUtils.getSubstitutedValue(keystore, vars);
-        return expandedKeystore;
+        return keystore;
     }
 
     public void setKeystore(String keystore) {
@@ -81,11 +78,14 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
         this.keypwd = password;
     }
 
-    public String getTruststore() {
+    private String getSubstitutedValue(String value) {
         EnvVars vars = new EnvVars();
         vars.put("JENKINS_HOME", Jenkins.getInstance().getRootDir().toString());
-        String expandedTruststore = PluginUtils.getSubstitutedValue(truststore, vars);
-        return expandedTruststore;
+        return PluginUtils.getSubstitutedValue(value, vars);
+    }
+
+    public String getTruststore() {
+        return truststore;
     }
 
     public void setTruststore(String truststore) {
@@ -104,9 +104,9 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
     public ActiveMQSslConnectionFactory getConnectionFactory(String broker) {
         try {
             ActiveMQSslConnectionFactory connectionFactory = new ActiveMQSslConnectionFactory(broker);
-            connectionFactory.setKeyStore(getKeystore());
+            connectionFactory.setKeyStore(getSubstitutedValue(getKeystore()));
             connectionFactory.setKeyStorePassword(Secret.toString(getKeypwd()));
-            connectionFactory.setTrustStore(getTruststore());
+            connectionFactory.setTrustStore(getSubstitutedValue(getTruststore()));
             connectionFactory.setTrustStorePassword(Secret.toString(getTrustpwd()));
             return connectionFactory;
         } catch (Exception e) {
@@ -125,7 +125,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
         @Override
         public String getDisplayName() {
-            return "SSL certificate";
+            return "SSL Certificate Authentication";
         }
 
         @Override

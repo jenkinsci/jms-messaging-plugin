@@ -1,20 +1,13 @@
 package com.redhat.jenkins.plugins.ci.authentication.activemq;
 
+import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.jms.Connection;
-import javax.jms.Session;
-import javax.servlet.ServletException;
-
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -22,8 +15,11 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+import javax.jms.Connection;
+import javax.jms.Session;
+import javax.servlet.ServletException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*
  * The MIT License
@@ -94,7 +90,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
 
         @Override
         public String getDisplayName() {
-            return "User name and password";
+            return "Username and Password Authentication";
         }
 
         @Override
