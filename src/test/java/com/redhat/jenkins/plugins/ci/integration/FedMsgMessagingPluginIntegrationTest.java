@@ -1,12 +1,12 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
-
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures
-        .FedmsgRelayContainer;
+import com.google.inject.Inject;
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.FedmsgRelayContainer;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.FedMsgMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
@@ -17,11 +17,9 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
 /*
  * The MIT License
@@ -145,6 +143,89 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
         notifier.messageType.select("CodeQualityChecksDone");
         notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    @Test
+    public void testSimpleCIEventTriggerWithCheck() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        check.expectedValue.set("Catch me");
+        check.field.set("message-content");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(5000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set("Catch me");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    @Test
+    public void testSimpleCIEventTriggerWithRegExpCheck() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        check.expectedValue.set(".+compose_id\": \"Fedora-Atomic.+");
+        check.field.set("compose");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(5000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed\n " +
+                "compose = \"compose_id\": \"Fedora-Atomic-25-20170105.0\"");
+        notifier.messageContent.set("");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    @Test
+    public void testSimpleCIEventTriggerWithWildcardInSelector() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("compose LIKE '%compose_id\": \"Fedora-Atomic%'");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(5000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed\n " +
+                "compose = \"compose_id\": \"Fedora-Atomic-25-20170105.0\"");
+        notifier.messageContent.set("");
         jobB.save();
         jobB.startBuild().shouldSucceed();
 

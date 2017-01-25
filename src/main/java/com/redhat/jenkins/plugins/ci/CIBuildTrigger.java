@@ -1,19 +1,28 @@
 package com.redhat.jenkins.plugins.ci;
+
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.Extension;
-import hudson.model.Item;
-import hudson.model.ParameterValue;
+import hudson.Util;
 import hudson.model.AbstractProject;
+import hudson.model.Item;
 import hudson.model.ParameterDefinition;
+import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterValue;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.ListBoxModel;
+import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,9 +30,6 @@ import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jenkins.model.Jenkins;
-
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -57,14 +63,20 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
 	private String selector;
 	private String providerName;
+	private List<MsgCheck> checks;
+
 	public static final transient WeakHashMap<String, CITriggerThread> triggerInfo = new WeakHashMap<String, CITriggerThread>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
-	public CIBuildTrigger(String selector, String providerName) {
+	public CIBuildTrigger(String selector, String providerName, List<MsgCheck> checks) {
 		super();
 		this.selector = StringUtils.stripToNull(selector);
         this.providerName = providerName;
+		if (checks == null) {
+			checks = new ArrayList<MsgCheck>();
+		}
+		this.checks = checks;
 	}
 
 	@DataBoundSetter
@@ -76,6 +88,10 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 	public void start(AbstractProject<?, ?> project, boolean newInstance) {
 		super.start(project, newInstance);
 		startTriggerThread();
+	}
+
+	public List<MsgCheck> getChecks() {
+		return Collections.unmodifiableList(checks);
 	}
 
 	public static CIBuildTrigger findTrigger(String fullname) {
@@ -141,7 +157,7 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 					return;
 				}
                 CITriggerThread trigger = new CITriggerThread(provider, job
-                        .getFullName(), selector);
+                        .getFullName(), selector, getChecks());
                 trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
 	            trigger.setDaemon(true);
                 trigger.start();
@@ -231,6 +247,14 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
             }
             return items;
         }
+
+		public FormValidation doCheckField(@QueryParameter String value) {
+			String field = Util.fixEmptyAndTrim(value);
+			if (field == null) {
+				return FormValidation.error("Field cannot be empty");
+			}
+			return FormValidation.ok();
+		}
 
 	    public CIBuildTriggerDescriptor() {
 	        super(CIBuildTrigger.class);

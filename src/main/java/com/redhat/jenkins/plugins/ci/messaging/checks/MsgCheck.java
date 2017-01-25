@@ -1,12 +1,7 @@
-package com.redhat.utils;
-
-import hudson.EnvVars;
-import org.apache.commons.lang.text.StrSubstitutor;
-
 /*
- * The MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) Red Hat, Inc.
+ * Copyright (c) 2015 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,12 +20,35 @@ import org.apache.commons.lang.text.StrSubstitutor;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class PluginUtils {
+ */
+package com.redhat.jenkins.plugins.ci.messaging.checks;
 
-    public static String getSubstitutedValue(String id, EnvVars env) {
-        String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); //replace $VAR instances with ${VAR}.
-        StrSubstitutor sub1 = new StrSubstitutor(env);
+import org.kohsuke.stapler.DataBoundConstructor;
 
-        return sub1.replace(text).trim();
+public class MsgCheck {
+    private String field;
+    private String expectedValue;
+
+    @DataBoundConstructor
+    public MsgCheck(String field, String expectedValue) {
+        super();
+        this.field = field;
+        this.expectedValue = expectedValue;
+    }
+
+    public String getField() {
+        return field;
+    }
+
+    public String getExpectedValue() {
+        return expectedValue;
+    }
+
+    @Override
+    public String toString() {
+        return "MsgCheck{" +
+                "field='" + field + '\'' +
+                ", expectedValue='" + expectedValue + '\'' +
+                '}';
     }
 }

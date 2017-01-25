@@ -32,9 +32,24 @@ import org.jenkinsci.test.acceptance.po.PageAreaImpl;
 public class CIEventTrigger extends PageAreaImpl {
     public final Control providerName = control("providerName");
     public final Control selector = control("selector");
+    public final Control checks = control("repeatable-add");
 
     public CIEventTrigger(Job parent) {
         super(parent, "/com-redhat-jenkins-plugins-ci-CIBuildTrigger");
         control("").check();
+    }
+
+    public MsgCheck addMsgCheck() {
+        checks.click();
+        return new MsgCheck(this, "checks");
+    }
+
+    public static class MsgCheck extends PageAreaImpl {
+        public final Control expectedValue = control("expectedValue");
+        public final Control field = control("field");
+
+        protected MsgCheck(CIEventTrigger area, String path) {
+            super(area, path);
+        }
     }
 }

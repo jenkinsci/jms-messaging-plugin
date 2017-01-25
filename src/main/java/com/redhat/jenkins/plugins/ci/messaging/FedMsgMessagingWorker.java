@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 import com.redhat.utils.MessageUtils;
 import hudson.EnvVars;
@@ -21,10 +22,12 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /*
  * The MIT License
@@ -157,7 +160,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     private String formatMessage(FedmsgMessage data) {
-        return data.getTopic();
+        return data.getMsg().toString();
     }
 
     private void process(FedmsgMessage data) {
@@ -183,7 +186,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public void receive(String jobname, long timeoutInMs) {
+    public void receive(String jobname, List<MsgCheck> checks, long timeoutInMs) {
         ObjectMapper mapper = new ObjectMapper();
         long start = new Date().getTime();
         try {
@@ -202,7 +205,23 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                                 log.info("false");
                                 continue;
                             }
-                            process(data);
+                            //check checks here
+                            boolean allPassed = true;
+                            for (MsgCheck check: checks) {
+                                if (!verify(data, check)) {
+                                    allPassed = false;
+                                    log.fine("msg check: " + check.toString() + " failed against: " + formatMessage(data));
+                                    break;
+                                }
+                            }
+                            if (allPassed) {
+                                if (checks.size() > 0) {
+                                    log.info("All msg checks have passed.");
+                                }
+                                process(data);
+                            } else {
+                                log.info("Some msg checks did not pass.");
+                            }
                         }
                     }
                 } else {
@@ -227,6 +246,27 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             }
         }
 
+    }
+
+    private boolean verify(FedmsgMessage message, MsgCheck check) {
+        Map<String, Object> msg = message.getMsg();
+        if (msg == null) {
+            return false;
+        }
+
+        Object val = msg.get(check.getField());
+        String sVal = "";
+        if (val != null) {
+            sVal = val.toString();
+        }
+        String eVal = "";
+        if (check.getExpectedValue() != null) {
+            eVal = check.getExpectedValue();
+        }
+        if (Pattern.compile(eVal).matcher(sVal).find()) {
+            return true;
+        }
+        return false;
     }
 
     @Override

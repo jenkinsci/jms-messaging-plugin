@@ -1,10 +1,12 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.utils.MessageUtils;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,7 +43,7 @@ public abstract class JMSMessagingWorker {
 
     public abstract boolean subscribe(String jobname, String selector);
     public abstract void unsubscribe(String jobname);
-    public abstract void receive(String jobname, long timeoutInMs);
+    public abstract void receive(String jobname, List<MsgCheck> checks, long timeoutInMs);
     public abstract boolean connect() throws Exception;
     public abstract boolean isConnected();
     public abstract void disconnect();
