@@ -37,6 +37,7 @@ import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
  * THE SOFTWARE.
  */
 public abstract class JMSMessagingWorker {
+    public static final String MESSAGECONTENTFIELD = "message-content" ;
     public String jobname;
     private static final Logger log = Logger.getLogger(JMSMessagingWorker.class.getName());
     public static final Integer RETRY_MINUTES = 1;

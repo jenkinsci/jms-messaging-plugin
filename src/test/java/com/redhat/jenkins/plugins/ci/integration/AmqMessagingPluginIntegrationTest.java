@@ -7,6 +7,7 @@ import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
@@ -236,7 +237,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
         check.expectedValue.set("Catch me");
-        check.field.set("message-content");
+        check.field.set(JMSMessagingWorker.MESSAGECONTENTFIELD);
         jobA.save();
         // Allow for connection
         elasticSleep(5000);

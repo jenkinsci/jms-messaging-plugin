@@ -327,7 +327,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 }
             }
 
-            message.put("message-content", sub.replace(content));
+            message.put(MESSAGECONTENTFIELD, sub.replace(content));
 
             FedmsgMessage blob = new FedmsgMessage();
             blob.setMsg(message);

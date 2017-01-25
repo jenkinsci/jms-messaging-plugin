@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -218,20 +219,52 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     private boolean verify(Message message, MsgCheck check) {
         String sVal = "";
-        Enumeration<String> propNames = null;
-        try {
-            propNames = message.getPropertyNames();
-            while (propNames.hasMoreElements()) {
-                String propertyName = propNames.nextElement ();
-                if (propertyName.equals(check.getField())) {
-                    if (message.getObjectProperty(propertyName) != null) {
-                        sVal = message.getObjectProperty(propertyName).toString();
-                        break;
+
+        if (check.getField().equals(MESSAGECONTENTFIELD)) {
+            try {
+                if (message instanceof TextMessage) {
+                    sVal = ((TextMessage) message).getText();
+                } else if (message instanceof MapMessage) {
+                    MapMessage mm = (MapMessage) message;
+                    ObjectMapper mapper = new ObjectMapper();
+                    ObjectNode root = mapper.createObjectNode();
+
+                    @SuppressWarnings("unchecked")
+                    Enumeration<String> e = mm.getMapNames();
+                    while (e.hasMoreElements()) {
+                        String field = e.nextElement();
+                        root.put(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
+                    }
+                    sVal = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+                } else if (message instanceof BytesMessage) {
+                    BytesMessage bm = (BytesMessage) message;
+                    bm.reset();
+                    byte[] bytes = new byte[(int) bm.getBodyLength()];
+                    if (bm.readBytes(bytes) == bm.getBodyLength()) {
+                        sVal = new String(bytes);
                     }
                 }
+            } catch (JMSException e) {
+                return false;
+            } catch (JsonProcessingException e) {
+                return false;
             }
-        } catch (JMSException e) {
-            return false;
+        } else {
+            Enumeration<String> propNames = null;
+            try {
+                propNames = message.getPropertyNames();
+                while (propNames.hasMoreElements()) {
+                    String propertyName = propNames.nextElement ();
+                    if (propertyName.equals(check.getField())) {
+                        if (message.getObjectProperty(propertyName) != null) {
+                            sVal = message.getObjectProperty(propertyName).toString();
+                            break;
+                        }
+                    }
+                }
+            } catch (JMSException e) {
+                return false;
+            }
         }
 
         String eVal = "";
