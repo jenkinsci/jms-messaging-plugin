@@ -1,8 +1,16 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.model.Failure;
 import hudson.util.Secret;
+import jenkins.model.GlobalConfiguration;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,17 +18,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
-
-import jenkins.model.GlobalConfiguration;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
-
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 
 /*
  * The MIT License
@@ -95,7 +92,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                             broker, topic, new UsernameAuthenticationMethod(user, password)));
                     log.info("Added default Message Provider using deprecated configuration.");
                     setMigrationInProgress(true);
-                    save();
                 } else {
                     log.info("Default (" + DEFAULT_PROVIDER + ") Message Provider already exists.");
                 }
@@ -108,7 +104,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                     ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
                     if (aconfig.IsMigrationInProgress()) {
                         log.info("Migration in progress for ActiveMqMessagingProvider " + aconfig.getName());
-                        save();
                     }
                 }
             }

@@ -7,7 +7,6 @@ import hudson.matrix.MatrixProject;
 import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
-import hudson.model.TopLevelItem;
 import hudson.triggers.Trigger;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,7 +15,6 @@ import org.jvnet.hudson.test.recipes.LocalData;
 
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -93,6 +91,12 @@ public class MigrationTest {
                 subscriberJob.getBuildersList().get(CIMessageSubscriberBuilder.class);
         assertNotNull(subscriberBuilder);
         assertNotNull(subscriberBuilder.getProviderName());
+
+        GlobalCIConfiguration newGlobalConfig = new GlobalCIConfiguration();
+        JMSMessagingProvider config2 = newGlobalConfig.getConfigs().get(0);
+        ActiveMqMessagingProvider aconfig2 = (ActiveMqMessagingProvider) config2;
+        assertNotNull(aconfig2.getAuthenticationMethod());
+
 
 
     }

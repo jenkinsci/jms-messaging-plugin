@@ -8,7 +8,6 @@ import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.matrix.MatrixProject;
-import hudson.model.AbstractProject;
 import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Job;
 import hudson.model.Project;
@@ -133,6 +132,10 @@ public class MessageProviderMigrator {
     public static void migrateCIMessageBuilders() {
         Jenkins instance = Jenkins.getInstance();
         if (instance == null) { return; }
+        if (GlobalCIConfiguration.get().isMigrationInProgress()) {
+            log.info("isMigrationInProgress - > true | Forcing GlobalCIConfiguration.save()");
+            GlobalCIConfiguration.get().save();
+        }
         int updatedCount = 0;
         log.info("Attempting to migrate all CIMessageBuilders, CIMessageNotifier and CIMessageSubscriberBuilders build/publish steps");
         for (BuildableItemWithBuildWrappers item : instance.getItems(BuildableItemWithBuildWrappers.class)) {
