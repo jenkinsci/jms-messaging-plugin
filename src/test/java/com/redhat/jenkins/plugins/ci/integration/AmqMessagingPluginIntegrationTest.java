@@ -12,10 +12,14 @@ import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
+import org.jenkinsci.test.acceptance.po.JenkinsLogger;
 import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
+import org.openqa.selenium.TimeoutException;
+
+import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -172,6 +176,32 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         wait.getLastBuild().shouldSucceed();
 
+    }
+
+    @Test
+    public void testJobRename() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.save();
+        elasticSleep(1000);
+
+        jobA.renameTo("ABC");
+        elasticSleep(3000);
+        assertThat("Trigger not subscribed", isSubscribed("ABC"));
+    }
+
+    public boolean isSubscribed(String job) {
+        try {
+            JenkinsLogger logger = jenkins.getLogger("all");
+            logger.waitForLogged(Pattern.compile("Successfully subscribed job \'" +
+                    job + "\' to.*"));
+            return true;
+        } catch (TimeoutException ex) {
+            return false;
+        }
     }
 
     @Test

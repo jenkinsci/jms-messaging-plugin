@@ -4,6 +4,7 @@ import org.jenkinsci.test.acceptance.po.Control;
 import org.jenkinsci.test.acceptance.po.Describable;
 import org.jenkinsci.test.acceptance.po.Job;
 import org.jenkinsci.test.acceptance.po.PageAreaImpl;
+
 /*
  * The MIT License
  *
@@ -36,5 +37,4 @@ public class CIEventTrigger extends PageAreaImpl {
         super(parent, "/com-redhat-jenkins-plugins-ci-CIBuildTrigger");
         control("").check();
     }
-
 }
