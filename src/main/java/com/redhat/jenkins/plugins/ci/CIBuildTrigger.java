@@ -1,5 +1,4 @@
 package com.redhat.jenkins.plugins.ci;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ParameterValue;
@@ -10,6 +9,7 @@ import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterValue;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
+import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
@@ -21,12 +21,13 @@ import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 
 /*
  * The MIT License
@@ -113,6 +114,11 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 		stopTriggerThread();
 	}
 
+    public void rename(String oldFullName) {
+        stopTriggerThread(oldFullName);
+        startTriggerThread();
+    }
+
 	private void startTriggerThread() {
 		if (providerUpdated) {
 			log.info("Saving job since messaging provider was migrated...");
@@ -146,8 +152,12 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
         }
 	}
 
-	private void stopTriggerThread() {
-        CITriggerThread thread = triggerInfo.get(job.getFullName());
+    private void stopTriggerThread() {
+        stopTriggerThread(job.getFullName());
+    }
+
+    private void stopTriggerThread(String fullName) {
+        CITriggerThread thread = triggerInfo.get(fullName);
         if (thread != null) {
             try {
                 thread.sendInterrupt();
@@ -155,8 +165,8 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
                 log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
             }
         }
-        triggerInfo.remove(job.getFullName());;
-	}
+        triggerInfo.remove(fullName);
+    }
 
 	public String getSelector() {
 		return selector;
