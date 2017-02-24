@@ -1,14 +1,7 @@
-package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
-
-import org.jenkinsci.test.acceptance.docker.DockerContainer;
-import org.jenkinsci.test.acceptance.docker.DockerFixture;
-
-import java.io.IOException;
-
 /*
- * The MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) Red Hat, Inc.
+ * Copyright (c) 2015 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,16 +21,34 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id="fedmsg-relay", ports={4001,2003,22})
-public class FedmsgRelayContainer extends DockerContainer {
+package com.redhat.jenkins.plugins.ci.messaging.checks;
 
-    public String getPublisher() throws IOException {
-        return "tcp://"+getIpAddress()+":2003";
+import org.kohsuke.stapler.DataBoundConstructor;
+
+public class MsgCheck {
+    private String field;
+    private String expectedValue;
+
+    @DataBoundConstructor
+    public MsgCheck(String field, String expectedValue) {
+        super();
+        this.field = field;
+        this.expectedValue = expectedValue;
     }
-    public String getHub() throws IOException {
-        return "tcp://"+getIpAddress()+":4001";
+
+    public String getField() {
+        return field;
     }
-    public String getSSHLocation() throws IOException {
-        return "-p 22 fedmsg2@" + getIpAddress();
+
+    public String getExpectedValue() {
+        return expectedValue;
+    }
+
+    @Override
+    public String toString() {
+        return "MsgCheck{" +
+                "field='" + field + '\'' +
+                ", expectedValue='" + expectedValue + '\'' +
+                '}';
     }
 }

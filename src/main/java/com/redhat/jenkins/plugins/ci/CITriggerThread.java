@@ -2,12 +2,13 @@ package com.redhat.jenkins.plugins.ci;
 
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.security.ACL;
-
-import java.util.logging.Logger;
-
 import org.acegisecurity.context.SecurityContext;
 import org.acegisecurity.context.SecurityContextHolder;
+
+import java.util.List;
+import java.util.logging.Logger;
 
 /*
  * The MIT License
@@ -40,12 +41,14 @@ import org.acegisecurity.context.SecurityContextHolder;
     private final JMSMessagingWorker messagingWorker;
     private final String jobname;
     private final String selector;
+    private final List<MsgCheck> checks;
 
     public CITriggerThread(JMSMessagingProvider messagingProvider,
-                           String jobname, String selector) {
+                           String jobname, String selector, List<MsgCheck> checks) {
         this.jobname = jobname;
         this.selector = selector;
         this.messagingWorker = messagingProvider.createWorker(this.jobname);
+        this.checks = checks;
     }
 
     public void sendInterrupt() {
@@ -63,7 +66,7 @@ import org.acegisecurity.context.SecurityContextHolder;
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 if (messagingWorker.subscribe(jobname, selector)) {
-                    messagingWorker.receive(jobname, WAIT_HOURS * 60 * 60 * 1000);
+                    messagingWorker.receive(jobname, checks, WAIT_HOURS * 60 * 60 * 1000);
                 } else {
                     // Should not get here unless subscribe failed. This could be
                     // because global configuration may not yet be available or

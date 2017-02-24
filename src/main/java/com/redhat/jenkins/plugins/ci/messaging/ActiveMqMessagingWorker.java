@@ -1,23 +1,20 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
-import static com.redhat.utils.MessageUtils.JSON_TYPE;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.utils.MessageUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
-import hudson.model.TaskListener;
 import hudson.model.Run;
-
-import java.io.StringReader;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.sql.Time;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -32,19 +29,21 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
+import java.io.StringReader;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.sql.Time;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
-import jenkins.model.Jenkins;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.text.StrSubstitutor;
-import org.apache.commons.lang3.StringUtils;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.utils.MessageUtils;
+import static com.redhat.utils.MessageUtils.JSON_TYPE;
 
 /*
  * The MIT License
@@ -218,6 +217,66 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return "";
     }
 
+    private boolean verify(Message message, MsgCheck check) {
+        String sVal = "";
+
+        if (check.getField().equals(MESSAGECONTENTFIELD)) {
+            try {
+                if (message instanceof TextMessage) {
+                    sVal = ((TextMessage) message).getText();
+                } else if (message instanceof MapMessage) {
+                    MapMessage mm = (MapMessage) message;
+                    ObjectMapper mapper = new ObjectMapper();
+                    ObjectNode root = mapper.createObjectNode();
+
+                    @SuppressWarnings("unchecked")
+                    Enumeration<String> e = mm.getMapNames();
+                    while (e.hasMoreElements()) {
+                        String field = e.nextElement();
+                        root.put(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
+                    }
+                    sVal = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+                } else if (message instanceof BytesMessage) {
+                    BytesMessage bm = (BytesMessage) message;
+                    bm.reset();
+                    byte[] bytes = new byte[(int) bm.getBodyLength()];
+                    if (bm.readBytes(bytes) == bm.getBodyLength()) {
+                        sVal = new String(bytes);
+                    }
+                }
+            } catch (JMSException e) {
+                return false;
+            } catch (JsonProcessingException e) {
+                return false;
+            }
+        } else {
+            Enumeration<String> propNames = null;
+            try {
+                propNames = message.getPropertyNames();
+                while (propNames.hasMoreElements()) {
+                    String propertyName = propNames.nextElement ();
+                    if (propertyName.equals(check.getField())) {
+                        if (message.getObjectProperty(propertyName) != null) {
+                            sVal = message.getObjectProperty(propertyName).toString();
+                            break;
+                        }
+                    }
+                }
+            } catch (JMSException e) {
+                return false;
+            }
+        }
+
+        String eVal = "";
+        if (check.getExpectedValue() != null) {
+            eVal = check.getExpectedValue();
+        }
+        if (Pattern.compile(eVal).matcher(sVal).find()) {
+            return true;
+        }
+        return false;
+    }
+
     private void process (String jobname, Message message) {
         try {
             Map<String, String> params = new HashMap<String, String>();
@@ -239,11 +298,27 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
 
     @Override
-    public void receive(String jobname, long timeoutInMs) {
+    public void receive(String jobname, List<MsgCheck> checks, long timeoutInMs) {
         try {
             Message m = subscriber.receive(timeoutInMs); // In milliseconds!
             if (m != null) {
-                process(jobname, m);
+                //check checks here
+                boolean allPassed = true;
+                for (MsgCheck check: checks) {
+                    if (!verify(m, check)) {
+                        allPassed = false;
+                        log.fine("msg check: " + check.toString() + " failed against: " + formatMessage(m));
+                        break;
+                    }
+                }
+                if (allPassed) {
+                    if (checks.size() > 0) {
+                        log.info("All msg checks have passed.");
+                    }
+                    process(jobname, m);
+                } else {
+                    log.info("Some msg checks did not pass.");
+                }
             } else {
                 log.info("No message received for the past " + timeoutInMs + " ms, re-subscribing job '" + jobname + "'.");
                 unsubscribe(jobname);

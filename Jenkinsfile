@@ -37,6 +37,6 @@ node('docker') {
 
     stage('Archive') {
         junit 'target/surefire-reports/**/*.xml'
-        archiveArtifacts artifacts: 'target/**/*.jar', fingerprint: true
+        archiveArtifacts artifacts: 'target/**/jms-messaging.hpi', fingerprint: true
     }
 }

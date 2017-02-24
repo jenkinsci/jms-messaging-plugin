@@ -1,12 +1,11 @@
 package com.redhat.utils;
 
-import java.io.File;
-import java.io.Serializable;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.AbstractFileFilter;
+
+import java.io.File;
+import java.io.Serializable;
+import java.util.regex.Pattern;
 
 /*
  * The MIT License
@@ -32,7 +31,6 @@ import org.apache.commons.io.filefilter.AbstractFileFilter;
  * THE SOFTWARE.
  */
 public class RegexFullPathnameFileFilter extends AbstractFileFilter implements Serializable {
-    private static final Logger log = Logger.getLogger(RegexFullPathnameFileFilter.class.getName());
 
     private static final long serialVersionUID = -5321202059543342087L;
     private final Pattern pattern;
