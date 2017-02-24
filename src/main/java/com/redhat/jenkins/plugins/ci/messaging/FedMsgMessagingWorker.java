@@ -242,6 +242,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 // Something other than an interrupt causes this.
                 // Unsubscribe, but stay in our loop and try to reconnect..
                 log.log(Level.WARNING, "JMS exception raised, going to re-subscribe for job '" + jobname + "'.", e);
+                log.log(Level.SEVERE, org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
                 unsubscribe(jobname); // Try again next time.
             }
         }

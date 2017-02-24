@@ -241,6 +241,7 @@
                     <environmentVariables>
                         <JENKINS_WAR>${user.home}/.m2/repository/org/jenkins-ci/main/jenkins-war/${jenkins.version}/jenkins-war-${jenkins.version}.war</JENKINS_WAR>
                         <PLUGINS_DIR>${project.basedir}/plugins</PLUGINS_DIR>
+                        <JENKINS_JAVA_OPTS>-Dhudson.model.ParametersAction.keepUndefinedParameters=true</JENKINS_JAVA_OPTS>
                     </environmentVariables>
                 </configuration>
             </plugin>

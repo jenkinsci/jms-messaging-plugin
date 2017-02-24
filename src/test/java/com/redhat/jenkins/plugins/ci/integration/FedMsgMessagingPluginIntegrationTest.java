@@ -8,17 +8,41 @@ import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
+import org.jenkinsci.test.acceptance.docker.fixtures.GitContainer;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
+import org.jenkinsci.utils.process.CommandBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.lang.ProcessBuilder.Redirect.INHERIT;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.util.Collections.singleton;
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
@@ -58,10 +82,87 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         FedMsgMessagingProvider msgConfig = new FedMsgMessagingProvider(ciPluginConfig).addMessagingProvider();
         msgConfig.name("test")
-            .topic("tom")
+            .topic("org.fedoraproject")
             .hubAddr(fedmsgRelay.getHub())
             .pubAddr(fedmsgRelay.getPublisher());
         jenkins.save();
+    }
+
+    @Test
+    public void testTriggeringUsingFedMsgLogger() throws Exception {
+
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("topic = 'org.fedoraproject.dev.logger.log'");
+        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        check.expectedValue.set(".+compose_id.+message.+");
+        check.field.set("compose");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(5000);
+
+        File privateKey = File.createTempFile("ssh", "key");
+        FileUtils.copyURLToFile(
+                FedmsgRelayContainer.class
+                        .getResource("FedmsgRelayContainer/unsafe"), privateKey);
+        Files.setPosixFilePermissions(privateKey.toPath(), singleton(OWNER_READ));
+
+        File ssh = File.createTempFile("jenkins", "ssh");
+        FileUtils.writeStringToFile(ssh,
+            "#!/bin/sh\n" +
+            "exec ssh -o StrictHostKeyChecking=no -i "
+            + privateKey.getAbsolutePath()
+            + " fedmsg2@" + fedmsgRelay.getIpAddress()
+            //+ " fedmsg-logger --message=\\\"This is a message.\\\"");
+            + " fedmsg-logger "
+            + " \"$@\""
+        );
+            //+ "--message=\\\'{\\\"compose\\\": "
+            //+ "{\\\"compose_id\\\": \\\"This is a message.\\\"}}\\\' --json-input");
+        Files.setPosixFilePermissions(ssh.toPath(),
+                new HashSet<>(Arrays.asList(OWNER_READ, OWNER_EXECUTE)));
+
+        System.out.println(FileUtils.readFileToString(ssh));
+        ProcessBuilder gitLog1Pb = new ProcessBuilder(ssh.getAbsolutePath(),
+                "--message='{\"compose\": "
+                + "{\"compose_id\": \"This is a message.\"}}\'",
+                "--json-input"
+        );
+        String output = stringFrom(logProcessBuilderIssues(gitLog1Pb,
+                "ssh"));
+        System.out.println(output);
+
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("This is a message"));
+
+    }
+
+    private String stringFrom(Process proc) throws InterruptedException, IOException {
+        assertThat(proc.waitFor(), is(equalTo(0)));
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(proc.getInputStream(), writer);
+        String string = writer.toString();
+        writer.close();
+        return string;
+    }
+
+    private Process logProcessBuilderIssues(ProcessBuilder pb, String commandName) throws InterruptedException, IOException {
+        String dir = "";
+        if (pb.directory() != null) {
+            dir = pb.directory().getAbsolutePath();
+        }
+        System.out.println("Running : " + pb.command() + " => directory: " + dir);
+        Process processToRun = pb.start();
+        int result = processToRun.waitFor();
+        if (result != 0) {
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(processToRun.getErrorStream(), writer);
+            System.out.println("Issue occurred during command \"" + commandName + "\":\n" + writer.toString());
+            writer.close();
+        }
+        return processToRun;
     }
 
     @Test
@@ -185,10 +286,11 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
         ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
-        check.expectedValue.set(".+compose_id\": \"Fedora-Atomic.+");
+        check.expectedValue.set(".+compose_id.+Fedora-Atomic.+");
         check.field.set("compose");
         jobA.save();
         // Allow for connection
@@ -207,6 +309,7 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+
     }
 
     @Test
