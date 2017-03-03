@@ -11,14 +11,12 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
-import org.jenkinsci.test.acceptance.docker.fixtures.GitContainer;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
-import org.jenkinsci.utils.process.CommandBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,23 +24,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.lang.ProcessBuilder.Redirect.INHERIT;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.util.Collections.singleton;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
@@ -191,7 +182,7 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(jobA.getLastBuild().getConsole(), containsString("Hello World"));
     }
 
-    @WithPlugins("workflow-aggregator@1.2")
+    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
         FreeStyleJob jobA = jenkins.jobs.create();
@@ -394,7 +385,7 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
     }
 
-    @WithPlugins("workflow-aggregator@1.2")
+    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);

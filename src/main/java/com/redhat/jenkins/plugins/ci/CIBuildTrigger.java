@@ -5,7 +5,10 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractProject;
+import hudson.model.BuildableItem;
+import hudson.model.CauseAction;
 import hudson.model.Item;
+import hudson.model.Job;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
@@ -16,15 +19,21 @@ import hudson.triggers.TriggerDescriptor;
 import hudson.util.ListBoxModel;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
+import jenkins.model.ParameterizedJobMixIn;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
@@ -32,8 +41,6 @@ import java.util.logging.Logger;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 
 /*
  * The MIT License
@@ -58,12 +65,12 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
+public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
 	private String selector;
 	private String providerName;
-	private List<MsgCheck> checks;
+	private List<MsgCheck> checks = new ArrayList<MsgCheck>();
 
 	public static final transient WeakHashMap<String, CITriggerThread> triggerInfo = new WeakHashMap<String, CITriggerThread>();
 	private transient boolean providerUpdated;
@@ -84,21 +91,19 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 		this.providerName = providerName;
 	}
 
-	@Override
-	public void start(AbstractProject<?, ?> project, boolean newInstance) {
-		super.start(project, newInstance);
-		startTriggerThread();
-	}
-
 	public List<MsgCheck> getChecks() {
+		if (checks == null) {
+			checks = new ArrayList<MsgCheck>();
+		}
 		return Collections.unmodifiableList(checks);
 	}
 
 	public static CIBuildTrigger findTrigger(String fullname) {
 		Jenkins jenkins = Jenkins.getInstance();
-		AbstractProject<?, ?> p = jenkins.getItemByFullName(fullname, AbstractProject.class);
+
+		final Job p = jenkins.getItemByFullName(fullname, Job.class);
 		if (p != null) {
-			return p.getTrigger(CIBuildTrigger.class);
+			return ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
 		}
 		return null;
 	}
@@ -124,7 +129,13 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 		return this;
 	}
 
-    @Override
+	@Override
+	public void start(BuildableItem project, boolean newInstance) {
+		super.start(project, newInstance);
+		startTriggerThread();
+	}
+
+	@Override
 	public void stop() {
 		super.stop();
 		stopTriggerThread();
@@ -144,32 +155,37 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 				log.warning("Exception while trying to save job: " + e.getMessage());
 			}
 		}
-		if (job.isDisabled()) {
-            log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
-        } else {
-            try {
-                stopTriggerThread();
-	            JMSMessagingProvider provider = GlobalCIConfiguration.get()
-			            .getProvider(providerName);
-	            if (provider == null) {
-					log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
-							+ providerName + ". You must update the job configuration. Trigger not started.");
-					return;
-				}
-                CITriggerThread trigger = new CITriggerThread(provider, job
-                        .getFullName(), selector, getChecks());
-                trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
-	            trigger.setDaemon(true);
-                trigger.start();
-                triggerInfo.put(job.getFullName(), trigger);
-            } catch (Exception e) {
-                log.log(Level.SEVERE, "Unhandled exception in trigger start.", e);
-            }
-        }
+		if (job instanceof AbstractProject) {
+			AbstractProject aJob = (AbstractProject) job;
+			if (aJob.isDisabled()) {
+				log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
+				return;
+			}
+		}
+		try {
+			stopTriggerThread();
+			JMSMessagingProvider provider = GlobalCIConfiguration.get()
+					.getProvider(providerName);
+			if (provider == null) {
+				log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
+						+ providerName + ". You must update the job configuration. Trigger not started.");
+				return;
+			}
+			CITriggerThread trigger = new CITriggerThread(provider, job
+					.getFullName(), selector, getChecks());
+			trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+			trigger.setDaemon(true);
+			trigger.start();
+			triggerInfo.put(job.getFullName(), trigger);
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "Unhandled exception in trigger start.", e);
+		}
 	}
 
     private void stopTriggerThread() {
-        stopTriggerThread(job.getFullName());
+        if (job != null) {
+            stopTriggerThread(job.getFullName());
+        }
     }
 
     private void stopTriggerThread(String fullName) {
@@ -192,10 +208,144 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 		this.selector = selector;
 	}
 
-	public void scheduleBuild(Map<String, String> messageParams) {
+    /**
+     * Inspects {@link ParametersAction} to see what kind of capabilities it has in regards to SECURITY-170.
+     * Assuming the safeParameters constructor could not be found.
+     *
+     * @return the inspection result
+     */
+    private static synchronized ParametersActionInspection getParametersInspection() {
+        if (parametersInspectionCache == null) {
+            parametersInspectionCache = new ParametersActionInspection();
+        }
+        return parametersInspectionCache;
+    }
+
+    /**
+     * Stored cache of the inspection.
+     * @see #getParametersInspection()
+     */
+    private static volatile ParametersActionInspection parametersInspectionCache = null;
+    /**
+     * Data structure with information regarding what kind of capabilities {@link ParametersAction} has.
+     */
+    private static class ParametersActionInspection {
+        private static final Class<ParametersAction> KLASS = ParametersAction.class;
+        private boolean inspectionFailure;
+        private boolean safeParametersSet = false;
+        private boolean keepUndefinedParameters = false;
+        private boolean hasSafeParameterConfig = false;
+
+        /**
+         * Constructor that performs the inspection.
+         */
+        ParametersActionInspection() {
+            try {
+                for (Field field : KLASS.getDeclaredFields()) {
+                    if (Modifier.isStatic(field.getModifiers())
+                            &&  (
+                            field.getName().equals("KEEP_UNDEFINED_PARAMETERS_SYSTEM_PROPERTY_NAME")
+                                    || field.getName().equals("SAFE_PARAMETERS_SYSTEM_PROPERTY_NAME")
+                    )
+                            ) {
+                        this.hasSafeParameterConfig = true;
+                        break;
+                    }
+                }
+                if (hasSafeParameterConfig) {
+                    if (Boolean.getBoolean(KLASS.getName() + ".keepUndefinedParameters")) {
+                        this.keepUndefinedParameters = true;
+                    }
+                    this.safeParametersSet = false;
+                }
+                this.inspectionFailure = false;
+            } catch (Exception e) {
+                this.inspectionFailure = true;
+            }
+        }
+
+        /**
+         * If the system property .keepUndefinedParameters is set and set to true.
+         *
+         * @return true if so.
+         */
+        boolean isKeepUndefinedParameters() {
+            return keepUndefinedParameters;
+        }
+
+        /**
+         * If any of the constant fields regarding safeParameters are declared in {@link ParametersAction}.
+         *
+         * @return true if so.
+         */
+        boolean isHasSafeParameterConfig() {
+            return hasSafeParameterConfig;
+        }
+
+        /**
+         * If there was an exception when inspecting the class.
+         *
+         * @return true if so.
+         */
+        public boolean isInspectionFailure() {
+            return inspectionFailure;
+        }
+    }
+
+    protected ParametersAction createParameters(BuildableItem project, Map<String, String> messageParams) {
+        List<ParameterValue> definedParameters = getDefinedParameters(project);
+        List<ParameterValue> parameters = getUpdatedParameters(messageParams, definedParameters);
+        try {
+            Constructor<ParametersAction> constructor = ParametersAction.class.getConstructor(List.class);
+            return constructor.newInstance(parameters);
+        } catch (NoSuchMethodException e) {
+            ParametersActionInspection inspection = getParametersInspection();
+            if (inspection.isInspectionFailure()) {
+                log.log(Level.WARNING, "Failed to inspect ParametersAction to determine "
+                        + "if we can behave normally around SECURITY-170.\nSee "
+                        + "https://wiki.jenkins-ci.org/display/SECURITY/Jenkins+Security+Advisory+2016-05-11"
+                        + " for information.");
+            } else if (inspection.isHasSafeParameterConfig()) {
+                StringBuilder txt = new StringBuilder(
+                        "Running on a core with SECURITY-170 fixed but no direct way for Gerrit Trigger"
+                                + " to self-specify safe parameters.");
+                txt.append(" You should consider upgrading to a new Jenkins core version.\n");
+                if (inspection.isKeepUndefinedParameters()) {
+                    txt.append(".keepUndefinedParameters is set so the trigger should behave normally.");
+                } else {
+                    txt.append("No overriding system properties appears to be set,");
+                    txt.append(" your builds might not work as expected.\n");
+                    txt.append("See https://wiki.jenkins-ci.org/display/SECURITY/Jenkins+Security+Advisory+2016-05-11");
+                    txt.append(" for information.");
+                }
+                log.log(Level.WARNING, txt.toString());
+            } else {
+                log.log(Level.FINE, "Running on an old core before safe parameters, we should be safe.");
+            }
+        } catch (IllegalAccessException e) {
+            log.log(Level.WARNING, "Running on a core with safe parameters fix available, but not allowed to specify them");
+        } catch (Exception e) {
+            log.log(Level.WARNING, "Running on a core with safe parameters fix available, but failed to provide them");
+        }
+        return new ParametersAction(parameters);
+    }
+
+    public void scheduleBuild(Map<String, String> messageParams) {
+        ParametersAction parameters = createParameters(job, messageParams);
 	    List<ParameterValue> definedParameters = getDefinedParameters(job);
 	    List<ParameterValue> buildParameters = getUpdatedParameters(messageParams, definedParameters);
-		job.scheduleBuild2(0, new CIBuildCause(), new ParametersAction(buildParameters), new CIEnvironmentContributingAction(messageParams, buildParameters));
+        ParameterizedJobMixIn jobMixIn = new ParameterizedJobMixIn() {
+            @Override
+            protected Job asJob() {
+                return (Job)job;
+            }
+        };
+
+        jobMixIn.scheduleBuild2(0,
+                new CauseAction(new CIBuildCause()),
+                parameters,
+                new CIEnvironmentContributingAction(messageParams, buildParameters)
+                );
 	}
 
 	private List<ParameterValue> getUpdatedParameters(Map<String, String> messageParams, List<ParameterValue> definedParams) {
@@ -213,9 +363,10 @@ public class CIBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 	    return new ArrayList<ParameterValue>(newParams.values());
 	}
 
-	private List<ParameterValue> getDefinedParameters(AbstractProject<?, ?> project) {
+	private List<ParameterValue> getDefinedParameters(BuildableItem project) {
 	    List<ParameterValue> parameters = new ArrayList<ParameterValue>();
-	    ParametersDefinitionProperty properties = project.getProperty(ParametersDefinitionProperty.class);
+	    ParametersDefinitionProperty properties = (ParametersDefinitionProperty)
+                ((Job)project).getProperty(ParametersDefinitionProperty.class);
 
 	    if (properties != null  && properties.getParameterDefinitions() != null) {
 	        for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {

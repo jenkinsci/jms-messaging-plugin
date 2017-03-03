@@ -13,7 +13,7 @@ node('docker') {
         /* Make sure our directory is there, if Docker creates it, it gets owned by 'root' */
         sh 'mkdir -p $HOME/.m2'
 
-        docker.image('maven:3.3-jdk-7').inside(containerArgs) {
+        docker.image('maven:3.3-jdk-8').inside(containerArgs) {
             timestamps {
                 sh 'mvn -B -U -e -Dmaven.test.failure.ignore=true -Duser.home=/var/maven clean install -DskipTests'
             }
@@ -26,11 +26,16 @@ node('docker') {
 
     }
 
+    def tDir = sh(script: 'mktemp -d', returnStdout: true).trim()
+    echo tDir
+    String runContainerArgs = "-e 'container=docker' -ti -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v ${tDir}:/run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.m2:/var/maven/.m2"
     stage('Test') {
-        docker.image('jenkins/ath').inside(containerArgs) {
+        docker.image('jenkins/ath').inside(runContainerArgs) {
+            sh 'sleep 3000'
+            sh 'docker ps'
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
-                mvn test -Dmaven.test.failure.ignore=true -Duser.home=/var/maven -DforkCount=1 -B
+                mvn test -Dmaven.test.failure.ignore=true -Duser.home=/var/maven -Djenkins.version=2.7.3  -DforkCount=1 -B
             '''
         }
     }
@@ -38,5 +43,6 @@ node('docker') {
     stage('Archive') {
         junit 'target/surefire-reports/**/*.xml'
         archiveArtifacts artifacts: 'target/**/jms-messaging.hpi', fingerprint: true
+        archiveArtifacts artifacts: 'target/diagnostics/**'
     }
 }
