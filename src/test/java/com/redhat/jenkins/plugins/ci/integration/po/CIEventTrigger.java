@@ -4,6 +4,7 @@ import org.jenkinsci.test.acceptance.po.Control;
 import org.jenkinsci.test.acceptance.po.Describable;
 import org.jenkinsci.test.acceptance.po.Job;
 import org.jenkinsci.test.acceptance.po.PageAreaImpl;
+import org.jenkinsci.test.acceptance.po.WorkflowJob;
 
 /*
  * The MIT License
@@ -35,8 +36,15 @@ public class CIEventTrigger extends PageAreaImpl {
     public final Control checks = control("repeatable-add");
 
     public CIEventTrigger(Job parent) {
-        super(parent, "/com-redhat-jenkins-plugins-ci-CIBuildTrigger");
+        super(parent, createPath(parent));
         control("").check();
+    }
+
+    private static String createPath(Job parent) {
+        if (parent instanceof WorkflowJob) {
+            return "/properties/org-jenkinsci-plugins-workflow-job-properties-PipelineTriggersJobProperty/triggers/com-redhat-jenkins-plugins-ci-CIBuildTrigger";
+        }
+        return "/com-redhat-jenkins-plugins-ci-CIBuildTrigger";
     }
 
     public MsgCheck addMsgCheck() {

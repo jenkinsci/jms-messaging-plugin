@@ -8,6 +8,18 @@
 FROM centos:7
 MAINTAINER ogondza@gmail.com
 
+ENV container docker
+RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
+systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+rm -f /lib/systemd/system/multi-user.target.wants/*;\
+rm -f /etc/systemd/system/*.wants/*;\
+rm -f /lib/systemd/system/local-fs.target.wants/*; \
+rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+rm -f /lib/systemd/system/basic.target.wants/*;\
+rm -f /lib/systemd/system/anaconda.target.wants/*;
+VOLUME [ "/sys/fs/cgroup" ]
+
 RUN yum -y update && \
     yum -y install \
         curl \
@@ -29,6 +41,7 @@ ENV gid $gid
 
 RUN groupadd ath-user -g $gid && \
     useradd ath-user -u $uid -g $gid -m -d /home/ath-user && \
+    usermod -aG dockerroot ath-user && \
     echo 'ath-user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
     sed -i 's/requiretty/!requiretty/g' /etc/sudoers
 
@@ -40,13 +53,6 @@ RUN mkdir /home/ath-user/.vnc && (echo ath-user; echo ath-user) | vncpasswd /hom
 # Default content includes x-window-manager, which is not installed, plus other stuff we do not need (vncconfig, x-terminal-emulator, etc.):
 RUN touch /home/ath-user/.vnc/xstartup && chmod a+x /home/ath-user/.vnc/xstartup
 
-# Set SUID and SGID for docker binary so it can communicate with mapped socket its uid:gid we can not control. Alternative
-# approach used for this is adding ath-user to the group of /var/run/docker.sock but that require root permission we do not
-# have in ENTRYPOINT as the container is started as ath-user.
-#USER root
-#RUN chmod u+s "$(which docker)"
-
-# Run interactive session by default
-CMD [ "bash", "-c", "cd ~/ath && bash" ]
+CMD [ "/usr/sbin/init" ]
 ADD entrypoint.sh entrypoint.sh
 ENTRYPOINT [ "./entrypoint.sh" ]

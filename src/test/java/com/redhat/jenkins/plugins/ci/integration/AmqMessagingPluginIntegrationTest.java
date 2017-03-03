@@ -106,7 +106,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(driver, hasContent("Attempt to add a duplicate JMS Message Provider - test"));
     }
 
-    @WithPlugins("workflow-aggregator@1.2")
+    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
         FreeStyleJob jobA = jenkins.jobs.create();
@@ -130,7 +130,33 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
     }
 
-    @WithPlugins("workflow-aggregator@1.2")
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventTriggerOnPipelineJob() throws Exception {
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.script.set("node('master') {\n sleep 10\n}");
+        jobA.save();
+
+        elasticSleep(1000);
+        jobA.configure();
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.save();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set("Hello World");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed();
+    }
+
+    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
