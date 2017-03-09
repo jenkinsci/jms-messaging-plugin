@@ -3,31 +3,34 @@
 # see docs/DOCKER.md for usage
 #
 
-FROM debian:sid
+# ubuntu and fedora does not seem to package ESR firefox. docker is in unstable repo in debian and installation breaks from time to time.
+# centos has both working, note that it offers firefox ESR only
+FROM centos:7
 MAINTAINER ogondza@gmail.com
 
-RUN apt-get -y update && \
-    apt-get install -y \
+RUN yum -y update && \
+    yum -y install \
         curl \
-        docker.io \
-        imagemagick \
+        docker \
+        firefox \
+        ImageMagick \
         iptables \
-        firefox-esr \
         maven \
-        openjdk-8-jdk \
-        vnc4server
+        java-1.8.0-openjdk-devel \
+        tigervnc-server \
+        sudo \
+        which
 
-# Allow injecting uid and git to match directory ownership
+# Allow injecting uid and gid to match directory ownership
 ARG uid=1000
 ENV uid $uid
 ARG gid=1000
 ENV gid $gid
 
-# So it is owned by root and has the permissions vncserver seems to require:
-RUN mkdir /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix/
-
 RUN groupadd ath-user -g $gid && \
-    useradd ath-user -u $uid -g $gid -m -d /home/ath-user
+    useradd ath-user -u $uid -g $gid -m -d /home/ath-user && \
+    echo 'ath-user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+    sed -i 's/requiretty/!requiretty/g' /etc/sudoers
 
 # TODO seems this can be picked up from the host, which is unwanted:
 ENV XAUTHORITY /home/ath-user/.Xauthority
@@ -40,7 +43,10 @@ RUN touch /home/ath-user/.vnc/xstartup && chmod a+x /home/ath-user/.vnc/xstartup
 # Set SUID and SGID for docker binary so it can communicate with mapped socket its uid:gid we can not control. Alternative
 # approach used for this is adding ath-user to the group of /var/run/docker.sock but that require root permission we do not
 # have in ENTRYPOINT as the container is started as ath-user.
-USER root
-RUN chmod ug+s "$(which docker)"
+#USER root
+#RUN chmod u+s "$(which docker)"
 
-
+# Run interactive session by default
+CMD [ "bash", "-c", "cd ~/ath && bash" ]
+ADD entrypoint.sh entrypoint.sh
+ENTRYPOINT [ "./entrypoint.sh" ]
