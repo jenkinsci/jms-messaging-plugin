@@ -33,6 +33,8 @@ import org.jenkinsci.test.acceptance.po.Job;
 public class CISubscriberBuildStep extends AbstractStep implements BuildStep {
 
     public final Control providerName = control("providerName");
+    public final Control overrides = control("overrides");
+    public final Control topic = control("overrides/topic");
     public final Control selector = control("selector");
     public final Control variable = control("variable");
     public final Control timeout = control("timeout");

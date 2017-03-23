@@ -1,13 +1,12 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Descriptor;
+import hudson.util.Secret;
 
 import java.util.logging.Logger;
 
-import hudson.util.Secret;
 import jenkins.model.Jenkins;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -17,6 +16,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod.AuthenticationMethodDescriptor;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 
 /*
  * The MIT License
@@ -110,8 +110,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessagingWorker createWorker(String jobname) {
-        return new ActiveMqMessagingWorker(this, jobname);
+    public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
+        return new ActiveMqMessagingWorker(this, overrides, jobname);
     }
 
     public boolean IsMigrationInProgress() {

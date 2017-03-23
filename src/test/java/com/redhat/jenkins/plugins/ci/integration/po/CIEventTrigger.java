@@ -32,6 +32,8 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 @Describable("CI event")
 public class CIEventTrigger extends PageAreaImpl {
     public final Control providerName = control("providerName");
+    public final Control overrides = control("overrides");
+    public final Control topic = control("overrides/topic");
     public final Control selector = control("selector");
     public final Control checks = control("repeatable-add");
 

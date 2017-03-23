@@ -1,21 +1,9 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.utils.MessageUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
-import hudson.model.Run;
 import hudson.model.TaskListener;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.text.StrSubstitutor;
-import org.apache.commons.lang3.StringUtils;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-import org.zeromq.jms.selector.ZmqMessageSelector;
-import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
+import hudson.model.Run;
 
 import java.io.StringReader;
 import java.util.Date;
@@ -28,6 +16,21 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.StringUtils;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
+import org.zeromq.jms.selector.ZmqMessageSelector;
+import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.utils.MessageUtils;
 
 /*
  * The MIT License
@@ -56,24 +59,27 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private static final Logger log = Logger.getLogger(FedMsgMessagingWorker.class.getName());
     private final FedMsgMessagingProvider provider;
+    private final MessagingProviderOverrides overrides;
     public static final String DEFAULT_PREFIX = "org.fedoraproject";
 
     private ZMQ.Context context;
     private ZMQ.Poller poller;
     private ZMQ.Socket socket;
     private boolean interrupt = false;
+    private String topic;
     private String selector;
 
-    public FedMsgMessagingWorker(FedMsgMessagingProvider
-                                         fedMsgMessagingProvider, String jobname) {
+    public FedMsgMessagingWorker(FedMsgMessagingProvider fedMsgMessagingProvider, MessagingProviderOverrides overrides, String jobname) {
         this.provider = fedMsgMessagingProvider;
+        this.overrides = overrides;
         this.jobname = jobname;
     }
 
     @Override
     public boolean subscribe(String jobname, String selector) {
+        this.topic = getTopic();
         this.selector = selector;
-        if (provider.getTopic() != null) {
+        if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     if (!isConnected()) {
@@ -83,19 +89,14 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     }
                     if (socket == null) {
                         socket = context.socket(ZMQ.SUB);
-                        if (provider.getTopic() == null || provider.getTopic().equals("")) {
-                            log.info("Subscribing job '" + jobname + "' to DEFAULT_PREFIX " + DEFAULT_PREFIX + " topic.");
-                            socket.subscribe(DEFAULT_PREFIX.getBytes());
-                        } else {
-                            log.info("Subscribing job '" + jobname + "' to " + provider.getTopic() + " topic.");
-                            socket.subscribe(provider.getTopic().getBytes());
-                        }
+                        log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
+                        socket.subscribe(this.topic.getBytes());
                         socket.setLinger(0);
                         socket.connect(provider.getHubAddr());
                         poller.register(socket, ZMQ.Poller.POLLIN);
-                        log.info("Successfully subscribed job '" + jobname + "' to " + provider.getTopic() + " topic with selector: " + selector);
+                        log.info("Successfully subscribed job '" + jobname + "' to " + this.topic + " topic with selector: " + selector);
                     } else {
-                        log.info("Already subscribed to " + provider.getTopic() + " topic with selector: " + selector + " for job '" + jobname);
+                        log.info("Already subscribed to " + this.topic + " topic with selector: " + selector + " for job '" + jobname);
                     }
                     return true;
                 } catch (Exception ex) {
@@ -138,13 +139,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     ZMQ.Socket s = poller.getSocket(i);
                     poller.unregister(s);
                     s.disconnect(provider.getHubAddr());
-                    if (provider.getTopic() == null || provider.getTopic().equals("")) {
-                        log.info("Un-subscribing job '" + jobname + "' from DEFAULT_PREFIX " + DEFAULT_PREFIX + " topic.");
-                        socket.unsubscribe(DEFAULT_PREFIX.getBytes());
-                    } else {
-                        log.info("Un-subscribing job '" + jobname + "' from " + provider.getTopic() + " topic.");
-                        socket.unsubscribe(provider.getTopic().getBytes());
-                    }
+                    log.info("Un-subscribing job '" + jobname + "' from " + this.topic + " topic.");
+                    socket.unsubscribe(this.topic.getBytes());
                 }
                 socket.close();
             }
@@ -287,9 +283,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public boolean sendMessage(Run<?, ?> build, TaskListener listener,
-                               MessageUtils.MESSAGE_TYPE type, String props,
-                               String content) {
+    public boolean sendMessage(Run<?, ?> build, TaskListener listener, MessageUtils.MESSAGE_TYPE type,
+                               String props, String content) {
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket sock = context.socket(ZMQ.PUB);
         sock.setLinger(0);
@@ -301,12 +296,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             e.printStackTrace();
         }
 
-        String topic = DEFAULT_PREFIX;
-        if (provider.getTopic() != null && !provider.getTopic().equals("")) {
-            topic = provider.getTopic();
-        }
-
-        HashMap<String, Object> message = new HashMap();
+        HashMap<String, Object> message = new HashMap<String, Object>();
         message.put("CI_NAME", build.getParent().getName());
         message.put("CI_TYPE", type.getMessage());
         if (!build.isBuilding()) {
@@ -332,7 +322,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
             FedmsgMessage blob = new FedmsgMessage();
             blob.setMsg(message);
-            blob.setTopic(topic);
+            blob.setTopic(getTopic());
             blob.setTimestamp((new java.util.Date()).getTime() / 1000);
 
             sock.sendMore(blob.getTopic());
@@ -356,12 +346,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         ZMQ.Context lcontext = ZMQ.context(1);
         ZMQ.Poller lpoller = new ZMQ.Poller(1);
         ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
-        if (provider.getTopic() == null || provider.getTopic().equals("")) {
-            lsocket.subscribe(DEFAULT_PREFIX.getBytes());
-        } else {
-            lsocket.subscribe(provider.getTopic().getBytes());
-        }
 
+        lsocket.subscribe(getTopic().getBytes());
         lsocket.setLinger(0);
         lsocket.connect(provider.getHubAddr());
         lpoller.register(lsocket, ZMQ.Poller.POLLIN);
@@ -425,4 +411,13 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         interrupt = true;
     }
 
+    private String getTopic() {
+        if (overrides != null && overrides.getTopic() != null && !overrides.getTopic().isEmpty()) {
+            return overrides.getTopic();
+        } else if (provider.getTopic() != null && !provider.getTopic().isEmpty()) {
+            return provider.getTopic();
+        } else {
+            return DEFAULT_PREFIX;
+        }
+    }
 }

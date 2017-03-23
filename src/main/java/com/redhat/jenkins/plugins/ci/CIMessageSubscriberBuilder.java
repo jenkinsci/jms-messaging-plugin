@@ -1,28 +1,30 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Run;
-import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import hudson.util.ListBoxModel;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 /*
  * The MIT License
@@ -54,24 +56,28 @@ import org.kohsuke.stapler.StaplerRequest;
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
     private String providerName;
+    private MessagingProviderOverrides overrides;
     private String selector;
     private String variable;
     private Integer timeout;
 
     @DataBoundConstructor
     public CIMessageSubscriberBuilder(String providerName,
+                                      MessagingProviderOverrides overrides,
                                       String selector,
                                       String variable,
                                       Integer timeout) {
         this.providerName = providerName;
+        this.overrides = overrides;
         this.selector = selector;
         this.variable = variable;
         this.timeout = timeout;
     }
 
-    public CIMessageSubscriberBuilder(String providerName,
+    public CIMessageSubscriberBuilder(String providerName, MessagingProviderOverrides overrides,
                                       String selector, Integer timeout) {
         this.providerName = providerName;
+        this.overrides = overrides;
         this.selector = selector;
         this.timeout = timeout;
     }
@@ -83,6 +89,15 @@ import org.kohsuke.stapler.StaplerRequest;
 
     public String getProviderName() {
         return providerName;
+    }
+
+    public MessagingProviderOverrides getOverrides() {
+        return overrides;
+    }
+
+    @DataBoundSetter
+    public void setOverrides(MessagingProviderOverrides overrides) {
+        this.overrides = overrides;
     }
 
     @DataBoundSetter
@@ -123,8 +138,7 @@ import org.kohsuke.stapler.StaplerRequest;
         }
 
         JMSMessagingWorker worker =
-                provider.createWorker(build
-                        .getParent().getName());
+                provider.createWorker(overrides, build.getParent().getName());
         return worker.waitForMessage(build, selector, variable, timeout);
     }
 
@@ -149,12 +163,17 @@ import org.kohsuke.stapler.StaplerRequest;
 
         @Override
         public CIMessageSubscriberBuilder newInstance(StaplerRequest sr, JSONObject jo) {
+            MessagingProviderOverrides mpo = null;
+            if (!jo.getJSONObject("overrides").isNullObject()) {
+                mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
+            }
             int timeout = getDefaultTimeout();
             if (jo.getString("timeout") != null && !jo.getString("timeout").isEmpty()) {
                 timeout = jo.getInt("timeout");
             }
             return new CIMessageSubscriberBuilder(
                     jo.getString("providerName"),
+                    mpo,
                     jo.getString("selector"),
                     jo.getString("variable"),
                     timeout);

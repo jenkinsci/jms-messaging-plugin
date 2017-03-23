@@ -1,14 +1,17 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.security.ACL;
-import org.acegisecurity.context.SecurityContext;
-import org.acegisecurity.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.logging.Logger;
+
+import org.acegisecurity.context.SecurityContext;
+import org.acegisecurity.context.SecurityContextHolder;
+
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 /*
  * The MIT License
@@ -43,11 +46,11 @@ import java.util.logging.Logger;
     private final String selector;
     private final List<MsgCheck> checks;
 
-    public CITriggerThread(JMSMessagingProvider messagingProvider,
+    public CITriggerThread(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
                            String jobname, String selector, List<MsgCheck> checks) {
         this.jobname = jobname;
         this.selector = selector;
-        this.messagingWorker = messagingProvider.createWorker(this.jobname);
+        this.messagingWorker = messagingProvider.createWorker(overrides, this.jobname);
         this.checks = checks;
     }
 

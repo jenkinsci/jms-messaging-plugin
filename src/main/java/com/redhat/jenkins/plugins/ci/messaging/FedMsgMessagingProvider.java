@@ -2,10 +2,12 @@ package com.redhat.jenkins.plugins.ci.messaging;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
-import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.logging.Logger;
+
+import jenkins.model.Jenkins;
+
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /*
  * The MIT License
@@ -58,8 +60,8 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessagingWorker createWorker(String jobname) {
-        return new FedMsgMessagingWorker(this, jobname);
+    public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
+        return new FedMsgMessagingWorker(this, overrides, jobname);
     }
 
     @Override
