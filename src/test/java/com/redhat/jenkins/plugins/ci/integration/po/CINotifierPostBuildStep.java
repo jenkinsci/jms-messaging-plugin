@@ -33,6 +33,8 @@ import org.jenkinsci.test.acceptance.po.PostBuildStep;
 public class CINotifierPostBuildStep extends AbstractStep implements PostBuildStep {
 
     public final Control providerName = control("providerName");
+    public final Control overrides = control("overrides");
+    public final Control topic = control("overrides/topic");
     public final Control messageType = control("messageType");
     public final Control messageProperties = control("messageProperties");
     public final Control messageContent = control("messageContent");

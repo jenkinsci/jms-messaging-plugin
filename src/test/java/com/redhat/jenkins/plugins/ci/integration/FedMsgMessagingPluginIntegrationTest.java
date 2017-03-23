@@ -1,13 +1,21 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.FedmsgRelayContainer;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.util.Collections.singleton;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.HashSet;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
@@ -20,22 +28,14 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.HashSet;
-
-import static java.lang.ProcessBuilder.Redirect.INHERIT;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.util.Collections.singleton;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+import com.google.inject.Inject;
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.FedmsgRelayContainer;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.FedMsgMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 
 /*
  * The MIT License
@@ -171,6 +171,36 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
         CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set("Hello World");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("Hello World"));
+    }
+
+    @Test
+    public void testSimpleCIEventSubscribeWithTopicOverride() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
+        subscriber.overrides.check();
+        subscriber.topic.set("otopic");
+        subscriber.selector.set("CI_TYPE = 'code-quality-checks-done'");
+        subscriber.variable.set("HELLO");
+
+        jobA.addShellStep("echo $HELLO");
+        jobA.save();
+        jobA.scheduleBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
         notifier.messageType.select("CodeQualityChecksDone");
         notifier.messageProperties.sendKeys("CI_STATUS = failed");
         notifier.messageContent.set("Hello World");
@@ -358,6 +388,34 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("my parameter"));
         assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content"));
+    }
+
+    @Test
+    public void testSimpleCIEventTriggerWithTopicOverride() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.overrides.check();
+        ciEvent.topic.set("otopic");
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(5000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
     }
 
     @WithPlugins("workflow-aggregator")

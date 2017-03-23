@@ -26,6 +26,15 @@
     <f:entry title="${%Messaging Provider}" field="providerName">
         <f:select/>
     </f:entry>
+    <f:nested>
+      <table>
+        <f:optionalBlock field="overrides" title="Override provider topic" checked="${instance.getOverrides() != null}">
+          <f:entry title="${%Topic name}" field="topic">
+            <f:textbox value="${instance.getOverrides().getTopic();}"/>
+          </f:entry>
+        </f:optionalBlock>
+      </table>
+    </f:nested>
     <f:entry title="${%JMS selector}" field="selector">
         <f:textbox name="selector"/>
     </f:entry>

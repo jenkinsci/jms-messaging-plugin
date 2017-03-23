@@ -1,13 +1,11 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
-import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+
+import java.util.regex.Pattern;
+
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
@@ -20,11 +18,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.TimeoutException;
 
-import java.util.regex.Pattern;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+import com.google.inject.Inject;
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
+import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 
 /*
  * The MIT License
@@ -336,6 +337,33 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithTopicOverride() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ciEvent.overrides.check();
+        ciEvent.topic.set("otopic");
+        jobA.save();
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    @Test
     public void testSimpleCIEventSubscribe() throws Exception, InterruptedException {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
@@ -426,6 +454,39 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("original parameter value"));
+        assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content"));
+    }
+
+    @Test
+    public void testSimpleCIEventSubscribeWithTopicOverride() throws Exception, InterruptedException {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+
+        CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
+        subscriber.overrides.check();
+        subscriber.topic.set("otopic");
+        subscriber.selector.set("CI_TYPE = 'code-quality-checks-done'");
+        subscriber.variable.set("MESSAGE_CONTENT");
+
+        jobA.addShellStep("echo $MESSAGE_CONTENT");
+        jobA.save();
+        elasticSleep(1000);
+        jobA.scheduleBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageContent.set("This is my content");
+
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content"));
     }
 }

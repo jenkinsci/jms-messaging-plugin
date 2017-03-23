@@ -8,7 +8,9 @@ import java.io.PrintStream;
 import java.util.logging.Logger;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 /*
  * The MIT License
@@ -105,14 +107,15 @@ public class MessageUtils {
 
     public static boolean sendMessage(Run<?, ?> build, TaskListener listener,
                                       String providerName,
+                                      MessagingProviderOverrides overrides,
                                       MESSAGE_TYPE type,
                                       String props,
                                       String content) throws InterruptedException, IOException {
-        log.info("Sending CI message for job '" + build.getParent().getName() + "'.");
+        log.info("Sending message for job '" + build.getParent().getName() + "'.");
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
+        JMSMessagingProvider provider = config.getProvider(providerName);
         JMSMessagingWorker worker =
-                config.getProvider(providerName).createWorker(build.getParent
-                        ().getName());
+                config.getProvider(providerName).createWorker(overrides, build.getParent().getName());
         return worker.sendMessage(build,
                 listener,
                 type,

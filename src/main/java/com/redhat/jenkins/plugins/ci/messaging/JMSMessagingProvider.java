@@ -42,7 +42,7 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
         return name;
     }
 
-    public abstract JMSMessagingWorker createWorker(String jobname);
+    public abstract JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname);
 
     @Override
     public boolean equals(Object o) {

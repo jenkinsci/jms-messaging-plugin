@@ -1,17 +1,17 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.utils.MessageUtils;
-import hudson.model.Run;
+import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
 import hudson.model.TaskListener;
+import hudson.model.Run;
 
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.utils.MessageUtils;
 
 /*
  * The MIT License

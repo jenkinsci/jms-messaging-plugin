@@ -1,27 +1,21 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.Extension;
 import hudson.Util;
-import hudson.model.AbstractProject;
 import hudson.model.BuildableItem;
-import hudson.model.CauseAction;
 import hudson.model.Item;
+import hudson.model.ParameterValue;
+import hudson.model.AbstractProject;
+import hudson.model.CauseAction;
 import hudson.model.Job;
 import hudson.model.ParameterDefinition;
-import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterValue;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
-import hudson.util.ListBoxModel;
 import hudson.util.FormValidation;
-import jenkins.model.Jenkins;
-import jenkins.model.ParameterizedJobMixIn;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.QueryParameter;
+import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
@@ -29,18 +23,25 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import jenkins.model.Jenkins;
+import jenkins.model.ParameterizedJobMixIn;
+
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 /*
  * The MIT License
@@ -71,15 +72,17 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private String selector;
 	private String providerName;
 	private List<MsgCheck> checks = new ArrayList<MsgCheck>();
+	private MessagingProviderOverrides overrides;
 
 	public static final transient WeakHashMap<String, CITriggerThread> triggerInfo = new WeakHashMap<String, CITriggerThread>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
-	public CIBuildTrigger(String selector, String providerName, List<MsgCheck> checks) {
+	public CIBuildTrigger(String selector, String providerName, MessagingProviderOverrides overrides, List<MsgCheck> checks) {
 		super();
 		this.selector = StringUtils.stripToNull(selector);
         this.providerName = providerName;
+        this.overrides = overrides;
 		if (checks == null) {
 			checks = new ArrayList<MsgCheck>();
 		}
@@ -90,6 +93,15 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	public void setProviderName(String providerName) {
 		this.providerName = providerName;
 	}
+
+	public MessagingProviderOverrides getOverrides() {
+        return overrides;
+    }
+
+    @DataBoundSetter
+    public void setOverrides(MessagingProviderOverrides overrides) {
+        this.overrides = overrides;
+    }
 
 	public List<MsgCheck> getChecks() {
 		if (checks == null) {
@@ -171,7 +183,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 						+ providerName + ". You must update the job configuration. Trigger not started.");
 				return;
 			}
-			CITriggerThread trigger = new CITriggerThread(provider, job
+			CITriggerThread trigger = new CITriggerThread(provider, overrides, job
 					.getFullName(), selector, getChecks());
 			trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
 			trigger.setDaemon(true);

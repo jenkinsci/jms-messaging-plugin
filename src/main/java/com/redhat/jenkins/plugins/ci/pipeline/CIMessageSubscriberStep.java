@@ -1,23 +1,21 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
-import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
-import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.utils.MessageUtils;
-import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
+import hudson.model.Run;
+
+import javax.inject.Inject;
+
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
-import javax.inject.Inject;
+import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
+import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 /*
  * The MIT License
@@ -45,17 +43,36 @@ import javax.inject.Inject;
 public class CIMessageSubscriberStep extends AbstractStepImpl {
 
     private String providerName;
+    private MessagingProviderOverrides overrides;
     private String selector;
     private Integer timeout;
 
     @DataBoundConstructor
     public CIMessageSubscriberStep(final String providerName,
+                                   final MessagingProviderOverrides overrides,
                                    final String selector,
                                    final Integer timeout) {
         super();
         this.providerName = providerName;
+        this.overrides = overrides;
         this.selector = selector;
         this.timeout = timeout;
+    }
+
+    public String getProviderName() {
+        return providerName;
+    }
+
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
+    }
+
+    public MessagingProviderOverrides getOverrides() {
+        return overrides;
+    }
+
+    public void setOverrides(MessagingProviderOverrides overrides) {
+        this.overrides = overrides;
     }
 
     public String getSelector() {
@@ -72,14 +89,6 @@ public class CIMessageSubscriberStep extends AbstractStepImpl {
 
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
-    }
-
-    public String getProviderName() {
-        return providerName;
-    }
-
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
     }
 
     /**
@@ -109,6 +118,7 @@ public class CIMessageSubscriberStep extends AbstractStepImpl {
                 timeout = step.getTimeout();
             }
             CIMessageSubscriberBuilder builder = new CIMessageSubscriberBuilder(step.getProviderName(),
+                    step.getOverrides(),
                     step.getSelector(),
                     timeout);
             return builder.waitforCIMessage(build, launcher, listener);

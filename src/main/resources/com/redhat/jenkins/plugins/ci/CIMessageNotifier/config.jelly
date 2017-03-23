@@ -24,8 +24,17 @@
      */
   -->
     <f:entry title="${%Messaging Provider}" field="providerName">
-        <f:select/>
+        <f:select onchange="displayTopic();"/>
     </f:entry>
+    <f:nested>
+      <table>
+        <f:optionalBlock field="overrides" title="Override provider topic" checked="${instance.getOverrides() != null}">
+          <f:entry title="${%Topic name}" field="topic">
+            <f:textbox value="${instance.getOverrides().getTopic();}"/>
+          </f:entry>
+        </f:optionalBlock>
+      </table>
+    </f:nested>
     <f:entry title="${%Message type}" field="messageType">
         <f:select name="messageType"/>
     </f:entry>
@@ -35,5 +44,4 @@
     <f:entry title="${%Message content}" field="messageContent">
         <f:textarea name="messageContent"/>
     </f:entry>
-
 </j:jelly>

@@ -1,34 +1,11 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.utils.MessageUtils;
+import static com.redhat.utils.MessageUtils.JSON_TYPE;
 import hudson.EnvVars;
 import hudson.model.Result;
-import hudson.model.Run;
 import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.text.StrSubstitutor;
-import org.apache.commons.lang3.StringUtils;
+import hudson.model.Run;
 
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.DeliveryMode;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.MapMessage;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.jms.Topic;
-import javax.jms.TopicSubscriber;
 import java.io.StringReader;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
@@ -43,7 +20,33 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static com.redhat.utils.MessageUtils.JSON_TYPE;
+import javax.jms.BytesMessage;
+import javax.jms.Connection;
+import javax.jms.DeliveryMode;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.MapMessage;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+import javax.jms.Topic;
+import javax.jms.TopicSubscriber;
+
+import jenkins.model.Jenkins;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.utils.MessageUtils;
 
 /*
  * The MIT License
@@ -73,19 +76,22 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
 
     private final ActiveMqMessagingProvider provider;
+    private final MessagingProviderOverrides overrides;
 
     private Connection connection;
     private TopicSubscriber subscriber;
+    private String topic;
 
-    public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, String jobname) {
+    public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, MessagingProviderOverrides overrides, String jobname) {
         this.provider = provider;
+        this.overrides = overrides;
         this.jobname = jobname;
     }
 
     @Override
     public boolean subscribe(String jobname, String selector) {
-
-        if (provider.getTopic() != null) {
+        this.topic = getTopic();
+        if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     if (!isConnected()) {
@@ -94,16 +100,16 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         }
                     }
                     if (subscriber == null) {
-                        log.info("Subscribing job '" + jobname + "' to " + provider.getTopic() + " topic.");
+                        log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' topic.");
                         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                        Topic destination = session.createTopic(provider.getTopic());
+                        Topic destination = session.createTopic(this.topic);
 
                         subscriber = session
                                 .createDurableSubscriber(destination, jobname,
                                         selector, false);
-                        log.info("Successfully subscribed job '" + jobname + "' to " + provider.getTopic() + " topic with selector: " + selector);
+                        log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' topic with selector: " + selector);
                     } else {
-                        log.fine("Already subscribed to " + provider.getTopic() + " topic with selector: " + selector + " for job '" + jobname);
+                        log.fine("Already subscribed to '" + this.topic + "' topic with selector: " + selector + " for job '" + jobname);
                     }
                     return true;
                 } catch (JMSException ex) {
@@ -171,7 +177,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
-        log.info("Unsubcribing job '" + jobname + "' from the CI topic.");
+        log.info("Unsubcribing job '" + jobname + "' from the '" + this.topic + "' topic.");
         disconnect();
         if (subscriber != null) {
             try {
@@ -195,7 +201,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 Enumeration<String> e = mm.getMapNames();
                 while (e.hasMoreElements()) {
                     String field = e.nextElement();
-                    root.put(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
+                    root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                 }
                 return mapper.writer().writeValueAsString(root);
             } else if (message instanceof TextMessage) {
@@ -233,7 +239,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     Enumeration<String> e = mm.getMapNames();
                     while (e.hasMoreElements()) {
                         String field = e.nextElement();
-                        root.put(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
+                        root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                     }
                     sVal = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
                 } else if (message instanceof BytesMessage) {
@@ -362,13 +368,14 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         MessageProducer publisher = null;
 
         try {
-            if (provider.getAuthenticationMethod() != null && provider.getTopic() != null && provider.getBroker() != null) {
+            String ltopic = getTopic();
+            if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
                 connection.start();
 
                 session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                Destination destination = session.createTopic(provider.getTopic());
+                Destination destination = session.createTopic(ltopic);
                 publisher = session.createProducer(destination);
 
                 TextMessage message;
@@ -397,7 +404,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message.setText(sub.replace(content));
 
                 publisher.send(message);
-                log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "':\n"
+                log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
                         + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
@@ -438,7 +445,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             log.severe("Unable to get localhost IP address.");
         }
 
-        if (ip != null && provider.getAuthenticationMethod() != null && provider.getTopic() != null && provider.getBroker() != null) {
+        String ltopic = getTopic();
+        if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 log.info("Waiting for message with selector: " + selector);
                 Connection connection = null;
                 MessageConsumer consumer = null;
@@ -448,7 +456,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     connection.setClientID(ip + "_" + UUID.randomUUID().toString());
                     connection.start();
                     Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    Topic destination = session.createTopic(provider.getTopic());
+                    Topic destination = session.createTopic(ltopic);
 
                     consumer = session.createConsumer(destination, selector);
 
@@ -676,4 +684,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return sb.toString();
     }
 
+    private String getTopic() {
+        if (overrides != null && overrides.getTopic() != null && !overrides.getTopic().isEmpty()) {
+            return overrides.getTopic();
+        } else if (provider.getTopic() != null && !provider.getTopic().isEmpty()) {
+            return provider.getTopic();
+        } else {
+            return null;
+        }
+    }
 }

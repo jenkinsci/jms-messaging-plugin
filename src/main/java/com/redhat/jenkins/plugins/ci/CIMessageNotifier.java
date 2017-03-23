@@ -1,6 +1,5 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -20,6 +19,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 import com.redhat.utils.PluginUtils;
@@ -51,10 +52,23 @@ import com.redhat.utils.PluginUtils;
     private static final String BUILDER_NAME = Messages.MessageNotifier();
 
     private String providerName;
+    private MessagingProviderOverrides overrides;
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
 
+    public String getProviderName() {
+        return providerName;
+    }
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
+    }
+    public MessagingProviderOverrides getOverrides() {
+        return overrides;
+    }
+    public void setOverrides(MessagingProviderOverrides overrides) {
+        this.overrides = overrides;
+    }
     public MESSAGE_TYPE getMessageType() {
         return messageType;
     }
@@ -76,11 +90,13 @@ import com.redhat.utils.PluginUtils;
 
     @DataBoundConstructor
     public CIMessageNotifier(final String providerName,
+                             final MessagingProviderOverrides overrides,
                              final MESSAGE_TYPE messageType,
                              final String messageProperties,
                              final String messageContent) {
         super();
         this.providerName = providerName;
+        this.overrides = overrides;
         this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
@@ -101,28 +117,37 @@ import com.redhat.utils.PluginUtils;
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return MessageUtils.sendMessage(build, listener, getProviderName(), getMessageType(),
+        return MessageUtils.sendMessage(build, listener, getProviderName(), getOverrides(), getMessageType(),
                 PluginUtils.getSubstitutedValue(getMessageProperties(), build.getEnvironment(listener)),
                 PluginUtils.getSubstitutedValue(getMessageContent(), build.getEnvironment(listener)));
-    }
-
-    public String getProviderName() {
-        return providerName;
-    }
-
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
     }
 
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         private String providerName;
+        private MessagingProviderOverrides overrides;
         private MESSAGE_TYPE messageType;
         private String messageProperties;
         private String messageContent;
 
         public DescriptorImpl() {
             load();
+        }
+
+        public String getProviderName() {
+            return providerName;
+        }
+
+        public void setProviderName(String providerName) {
+            this.providerName = providerName;
+        }
+
+        public MessagingProviderOverrides getOverrides() {
+            return overrides;
+        }
+
+        public void setOverrides(MessagingProviderOverrides overrides) {
+            this.overrides = overrides;
         }
 
         public MESSAGE_TYPE getMessageType() {
@@ -157,20 +182,31 @@ import com.redhat.utils.PluginUtils;
 
         @Override
         public CIMessageNotifier newInstance(StaplerRequest sr, JSONObject jo) {
+            MessagingProviderOverrides mpo = null;
+            if (!jo.getJSONObject("overrides").isNullObject()) {
+                mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
+            }
             return new CIMessageNotifier(jo.getString("providerName"),
-                    MESSAGE_TYPE.fromString(jo.getString("messageType")),
-                    jo.getString("messageProperties"),
-                    jo.getString("messageContent"));
+                     mpo,
+                     MESSAGE_TYPE.fromString(jo.getString("messageType")),
+                     jo.getString("messageProperties"),
+                     jo.getString("messageContent"));
         }
 
         @Override
         public boolean configure(StaplerRequest sr, JSONObject formData) throws FormException {
+            MessagingProviderOverrides mpo = null;
+            if (!formData.getJSONObject("overrides").isNullObject()) {
+                mpo = new MessagingProviderOverrides(formData.getJSONObject("overrides").getString("topic"));
+            }
             setProviderName(formData.optString("providerName"));
+            setOverrides(mpo);
             setMessageType(MESSAGE_TYPE.fromString(formData.optString("messageType")));
             setMessageProperties(formData.optString("messageProperties"));
             setMessageContent(formData.optString("messageContent"));
             try {
                 new CIMessageNotifier(getProviderName(),
+                        getOverrides(),
                         getMessageType(),
                         getMessageProperties(),
                         getMessageContent());
@@ -201,14 +237,6 @@ import com.redhat.utils.PluginUtils;
                 items.add(provider.getName());
             }
             return items;
-        }
-
-        public String getProviderName() {
-            return providerName;
-        }
-
-        public void setProviderName(String providerName) {
-            this.providerName = providerName;
         }
     }
 }

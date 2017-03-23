@@ -1,6 +1,5 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -18,6 +17,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
@@ -47,10 +48,24 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 public class CIMessageBuilder extends Builder {
 
     private String providerName;
+    private MessagingProviderOverrides overrides;
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
 
+
+    public String getProviderName() {
+        return providerName;
+    }
+    public void setProviderName(String providerName) {
+        this.providerName = providerName;
+    }
+    public MessagingProviderOverrides getOverrides() {
+        return overrides;
+    }
+    public void setOverrides(MessagingProviderOverrides overrides) {
+        this.overrides = overrides;
+    }
     public MESSAGE_TYPE getMessageType() {
         return messageType;
     }
@@ -72,11 +87,13 @@ public class CIMessageBuilder extends Builder {
 
     @DataBoundConstructor
     public CIMessageBuilder(final String providerName,
+                            final MessagingProviderOverrides overrides,
                             final MESSAGE_TYPE messageType,
                             final String messageProperties,
                             final String messageContent) {
         super();
         this.providerName = providerName;
+        this.overrides = overrides;
         this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
@@ -86,28 +103,38 @@ public class CIMessageBuilder extends Builder {
     public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         return MessageUtils.sendMessage(build, listener,
                 getProviderName(),
+                getOverrides(),
                 getMessageType(),
                 getMessageProperties(),
                 getMessageContent());
     }
 
-    public String getProviderName() {
-        return providerName;
-    }
-
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
-    }
-
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
         private String providerName;
+        private MessagingProviderOverrides overrides;
         private MESSAGE_TYPE messageType;
         private String messageProperties;
         private String messageContent;
 
         public DescriptorImpl() {
             load();
+        }
+
+        public String getProviderName() {
+            return providerName;
+        }
+
+        public void setProviderName(String providerName) {
+            this.providerName = providerName;
+        }
+
+        public MessagingProviderOverrides getOverrides() {
+            return overrides;
+        }
+
+        public void setOverrides(MessagingProviderOverrides overrides) {
+            this.overrides = overrides;
         }
 
         public MESSAGE_TYPE getMessageType() {
@@ -140,10 +167,14 @@ public class CIMessageBuilder extends Builder {
             return true;
         }
 
-
         @Override
         public CIMessageBuilder newInstance(StaplerRequest sr, JSONObject jo) {
+            MessagingProviderOverrides mpo = null;
+            if (!jo.getJSONObject("overrides").isNullObject()) {
+                mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
+            }
             return new CIMessageBuilder(jo.getString("providerName"),
+                    mpo,
                     MESSAGE_TYPE.fromString(jo.getString("messageType")),
                     jo.getString("messageProperties"),
                     jo.getString("messageContent"));
@@ -151,12 +182,18 @@ public class CIMessageBuilder extends Builder {
 
         @Override
         public boolean configure(StaplerRequest sr, JSONObject formData) throws FormException {
+            MessagingProviderOverrides mpo = null;
+            if (!formData.getJSONObject("overrides").isNullObject()) {
+                mpo = new MessagingProviderOverrides(formData.getJSONObject("overrides").getString("topic"));
+            }
             setProviderName(formData.optString("providerName"));
+            setOverrides(mpo);
             setMessageType(MESSAGE_TYPE.fromString(formData.optString("messageType")));
             setMessageProperties(formData.optString("messageProperties"));
             setMessageContent(formData.optString("messageContent"));
             try {
                 new CIMessageNotifier(getProviderName(),
+                        getOverrides(),
                         getMessageType(),
                         getMessageProperties(),
                         getMessageContent());
@@ -187,14 +224,6 @@ public class CIMessageBuilder extends Builder {
                 items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
             }
             return items;
-        }
-
-        public String getProviderName() {
-            return providerName;
-        }
-
-        public void setProviderName(String providerName) {
-            this.providerName = providerName;
         }
     }
 }
