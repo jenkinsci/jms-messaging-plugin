@@ -190,6 +190,27 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
     }
 
+    public static String getMessageHeaders(Message message) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode root = mapper.createObjectNode();
+
+            Enumeration<String> e = message.getPropertyNames();
+            while (e.hasMoreElements()) {
+                String s = e.nextElement();
+                if (message.getStringProperty(s) != null) {
+                    root.set(s, mapper.convertValue(message.getObjectProperty(s), JsonNode.class));
+                }
+            }
+
+            return mapper.writer().writeValueAsString(root);
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Unhandled exception retrieving message headers:\n" + formatMessage(message), e);
+        }
+
+        return "";
+    }
+
     public static String getMessageBody(Message message) {
         try {
             if (message instanceof MapMessage) {
@@ -287,6 +308,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             Map<String, String> params = new HashMap<String, String>();
             params.put("CI_MESSAGE", getMessageBody(message));
+            params.put("CI_HEADERS", getMessageHeaders(message));
 
             @SuppressWarnings("unchecked")
             Enumeration<String> e = message.getPropertyNames();

@@ -421,6 +421,33 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     }
 
     @Test
+    public void testSimpleCIEventTriggerHeadersInEnv() throws Exception, InterruptedException {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done'");
+
+        // We are only checking that this shows up in the console output.
+        jobA.addShellStep("echo $CI_HEADERS");
+        jobA.save();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageContent.set("some irrelevant content");
+
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("\"CI_STATUS\":\"passed\""));
+        assertThat(jobA.getLastBuild().getConsole(), containsString("\"CI_TYPE\":\"code-quality-checks-done\""));
+    }
+
+    @Test
     public void testSimpleCIEventSubscribeWithNoParamOverride() throws Exception, InterruptedException {
         // Job parameters are NOT overridden when the subscribe build step is used.
         FreeStyleJob jobA = jenkins.jobs.create();
