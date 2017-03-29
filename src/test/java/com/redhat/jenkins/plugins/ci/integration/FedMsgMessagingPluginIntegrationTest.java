@@ -80,13 +80,21 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
     }
 
     @Test
-    public void testTriggeringUsingFedMsgLogger() throws Exception {
+    public void testTriggeringUsingFedMsgLoggerAndSingleQuotes() throws Exception {
+        testTriggeringUsingFedMsgLogger("topic = 'org.fedoraproject.dev.logger.log'");
+    }
 
+    @Test
+    public void testTriggeringUsingFedMsgLoggerAndDoubleQuotes() throws Exception {
+        testTriggeringUsingFedMsgLogger("topic = \"org.fedoraproject.dev.logger.log\"");
+    }
+
+    public void testTriggeringUsingFedMsgLogger(String topic) throws Exception {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("topic = 'org.fedoraproject.dev.logger.log'");
+        ciEvent.selector.set(topic);
         CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
         check.expectedValue.set(".+compose_id.+message.+");
         check.field.set("compose");
@@ -102,23 +110,23 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         File ssh = File.createTempFile("jenkins", "ssh");
         FileUtils.writeStringToFile(ssh,
-            "#!/bin/sh\n" +
-            "exec ssh -o StrictHostKeyChecking=no -i "
-            + privateKey.getAbsolutePath()
-            + " fedmsg2@" + fedmsgRelay.getIpAddress()
-            //+ " fedmsg-logger --message=\\\"This is a message.\\\"");
-            + " fedmsg-logger "
-            + " \"$@\""
+                "#!/bin/sh\n" +
+                        "exec ssh -o StrictHostKeyChecking=no -i "
+                        + privateKey.getAbsolutePath()
+                        + " fedmsg2@" + fedmsgRelay.getIpAddress()
+                        //+ " fedmsg-logger --message=\\\"This is a message.\\\"");
+                        + " fedmsg-logger "
+                        + " \"$@\""
         );
-            //+ "--message=\\\'{\\\"compose\\\": "
-            //+ "{\\\"compose_id\\\": \\\"This is a message.\\\"}}\\\' --json-input");
+        //+ "--message=\\\'{\\\"compose\\\": "
+        //+ "{\\\"compose_id\\\": \\\"This is a message.\\\"}}\\\' --json-input");
         Files.setPosixFilePermissions(ssh.toPath(),
                 new HashSet<>(Arrays.asList(OWNER_READ, OWNER_EXECUTE)));
 
         System.out.println(FileUtils.readFileToString(ssh));
         ProcessBuilder gitLog1Pb = new ProcessBuilder(ssh.getAbsolutePath(),
                 "--message='{\"compose\": "
-                + "{\"compose_id\": \"This is a message.\"}}\'",
+                        + "{\"compose_id\": \"This is a message.\"}}\'",
                 "--json-input"
         );
         String output = stringFrom(logProcessBuilderIssues(gitLog1Pb,
@@ -127,6 +135,7 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("This is a message"));
+
 
     }
 
