@@ -443,8 +443,10 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
-        assertThat(jobA.getLastBuild().getConsole(), containsString("\"CI_STATUS\":\"passed\""));
-        assertThat(jobA.getLastBuild().getConsole(), containsString("\"CI_TYPE\":\"code-quality-checks-done\""));
+        String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"";
+        expected += jobB.name;
+        expected += "\",\"CI_TYPE\":\"code-quality-checks-done\"}";
+        assertThat(jobA.getLastBuild().getConsole(), containsString(expected));
     }
 
     @Test
