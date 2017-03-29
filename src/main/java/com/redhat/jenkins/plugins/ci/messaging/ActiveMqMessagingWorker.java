@@ -308,7 +308,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             Map<String, String> params = new HashMap<String, String>();
             params.put("CI_MESSAGE", getMessageBody(message));
-            params.put("CI_HEADERS", getMessageHeaders(message));
+            params.put("MESSAGE_HEADERS", getMessageHeaders(message));
 
             @SuppressWarnings("unchecked")
             Enumeration<String> e = message.getPropertyNames();

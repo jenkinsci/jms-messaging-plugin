@@ -164,7 +164,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     private void process(FedmsgMessage data) {
         Map<String, String> params = new HashMap<String, String>();
         params.put("CI_MESSAGE", getMessageBody(data));
-        params.put("CI_HEADERS", getMessageHeaders(data));
+        params.put("MESSAGE_HEADERS", getMessageHeaders(data));
 
         Iterator<String> it = data.getMsg().keySet().iterator();
         while (it.hasNext()) {
@@ -187,7 +187,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     public String getMessageHeaders(FedmsgMessage data) {
         // fedmsg messages don't have headers or properties like JMS messages.
         // The only real header is the topic.  This is here to maintain
-        // symmetry with CI_HEADERS provided by the AmqMessagingWorker.
+        // symmetry with MESSAGE_HEADERS provided by the AmqMessagingWorker.
         // https://github.com/jenkinsci/jms-messaging-plugin/pull/20
         try {
             ObjectMapper mapper = new ObjectMapper();

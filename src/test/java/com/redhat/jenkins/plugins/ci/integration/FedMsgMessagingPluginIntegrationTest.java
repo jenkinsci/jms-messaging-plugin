@@ -475,7 +475,7 @@ public class FedMsgMessagingPluginIntegrationTest extends AbstractJUnitTest {
         ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done'");
 
         // We are only checking that this shows up in the console output.
-        jobA.addShellStep("echo $CI_HEADERS");
+        jobA.addShellStep("echo $MESSAGE_HEADERS");
         jobA.save();
 
         FreeStyleJob jobB = jenkins.jobs.create();
