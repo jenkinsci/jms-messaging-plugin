@@ -26,12 +26,8 @@ node('docker') {
 
     }
 
-    def tDir = sh(script: 'mktemp -d', returnStdout: true).trim()
-    echo tDir
-    String runContainerArgs = "-e 'container=docker' -ti -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v ${tDir}:/run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.m2:/var/maven/.m2"
     stage('Test') {
-        docker.image('jenkins/ath').inside(runContainerArgs) {
-            sh 'sleep 3000'
+        docker.image('jenkins/ath').inside(containerArgs) {
             sh 'docker ps'
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
