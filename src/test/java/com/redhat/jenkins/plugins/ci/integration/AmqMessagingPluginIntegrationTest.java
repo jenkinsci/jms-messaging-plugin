@@ -233,6 +233,38 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     }
 
     @Test
+    public void testDisabledJobDoesNotGetTriggered() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.disable();
+        jobA.save();
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(5000);
+        jobA.getLastBuild().shouldNotExist();
+
+        jobA.configure();
+        jobA.check((find(by.checkbox("disable"))), false);
+        jobA.save();
+        elasticSleep(5000);
+        jobB.startBuild().shouldSucceed();
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+
+    }
+
+    @Test
     public void testSimpleCIEventTrigger() throws Exception {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
