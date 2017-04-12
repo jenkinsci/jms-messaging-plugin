@@ -167,13 +167,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				log.warning("Exception while trying to save job: " + e.getMessage());
 			}
 		}
-		if (job instanceof AbstractProject) {
-			AbstractProject aJob = (AbstractProject) job;
-			if (aJob.isDisabled()) {
-				log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
-				return;
-			}
-		}
 		try {
 			stopTriggerThread();
 			JMSMessagingProvider provider = GlobalCIConfiguration.get()
