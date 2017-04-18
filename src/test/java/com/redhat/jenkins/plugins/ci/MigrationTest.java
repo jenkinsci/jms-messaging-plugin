@@ -96,8 +96,40 @@ public class MigrationTest {
         JMSMessagingProvider config2 = newGlobalConfig.getConfigs().get(0);
         ActiveMqMessagingProvider aconfig2 = (ActiveMqMessagingProvider) config2;
         assertNotNull(aconfig2.getAuthenticationMethod());
+    }
 
+    @LocalData
+    @Test
+    public void testAlreadyMigratedConfig() throws Exception {
+        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
 
+        JMSMessagingProvider config =
+                GlobalCIConfiguration.get().getConfigs().get(0);
+        ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
+        String topic = aconfig.getTopic();
+        assertTrue("topic is not CI", topic.equals("CI"));
+
+        AbstractProject triggerJob = (AbstractProject)j.getInstance().getItem("ci-trigger");
+
+        Trigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
+        assertNotNull(trigger);
+        assertNotNull(((CIBuildTrigger)triggerJob.getTrigger(CIBuildTrigger.class)).getProviderName());
+
+        FreeStyleProject notifierJob = (FreeStyleProject)j.getInstance().getItem("ci-notifier");
+
+        CIMessageBuilder builder = notifierJob.getBuildersList().get(CIMessageBuilder.class);
+        assertNotNull(builder);
+        assertNotNull(builder.getProviderName());
+
+        assertNotNull(notifierJob.getPublishersList());
+        CIMessageNotifier notifierPublisher = notifierJob.getPublishersList().get(CIMessageNotifier.class);
+        assertNotNull(notifierPublisher.getProviderName());
+
+        FreeStyleProject subscriberJob = (FreeStyleProject)j.getInstance().getItem("ci-message-subscriber");
+        CIMessageSubscriberBuilder subscriberBuilder =
+                subscriberJob.getBuildersList().get(CIMessageSubscriberBuilder.class);
+        assertNotNull(subscriberBuilder);
+        assertNotNull(subscriberBuilder.getProviderName());
 
     }
 }

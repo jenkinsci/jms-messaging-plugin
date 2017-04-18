@@ -45,7 +45,7 @@ public class MessageProviderMigrator {
     private static final Logger log = Logger.getLogger(MessageProviderMigrator.class.getName());
 
     private static boolean updateCIMessageBuilder(Project p, CIMessageBuilder builder) {
-        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+        if (builder.getProviderName() == null) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
@@ -59,7 +59,7 @@ public class MessageProviderMigrator {
     }
 
     private static boolean updateCIMessageBuilder(MatrixProject p, CIMessageBuilder builder) {
-        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+        if (builder.getProviderName() == null) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
@@ -73,7 +73,7 @@ public class MessageProviderMigrator {
     }
 
     private static boolean updateCIMessageNotifier(Project p, CIMessageNotifier builder) {
-        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+        if (builder.getProviderName() == null) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
@@ -87,7 +87,7 @@ public class MessageProviderMigrator {
     }
 
     private static boolean updateCIMessageNotifier(MatrixProject p, CIMessageNotifier builder) {
-        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+        if (builder.getProviderName() == null) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
@@ -101,7 +101,7 @@ public class MessageProviderMigrator {
     }
 
     private static boolean updateCIMessageSubscriberBuilder(Project p, CIMessageSubscriberBuilder builder) {
-        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+        if (builder.getProviderName() == null) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {
@@ -115,7 +115,7 @@ public class MessageProviderMigrator {
     }
 
     private static boolean updateCIMessageSubscriberBuilder(MatrixProject p, CIMessageSubscriberBuilder builder) {
-        if (builder.getProviderName() == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
+        if (builder.getProviderName() == null) {
             builder.setProviderName(GlobalCIConfiguration.get()
                     .getConfigs().get(0).getName());
             try {

@@ -122,8 +122,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	@Override
 	protected Object readResolve() throws ObjectStreamException {
-		if (providerName == null && GlobalCIConfiguration.get().isMigrationInProgress()) {
-			log.info("Provider is null and migration is in progress for providers...");
+		if (providerName == null) {
+			log.info("Provider is null for trigger for job");
 			JMSMessagingProvider provider = GlobalCIConfiguration.get()
 					.getConfigs().get(0);
 			if (provider != null) {
@@ -165,6 +165,13 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				job.save();
 			} catch (IOException e) {
 				log.warning("Exception while trying to save job: " + e.getMessage());
+			}
+		}
+		if (job instanceof AbstractProject) {
+			AbstractProject aJob = (AbstractProject) job;
+			if (aJob.isDisabled()) {
+				log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
+					return;
 			}
 		}
 		try {
