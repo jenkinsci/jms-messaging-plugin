@@ -5,7 +5,6 @@ node('docker') {
     /* Grab our source for this build */
     checkout scm
 
-
     String containerArgs = '-v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.m2:/var/maven/.m2'
     stage('Build') {
         /* Performing some clever trickery to map our ~/.m2 into the container */
@@ -26,15 +25,11 @@ node('docker') {
 
     }
 
-    def tDir = sh(script: 'mktemp -d', returnStdout: true).trim()
-    echo tDir
-    String runContainerArgs = "-e 'container=docker' -ti -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v ${tDir}:/run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.m2:/var/maven/.m2"
     stage('Test') {
-        docker.image('jenkins/ath').inside(runContainerArgs) {
-            sh 'docker ps'
+        docker.image('jenkins/ath').inside(containerArgs) {
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
-                mvn test -Dmaven.test.failure.ignore=true -Duser.home=/var/maven -Djenkins.version=2.7.3  -DforkCount=1 -B
+                mvn test -Dmaven.test.failure.ignore=true -Duser.home=/var/maven -Djenkins.version=2.7.3 -DforkCount=1 -B
             '''
         }
     }
