@@ -168,6 +168,15 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             connectiontmp.start();
         } catch (JMSException e) {
             log.severe("Unable to connect to " + provider.getBroker() + " " + e.getMessage());
+            // We need to close the connection that we attempted
+            // to start.
+            try {
+                if (connectiontmp != null) {
+                    connectiontmp.close();
+                }
+            } catch (JMSException e1) {
+                //swallow the exception
+            }
             return false;
         }
         log.info("Connection started");
