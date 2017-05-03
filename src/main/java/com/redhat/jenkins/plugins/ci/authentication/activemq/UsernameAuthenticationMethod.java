@@ -16,6 +16,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.jms.Connection;
+import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.servlet.ServletException;
 import java.util.logging.Level;
@@ -106,19 +107,32 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
                                                @QueryParameter("username") String username,
                                                @QueryParameter("password") String password) throws ServletException {
             broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
+            Session session = null;
+            Connection connection = null;
             if (broker != null && isValidURL(broker)) {
                 try {
                     UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
                     ActiveMQConnectionFactory connectionFactory = uam.getConnectionFactory(broker);
-                    Connection connection = connectionFactory.createConnection();
+                    connection = connectionFactory.createConnection();
                     connection.start();
-                    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                    session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     session.close();
                     connection.close();
                     return FormValidation.ok(Messages.SuccessBrokerConnect(broker));
                 } catch (Exception e) {
                     log.log(Level.SEVERE, "Unhandled exception in UsernameAuthenticationMethod.doTestConnection: ", e);
                     return FormValidation.error(Messages.Error() + ": " + e);
+                } finally {
+                    try {
+                        if (session != null) {
+                            session.close();
+                        }
+                        if (connection != null) {
+                            connection.close();
+                        }
+                    } catch (JMSException e) {
+                        //
+                    }
                 }
             } else {
                 return FormValidation.error(Messages.InvalidURI());
