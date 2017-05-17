@@ -8,7 +8,9 @@ The JMS Messaging Plugin provides the following functionality:
 
 JMS Messaging Providers
 
-* This plugin currently only supports ActiveMQ at the moment.
+* This plugin currently only supports:
+ * ActiveMQ
+ * FedMsg
 
 # Development
 
@@ -32,3 +34,23 @@ To run tests:
 ## CI
 
 This plugin is currently built on [ci.jenkins.io](https://ci.jenkins.io/job/Plugins/job/jms-messaging-plugin/).
+
+## Note surrounding certificates needed for FedMsg Message Signing
+
+* Clone https://github.com/fedora-infra/fedmsg
+* Checkout the *develop* branch.
+* Navigate to the *fedmsg/test/test_certs* folder.
+* Run the following:
+
+```
+source ./vars
+./clean-all
+./build-ca
+./build-and-sign-key <applicationName>
+```
+
+* The following files should be then collected:
+** *keys/ca.crt* (This is the CA cert that would need to be distributed to anyone who wants to listen securely to your message)
+** *keys/<applicationName>.crt* (This is the certificate that should be specified in the FedMsg Messaging Provider for Certificate.)
+** *keys/<applicationName>.key* (This is the private key that should be specified in the FedMsg Messaging Provider for Keystore.)
+

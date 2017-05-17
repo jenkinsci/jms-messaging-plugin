@@ -25,6 +25,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:f="/lib/form">
     <?jelly escape-by-default='true'?>
+
     <f:section title="Connection Properties">
         <f:entry title="Name" field="name">
           <f:textbox />
@@ -39,4 +40,17 @@
             <f:textbox />
         </f:entry>
     </f:section>
+
+    <f:section title="Messaging Signing">
+        <f:entry title="Sign Messages" field="shouldSign">
+          <f:checkbox />
+        </f:entry>
+        <f:entry title="Certificate File" field="certificateFile">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Keystore File" field="keystoreFile">
+            <f:textbox />
+        </f:entry>
+    </f:section>
+
 </j:jelly>

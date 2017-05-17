@@ -1,11 +1,38 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.jenkins.plugins.ci.messaging.data.SignedFedmsgMessage;
+import com.redhat.utils.MessageUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
-import hudson.model.TaskListener;
 import hudson.model.Run;
+import hudson.model.TaskListener;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.util.encoders.Base64;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
+import org.zeromq.jms.selector.ZmqMessageSelector;
+import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.StringReader;
+import java.security.PrivateKey;
+import java.security.Security;
+import java.security.Signature;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -16,23 +43,6 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import net.sf.json.JSONObject;
-
-import org.apache.commons.lang.text.StrSubstitutor;
-import org.apache.commons.lang3.StringUtils;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-import org.zeromq.jms.selector.ZmqMessageSelector;
-import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.utils.MessageUtils;
 
 /*
  * The MIT License
@@ -216,9 +226,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             data.getMsg().put("topic", data.getTopic());
                             ZmqMessageSelector selectorObj =
                                     ZmqSimpleMessageSelector.parse(selector);
-                            log.info("Evaluating selector: " + selectorObj.toString());
+                            log.fine("Evaluating selector: " + selectorObj.toString());
                             if (!selectorObj.evaluate(data.getMsg())) {
-                                log.info("false");
+                                log.fine("false");
                                 continue;
                             }
                             //check checks here
@@ -340,14 +350,45 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
             message.put(MESSAGECONTENTFIELD, sub.replace(content));
 
-            FedmsgMessage blob = new FedmsgMessage();
-            blob.setMsg(message);
-            blob.setTopic(getTopic());
-            blob.setTimestamp((new java.util.Date()).getTime() / 1000);
+            FedmsgMessage baseblob = new FedmsgMessage();
+            baseblob.setMsg(message);
+            baseblob.setTopic(getTopic());
+            baseblob.setTimestamp((new java.util.Date()).getTime() / 1000);
 
-            sock.sendMore(blob.getTopic());
-            sock.send(blob.toJson().toString());
-            log.fine(blob.toJson().toString());
+            FedmsgMessage blobToSend;
+            if (provider.getShouldSign()) {
+
+                String c = readCert(provider.getCertificateFile());
+                Security.addProvider(new BouncyCastleProvider());
+                try {
+                    String certString =
+                            new String(Base64.encode(c.getBytes()));
+
+                    PEMParser keyParser = new PEMParser(new FileReader(provider.getKeystoreFile()));
+                    JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+                    Signature signature = Signature.getInstance("SHA1WithRSA", "BC");
+                    Object obj = keyParser.readObject();
+                    PrivateKey privKey =
+                            converter.getPrivateKey((PrivateKeyInfo) obj);
+                    signature.initSign(privKey);
+                    signature.update(baseblob.toJson().toString().getBytes());
+                    byte[] signed = signature.sign();
+                    String signatureString = new String(Base64.encode(signed));
+                    SignedFedmsgMessage signedBlob = new SignedFedmsgMessage
+                            (baseblob, signatureString, certString);
+
+                    blobToSend = signedBlob;
+
+                } catch (Exception e) {
+                    throw e;
+                }
+            } else {
+                blobToSend = baseblob;
+            }
+
+            sock.sendMore(blobToSend.getTopic());
+            sock.send(blobToSend.toJson().toString());
+            log.info(blobToSend.toJson().toString());
 
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception: ", e);
@@ -358,6 +399,23 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         }
 
         return true;
+    }
+
+    private String readCert(String f) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(f));
+        String line;
+        String cert = "";
+        boolean readingCert = false;
+        while ((line = br.readLine()) != null) {
+            if (!readingCert && line.contains("----")) {
+                readingCert = true;
+                cert = cert.concat(line.concat("\n"));
+            } else if (readingCert) {
+                cert = cert.concat(line.concat("\n"));
+            }
+        }
+        br.close();
+        return cert;
     }
 
     @Override

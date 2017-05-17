@@ -1,0 +1,74 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+    Signature Algorithm: sha1WithRSAEncryption
+        Issuer: C=US, ST=NC, L=Raleigh, O=Fedora Project, OU=fedmsg, CN=fedmsg/name=fedmsg/emailAddress=admin@fedoraproject.org
+        Validity
+            Not Before: Jan 27 18:54:47 2017 GMT
+            Not After : Jan 25 18:54:47 2027 GMT
+        Subject: C=US, ST=NC, L=Raleigh, O=Fedora Project, OU=fedmsg, CN=jms-messaging/name=jms-messaging/emailAddress=admin@fedoraproject.org
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (1024 bit)
+                Modulus:
+                    00:c5:cc:92:0a:6f:dc:11:a3:29:ed:bd:70:34:b9:
+                    1c:96:78:84:5f:35:66:e0:21:fa:ed:75:96:bc:38:
+                    da:11:40:0a:de:3c:b0:39:1a:1f:77:39:49:2e:f1:
+                    be:14:71:f4:05:0b:0b:5d:c3:8d:ca:8c:91:62:2b:
+                    c5:3c:be:48:1e:2b:6d:9c:a6:c4:53:ca:25:10:9a:
+                    f2:a6:25:48:24:d8:f3:c0:84:83:96:61:f8:67:a3:
+                    62:ea:ae:a7:22:b8:64:48:2c:eb:be:a1:e3:b1:5d:
+                    f9:de:3c:f7:f3:b7:91:eb:45:73:3d:2e:34:ec:16:
+                    bf:0a:e3:e8:ac:c0:23:48:3d
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Comment: 
+                Easy-RSA Generated Certificate
+            X509v3 Subject Key Identifier: 
+                36:0F:BA:46:5B:88:05:AE:10:9C:E6:98:72:76:8E:F7:07:6F:82:4D
+            X509v3 Authority Key Identifier: 
+                keyid:9F:10:99:F0:70:16:44:6A:54:EB:BD:25:39:28:44:09:39:67:F0:D1
+                DirName:/C=US/ST=NC/L=Raleigh/O=Fedora Project/OU=fedmsg/CN=fedmsg/name=fedmsg/emailAddress=admin@fedoraproject.org
+                serial:E9:6B:A5:5D:37:37:DB:4A
+
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication
+            X509v3 Key Usage: 
+                Digital Signature
+    Signature Algorithm: sha1WithRSAEncryption
+         94:d1:9b:48:16:37:6b:57:de:47:df:c8:f7:54:17:01:b2:57:
+         9a:b9:fb:ac:db:a1:a2:4c:16:18:ca:3f:63:e7:31:40:b6:46:
+         50:0b:91:91:db:cf:50:f5:b6:15:e8:d8:ce:fe:6b:c9:2b:fb:
+         54:6a:e3:43:59:ea:74:54:55:90:20:62:50:10:06:94:86:b4:
+         44:43:e4:ef:64:df:9c:52:1a:3e:06:77:72:c9:c8:60:f8:62:
+         57:bf:f0:b9:f8:c6:9c:43:22:0e:74:11:77:9c:51:ca:31:72:
+         7d:42:a7:20:4e:35:53:85:18:ea:f3:19:1e:95:3f:b3:77:e0:
+         b6:a9
+-----BEGIN CERTIFICATE-----
+MIIEHzCCA4igAwIBAgIBATANBgkqhkiG9w0BAQUFADCBoDELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgTAk5DMRAwDgYDVQQHEwdSYWxlaWdoMRcwFQYDVQQKEw5GZWRvcmEg
+UHJvamVjdDEPMA0GA1UECxMGZmVkbXNnMQ8wDQYDVQQDEwZmZWRtc2cxDzANBgNV
+BCkTBmZlZG1zZzEmMCQGCSqGSIb3DQEJARYXYWRtaW5AZmVkb3JhcHJvamVjdC5v
+cmcwHhcNMTcwMTI3MTg1NDQ3WhcNMjcwMTI1MTg1NDQ3WjCBrjELMAkGA1UEBhMC
+VVMxCzAJBgNVBAgTAk5DMRAwDgYDVQQHEwdSYWxlaWdoMRcwFQYDVQQKEw5GZWRv
+cmEgUHJvamVjdDEPMA0GA1UECxMGZmVkbXNnMRYwFAYDVQQDEw1qbXMtbWVzc2Fn
+aW5nMRYwFAYDVQQpEw1qbXMtbWVzc2FnaW5nMSYwJAYJKoZIhvcNAQkBFhdhZG1p
+bkBmZWRvcmFwcm9qZWN0Lm9yZzCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA
+xcySCm/cEaMp7b1wNLkclniEXzVm4CH67XWWvDjaEUAK3jywORofdzlJLvG+FHH0
+BQsLXcONyoyRYivFPL5IHittnKbEU8olEJrypiVIJNjzwISDlmH4Z6Ni6q6nIrhk
+SCzrvqHjsV353jz387eR60VzPS407Ba/CuPorMAjSD0CAwEAAaOCAVcwggFTMAkG
+A1UdEwQCMAAwLQYJYIZIAYb4QgENBCAWHkVhc3ktUlNBIEdlbmVyYXRlZCBDZXJ0
+aWZpY2F0ZTAdBgNVHQ4EFgQUNg+6RluIBa4QnOaYcnaO9wdvgk0wgdUGA1UdIwSB
+zTCByoAUnxCZ8HAWRGpU670lOShECTln8NGhgaakgaMwgaAxCzAJBgNVBAYTAlVT
+MQswCQYDVQQIEwJOQzEQMA4GA1UEBxMHUmFsZWlnaDEXMBUGA1UEChMORmVkb3Jh
+IFByb2plY3QxDzANBgNVBAsTBmZlZG1zZzEPMA0GA1UEAxMGZmVkbXNnMQ8wDQYD
+VQQpEwZmZWRtc2cxJjAkBgkqhkiG9w0BCQEWF2FkbWluQGZlZG9yYXByb2plY3Qu
+b3JnggkA6WulXTc320owEwYDVR0lBAwwCgYIKwYBBQUHAwIwCwYDVR0PBAQDAgeA
+MA0GCSqGSIb3DQEBBQUAA4GBAJTRm0gWN2tX3kffyPdUFwGyV5q5+6zboaJMFhjK
+P2PnMUC2RlALkZHbz1D1thXo2M7+a8kr+1Rq40NZ6nRUVZAgYlAQBpSGtERD5O9k
+35xSGj4Gd3LJyGD4Yle/8Ln4xpxDIg50EXecUcoxcn1CpyBONVOFGOrzGR6VP7N3
+4Lap
+-----END CERTIFICATE-----
