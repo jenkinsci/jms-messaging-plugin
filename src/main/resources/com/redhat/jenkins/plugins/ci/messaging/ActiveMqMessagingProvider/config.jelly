@@ -34,10 +34,12 @@
     <f:entry title="${%Topic name}" field="topic">
       <f:textbox />
     </f:entry>
-    <f:descriptorRadioList title="${%Authentication Method}"
-                         descriptors="${descriptor.getAuthenticationMethodDescriptors()}"
-                         instance="${instance.authenticationMethod}"
-                         varName="authenticationMethod"/>
+    <f:dropdownDescriptorSelector title="${%Topic provider}"
+                                  field="topicProvider"
+                                  descriptors="${descriptor.getTopicProviderDescriptors()}" />
+    <f:dropdownDescriptorSelector title="${%Authentication Method}"
+                                  field="authenticationMethod"
+                                  descriptors="${descriptor.getAuthenticationMethodDescriptors()}" />
   </f:section>
 </j:jelly>
 

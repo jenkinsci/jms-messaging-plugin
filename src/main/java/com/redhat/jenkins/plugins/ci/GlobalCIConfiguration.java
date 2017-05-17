@@ -1,16 +1,8 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.model.Failure;
 import hudson.util.Secret;
-import jenkins.model.GlobalConfiguration;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +10,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
+
+import jenkins.model.GlobalConfiguration;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.StaplerRequest;
+
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
 
 /*
  * The MIT License
@@ -89,7 +94,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                 if (getProvider(DEFAULT_PROVIDER)==null) {
                     log.info("There is no default Message Provider.");
                     configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER,
-                            broker, topic, new UsernameAuthenticationMethod(user, password)));
+                            broker, topic, new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
                     log.info("Added default Message Provider using deprecated configuration.");
                     setMigrationInProgress(true);
                 } else {
@@ -104,6 +109,9 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                     ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
                     if (aconfig.IsMigrationInProgress()) {
                         log.info("Migration in progress for ActiveMqMessagingProvider " + aconfig.getName());
+                    }
+                    if (aconfig.getTopicProvider() == null) {
+                        aconfig.setTopicProvider(new DefaultTopicProvider());
                     }
                 }
             }
@@ -175,4 +183,33 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         return null;
     }
 
+    // Jelly helper routines.
+    public Boolean getFirstProviderOverrides() {
+        return getFirstProviderOverrideTopic().length() > 0;
+    }
+
+    public String getFirstProviderOverrideTopic() {
+        if (configs != null && configs.size() > 0) {
+            JMSMessagingProvider prov = configs.get(0);
+            if (prov instanceof ActiveMqMessagingProvider) {
+                TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider) prov).getTopicProvider().getDescriptor();
+                return tpd.generateSubscriberTopic();
+            }
+        }
+        return "";
+    }
+
+    public boolean getFirstProviderSupportsTopicOverrides() {
+        if (configs != null && configs.size() > 0 && configs.get(0) instanceof ActiveMqMessagingProvider) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean getProviderSupportsTopicOverrides(String name) {
+        if (configs != null && configs.size() > 0 && getProvider(name) instanceof ActiveMqMessagingProvider) {
+            return true;
+        }
+        return false;
+    }
 }
