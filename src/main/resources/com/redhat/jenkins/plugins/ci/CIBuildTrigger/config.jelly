@@ -31,17 +31,16 @@
     <j:choose>
       <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
       <j:when test="${empty(instance)}">
-        <j:set var="display" value="display: ${gdescriptor.getFirstProviderSupportsTopicOverrides()?'':'none'};"/>
+
         <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
         <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic();}"/>
       </j:when>
       <j:otherwise>
-        <j:set var="display" value="display: ${gdescriptor.getProviderSupportsTopicOverrides(instance.getProviderName())?'':'none'};"/>
         <j:set var="checked" value="${instance.getOverrides() != null}"/>
         <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
       </j:otherwise>
     </j:choose>
-    <table style="${display}" >
+    <table>
       <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
         <f:entry title="${%Topic name}" field="topic">
           <f:textbox value="${value}"/>

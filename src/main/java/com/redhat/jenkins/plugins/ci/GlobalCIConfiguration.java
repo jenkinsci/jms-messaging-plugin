@@ -109,9 +109,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                     ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
                     if (aconfig.IsMigrationInProgress()) {
                         log.info("Migration in progress for ActiveMqMessagingProvider " + aconfig.getName());
-                    }
-                    if (aconfig.getTopicProvider() == null) {
-                        aconfig.setTopicProvider(new DefaultTopicProvider());
+                        setMigrationInProgress(true);
                     }
                 }
             }
@@ -197,19 +195,5 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             }
         }
         return "";
-    }
-
-    public boolean getFirstProviderSupportsTopicOverrides() {
-        if (configs != null && configs.size() > 0 && configs.get(0) instanceof ActiveMqMessagingProvider) {
-            return true;
-        }
-        return false;
-    }
-
-    public boolean getProviderSupportsTopicOverrides(String name) {
-        if (configs != null && configs.size() > 0 && getProvider(name) instanceof ActiveMqMessagingProvider) {
-            return true;
-        }
-        return false;
     }
 }

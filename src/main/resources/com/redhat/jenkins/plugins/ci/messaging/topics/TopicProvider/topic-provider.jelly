@@ -40,10 +40,7 @@
           
           var cb = t.querySelector("tr input[name='_.overrides']");
           var tb = t.querySelector("tr input[name='_.topic']");
-          // Reset parent table to be the parent table of the checkbox (to toggle display).
-          t = getParentByTag(cb, 'TABLE');          
           if (pmap[prov.value]) {             
-              t.style.display = '';
               var xhttp = new XMLHttpRequest();
               xhttp.onreadystatechange = function() {
                   if (this.readyState == 4 &amp;&amp; this.status == 200) {
@@ -57,11 +54,10 @@
               xhttp.open("GET", pmap[prov.value][type], true);
               xhttp.send();
           } else {
-              t.style.display = 'none';
               if (cb.checked) {
                   cb.click();
               }
-              tb.topic = "";
+              tb.value = "";
           }
       }
       

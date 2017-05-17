@@ -71,6 +71,10 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
             log.info("Added default username/password authentication method using deprecated configuration.");
             setMigrationInProgress(true);
         }
+        if (topicProvider == null) {
+            topicProvider = new DefaultTopicProvider();
+            setMigrationInProgress(true);
+        }
         return this;
     }
 
