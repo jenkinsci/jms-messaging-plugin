@@ -231,13 +231,14 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         int currentThreadCount = getCurrentAMQThreadCount();
         System.out.println("Current AMQ Thread Count: " + currentThreadCount);
         int counter = 0;
-        int MAXWAITTIME = 60;
+        int MAXWAITTIME = 120;
         while (abs(currentThreadCount- previousThreadCount) > 2 &&
                 counter < MAXWAITTIME ) {
             System.out.println("abs(currentThreadCount- previousThreadCount) > 2");
             System.out.println(abs(currentThreadCount- previousThreadCount));
             elasticSleep(1000);
             counter++;
+            System.out.println("Elapsed time waiting: " + counter + " sec(s)");
             currentThreadCount = getCurrentAMQThreadCount();
         }
         boolean equal = abs(currentThreadCount- previousThreadCount) <= 2;
