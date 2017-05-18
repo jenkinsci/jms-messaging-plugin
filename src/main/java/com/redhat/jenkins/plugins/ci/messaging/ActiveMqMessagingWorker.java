@@ -1,6 +1,8 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
+
+import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -399,7 +401,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         MessageProducer publisher = null;
 
         try {
-            String ltopic = getTopic();
+            String ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
