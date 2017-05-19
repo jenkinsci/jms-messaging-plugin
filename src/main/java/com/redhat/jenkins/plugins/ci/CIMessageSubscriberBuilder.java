@@ -139,7 +139,7 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
         JMSMessagingWorker worker =
                 provider.createWorker(overrides, build.getParent().getName());
-        return worker.waitForMessage(build, selector, variable, timeout);
+        return worker.waitForMessage(build, listener, selector, variable, timeout);
     }
 
     @Override

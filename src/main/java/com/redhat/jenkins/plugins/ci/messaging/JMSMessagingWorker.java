@@ -55,7 +55,9 @@ public abstract class JMSMessagingWorker {
                                      String props,
                                      String content);
 
-    public abstract String waitForMessage(Run<?, ?> build, String selector,
+    public abstract String waitForMessage(Run<?, ?> build,
+                                          TaskListener listener,
+                                          String selector,
                                           String variable, Integer timeout);
 
     public void trigger(String jobname, String messageSummary,
