@@ -1,10 +1,12 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.Date;
 import java.util.Enumeration;
@@ -342,7 +344,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
             FedmsgMessage blob = new FedmsgMessage();
             blob.setMsg(message);
-            blob.setTopic(getTopic());
+            blob.setTopic(PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener)));
             blob.setTimestamp((new java.util.Date()).getTime() / 1000);
 
             sock.sendMore(blob.getTopic());
@@ -361,13 +363,23 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public String waitForMessage(Run<?, ?> build, String selector, String variable, Integer timeout) {
+    public String waitForMessage(Run<?, ?> build, TaskListener listener,
+                                 String selector, String variable, Integer timeout) {
         log.info("Waiting for message with selector: " + selector);
         ZMQ.Context lcontext = ZMQ.context(1);
         ZMQ.Poller lpoller = new ZMQ.Poller(1);
         ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
 
-        lsocket.subscribe(getTopic().getBytes());
+        String ltopic = getTopic();
+        try {
+            ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
+        } catch (IOException e) {
+            log.warning(e.getMessage());
+        } catch (InterruptedException e) {
+            log.warning(e.getMessage());
+        }
+
+        lsocket.subscribe(ltopic.getBytes());
         lsocket.setLinger(0);
         lsocket.connect(provider.getHubAddr());
         lpoller.register(lsocket, ZMQ.Poller.POLLIN);

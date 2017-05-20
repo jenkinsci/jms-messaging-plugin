@@ -187,13 +187,46 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
         wait.script.set("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
                 "selector: " +
-                " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}");
+                " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
+                " topic: 'otopic'" +
+                "\necho \"scott = \" + scott}");
         wait.save();
         wait.startBuild();
 
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
         send.script.set("node('master') {\n sendCIMessage" +
                 " providerName: 'test', " +
+                " topic: 'otopic'," +
+                " messageContent: 'abcdefg', " +
+                " messageProperties: 'CI_STATUS = failed'," +
+                " messageType: 'CodeQualityChecksDone'}");
+        send.save();
+        send.startBuild().shouldSucceed();
+        send.getLastBuild().getConsole().contains("scott = abcdefg");
+
+        elasticSleep(1000);
+        wait.getLastBuild().shouldSucceed();
+
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventSendAndWaitPipelineWithVariableTopic() throws Exception {
+        WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
+        wait.script.set("node('master') {\n env.MY_TOPIC = 'my-topic'\n " +
+                " def scott = waitForCIMessage providerName: 'test'," +
+                "selector: " +
+                " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
+                " topic: '$MY_TOPIC'" +
+                "\necho \"scott = \" + scott}");
+        wait.save();
+        wait.startBuild();
+
+        WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
+        send.script.set("node('master') {\n env.MY_TOPIC = 'my-topic'\n " +
+                " sendCIMessage" +
+                " providerName: 'test', " +
+                " topic: '$MY_TOPIC'," +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}");
@@ -396,6 +429,37 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ciEvent.overrides.check();
+        ciEvent.topic.set("my-topic");
+        jobA.save();
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        StringParameter p = jobB.addParameter(StringParameter.class);
+        p.setName("MY_TOPIC");
+        p.setDefault("my-topic");
+
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("$MY_TOPIC");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    @Test
     public void testSimpleCIEventSubscribe() throws Exception, InterruptedException {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
@@ -549,5 +613,39 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content"));
+    }
+
+    @Test
+    public void testSimpleCIEventSubscribeWithTopicOverrideAndVariableTopic() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        StringParameter p = jobA.addParameter(StringParameter.class);
+        p.setName("MY_TOPIC");
+        p.setDefault("my-topic");
+
+        CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
+        subscriber.overrides.check();
+        subscriber.topic.set("$MY_TOPIC");
+        subscriber.selector.set("CI_TYPE = 'code-quality-checks-done'");
+        subscriber.variable.set("HELLO");
+
+        jobA.addShellStep("echo $HELLO");
+        jobA.save();
+        jobA.scheduleBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("my-topic");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set("Hello World");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("Hello World"));
     }
 }

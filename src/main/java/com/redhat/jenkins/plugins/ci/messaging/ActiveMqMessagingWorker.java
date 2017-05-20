@@ -1,11 +1,14 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
+
+import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
@@ -399,7 +402,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         MessageProducer publisher = null;
 
         try {
-            String ltopic = getTopic();
+            String ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
@@ -468,7 +471,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public String waitForMessage(Run<?, ?> build, String selector, String variable, Integer timeout) {
+    public String waitForMessage(Run<?, ?> build, TaskListener listener,
+                                 String selector, String variable, Integer timeout) {
         String ip = null;
         try {
             ip = Inet4Address.getLocalHost().getHostAddress();
@@ -477,6 +481,14 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
 
         String ltopic = getTopic();
+        try {
+            ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
+        } catch (IOException e) {
+            log.warning(e.getMessage());
+        } catch (InterruptedException e) {
+            log.warning(e.getMessage());
+        }
+
         if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 log.info("Waiting for message with selector: " + selector);
                 Connection connection = null;
