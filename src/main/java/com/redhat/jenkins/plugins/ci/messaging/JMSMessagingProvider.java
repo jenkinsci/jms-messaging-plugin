@@ -42,6 +42,10 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
         return name;
     }
 
+    public JMSMessagingWorker createWorker(String jobname) {
+        return createWorker(null, jobname);
+    }
+
     public abstract JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname);
 
     @Override
