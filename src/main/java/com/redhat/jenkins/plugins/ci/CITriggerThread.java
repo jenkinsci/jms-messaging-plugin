@@ -57,10 +57,12 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
     public void sendInterrupt() {
         messagingWorker.prepareForInterrupt();
         this.interrupt();
-        try {
-            this.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (this.isInterrupted()) {
+            try {
+                this.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
