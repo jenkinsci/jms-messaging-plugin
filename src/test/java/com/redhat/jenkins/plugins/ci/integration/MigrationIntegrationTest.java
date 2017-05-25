@@ -1,6 +1,12 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assume.assumeThat;
+
+import java.io.File;
+
+import javax.inject.Inject;
+
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.test.acceptance.controller.JenkinsController;
 import org.jenkinsci.test.acceptance.controller.LocalController;
@@ -9,12 +15,7 @@ import org.jenkinsci.test.acceptance.junit.WithPlugins;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.junit.Test;
 
-import javax.inject.Inject;
-
-import java.io.File;
-
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assume.assumeThat;
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 
 /*
  * The MIT License

@@ -70,10 +70,10 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
     }
 
     public ActiveMqMessagingProvider userNameAuthentication(String user, String password) {
-        Control radio = control("/authenticationMethod[1]");
-        radio.click();
-        control("/authenticationMethod[1]/username").set(user);
-        control("/authenticationMethod[1]/password").set(password);
+        Control select = control("/[1]");
+        select.select("1");
+        control("/authenticationMethod/username").set(user);
+        control("/authenticationMethod/password").set(password);
         return this;
     }
 
@@ -81,12 +81,12 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
                                                            String keystorePass,
                                                            String trustStore,
                                                            String trustStorePass) {
-        Control radio = control("/authenticationMethod[0]");
-        radio.click();
-        control("/authenticationMethod[0]/keystore").set(keystore);
-        control("/authenticationMethod[0]/keypwd").set(keystorePass);
-        control("/authenticationMethod[0]/truststore").set(trustStore);
-        control("/authenticationMethod[0]/trustpwd").set(trustStorePass);
+        Control select = control("/[0]");
+        select.select("0");
+        control("/authenticationMethod/keystore").set(keystore);
+        control("/authenticationMethod/keypwd").set(keystorePass);
+        control("/authenticationMethod/truststore").set(trustStore);
+        control("/authenticationMethod/trustpwd").set(trustStorePass);
         return this;
     }
 }

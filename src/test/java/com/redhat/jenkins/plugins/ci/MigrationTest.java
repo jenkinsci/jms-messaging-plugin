@@ -1,21 +1,23 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import static junit.framework.TestCase.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import hudson.matrix.MatrixProject;
+import hudson.model.Item;
 import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
-import hudson.model.Item;
 import hudson.triggers.Trigger;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.recipes.LocalData;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 
 /**
  * Created by shebert on 07/12/16.
@@ -37,13 +39,14 @@ public class MigrationTest {
         assertTrue(aconfig.getAuthenticationMethod() instanceof UsernameAuthenticationMethod);
         UsernameAuthenticationMethod authMethod = (UsernameAuthenticationMethod) aconfig.getAuthenticationMethod();
         assertEquals("username should be scott", "scott", authMethod.getUsername());
+        assertTrue(aconfig.getTopicProvider() instanceof DefaultTopicProvider);
 
         GlobalCIConfiguration newGlobalConfig = new GlobalCIConfiguration();
         JMSMessagingProvider config2 = newGlobalConfig.getConfigs().get(0);
         ActiveMqMessagingProvider aconfig2 = (ActiveMqMessagingProvider) config2;
         assertNotNull(aconfig2.getAuthenticationMethod());
     }
-    
+
     @LocalData
     @Test
     public void testOtherJobTypes() throws Exception {
@@ -108,6 +111,8 @@ public class MigrationTest {
         ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
         String topic = aconfig.getTopic();
         assertTrue("topic is not CI", topic.equals("CI"));
+
+        assertTrue(aconfig.getTopicProvider() instanceof DefaultTopicProvider);
 
         AbstractProject triggerJob = (AbstractProject)j.getInstance().getItem("ci-trigger");
 

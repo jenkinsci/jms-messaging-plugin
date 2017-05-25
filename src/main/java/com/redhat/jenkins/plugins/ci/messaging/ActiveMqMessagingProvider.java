@@ -17,6 +17,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod.AuthenticationMethodDescriptor;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
 
 /*
  * The MIT License
@@ -48,14 +51,16 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     private transient String user;
     private transient Secret password;
     private transient boolean migrationInProgress = false;
+    private TopicProvider topicProvider= new DefaultTopicProvider();
     private ActiveMQAuthenticationMethod authenticationMethod;
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
 
     @DataBoundConstructor
-    public ActiveMqMessagingProvider(String name, String broker, String topic, ActiveMQAuthenticationMethod authenticationMethod) {
+    public ActiveMqMessagingProvider(String name, String broker, String topic, TopicProvider topicProvider, ActiveMQAuthenticationMethod authenticationMethod) {
         this.name = name;
         this.broker = broker;
         this.topic = topic;
+        this.topicProvider = topicProvider;
         this.authenticationMethod = authenticationMethod;
     }
 
@@ -66,10 +71,14 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
             log.info("Added default username/password authentication method using deprecated configuration.");
             setMigrationInProgress(true);
         }
+        if (topicProvider == null) {
+            topicProvider = new DefaultTopicProvider();
+            setMigrationInProgress(true);
+        }
         return this;
     }
 
-        @DataBoundSetter
+    @DataBoundSetter
     public void setBroker(String broker) {
         this.broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
     }
@@ -77,6 +86,11 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     @DataBoundSetter
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    @DataBoundSetter
+    public void setTopicProvider(TopicProvider topicProvider) {
+        this.topicProvider = topicProvider;
     }
 
     @DataBoundSetter
@@ -95,6 +109,10 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     public String getTopic() {
         return topic;
+    }
+
+    public TopicProvider getTopicProvider() {
+        return topicProvider;
     }
 
     public ActiveMQAuthenticationMethod getAuthenticationMethod() {
@@ -129,6 +147,10 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         @Override
         public String getDisplayName() {
             return "Active MQ";
+        }
+
+        public ExtensionList<TopicProviderDescriptor> getTopicProviderDescriptors() {
+            return TopicProviderDescriptor.all();
         }
 
         public ExtensionList<AuthenticationMethodDescriptor> getAuthenticationMethodDescriptors() {
