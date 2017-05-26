@@ -205,6 +205,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         if (thread != null) {
             try {
                 thread.sendInterrupt();
+                thread.interrupt();
+                thread.join();
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
             }
