@@ -91,4 +91,9 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
             SecurityContextHolder.setContext(old);
         }
     }
+
+    public boolean isMessageProviderConnected() {
+        if (messagingWorker == null) return false;
+        return messagingWorker.isConnected();
+    }
 }
