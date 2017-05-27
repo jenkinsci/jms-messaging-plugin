@@ -44,6 +44,9 @@ public class ProjectChangeListener extends ItemListener {
             if (item instanceof AbstractProject) {
                 AbstractProject project = (AbstractProject) item;
                 CITriggerThread triggerThread = CIBuildTrigger.triggerInfo.get(item.getFullName());
+                if (triggerThread == null) {
+                    log.info("Getting thread: " + triggerThread.getId());
+                }
                 if (triggerThread != null && project.isDisabled()) {
                     // there is a trigger thread AND it is disabled. we stop it.
                     log.info("Job " + item.getFullName() + " may have been previously been enabled." +
