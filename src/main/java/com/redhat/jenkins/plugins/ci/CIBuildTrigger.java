@@ -188,7 +188,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
 			trigger.setDaemon(true);
 			trigger.start();
-			log.info("Adding thread: " + trigger.getId());
+			log.fine("Adding thread: " + trigger.getId());
 			triggerInfo.put(job.getFullName(), trigger);
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Unhandled exception in trigger start.", e);
@@ -204,11 +204,11 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
     private void stopTriggerThread(String fullName) {
         CITriggerThread thread = triggerInfo.get(fullName);
         if (thread != null) {
-            log.info("Getting thread: " + thread.getId());
+            log.fine("Getting thread: " + thread.getId());
             try {
                 int waitCount = 0;
                 while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
-                    log.info("Thread " + thread.getId() + ": Message Provider is NOT connected. Sleeping 1 sec");
+                    log.fine("Thread " + thread.getId() + ": Message Provider is NOT connected. Sleeping 1 sec");
                     Thread.sleep(1000);
                     waitCount++;
                 }
@@ -218,8 +218,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 thread.sendInterrupt();
                 thread.interrupt();
                 if (thread.isMessageProviderConnected()) {
-                    log.info("Thread " + thread.getId() + ": Message Provider is connected");
-                    log.info("Thread " + thread.getId() + ": trying to join");
+                    log.fine("Thread " + thread.getId() + ": Message Provider is connected");
+                    log.fine("Thread " + thread.getId() + ": trying to join");
                     thread.join();
                 } else {
                     log.warning("Thread " + thread.getId() + " Message Provider is NOT connected; skipping join!");
@@ -230,7 +230,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         }
         CITriggerThread thread2 = triggerInfo.remove(fullName);
         if (thread2 != null) {
-            log.info("Removed thread: " + thread2.getId());
+            log.fine("Removed thread: " + thread2.getId());
         }
     }
 
