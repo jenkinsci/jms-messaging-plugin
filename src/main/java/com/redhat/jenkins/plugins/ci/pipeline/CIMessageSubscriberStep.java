@@ -1,5 +1,7 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.TaskListener;
@@ -7,6 +9,7 @@ import hudson.model.Run;
 
 import javax.inject.Inject;
 
+import hudson.util.ListBoxModel;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
@@ -132,6 +135,14 @@ public class CIMessageSubscriberStep extends AbstractStepImpl {
      */
     @Extension(optional = true)
     public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+
+        public ListBoxModel doFillProviderNameItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+                items.add(provider.getName());
+            }
+            return items;
+        }
 
         /**
          * Constructor.

@@ -23,25 +23,32 @@
      * THE SOFTWARE.
      */
   -->
-    <f:entry title="${%Messaging Provider}" field="providerName">
-        <f:select/>
-    </f:entry>
-    <f:nested>
-      <table>
-        <f:optionalBlock field="overrides" title="Override provider topic" checked="${instance.getOverrides() != null}">
-          <f:entry title="${%Topic name}" field="topic">
-            <f:textbox value="${instance.getOverrides().getTopic();}"/>
-          </f:entry>
-        </f:optionalBlock>
-      </table>
-    </f:nested>
-    <f:entry title="${%JMS selector}" field="selector">
-        <f:textbox name="selector"/>
-    </f:entry>
-    <f:entry title="${%Variable}" field="variable">
-        <f:textbox name="variable"/>
-    </f:entry>
-    <f:entry title="${%Timeout}" field="timeout">
-        <f:textbox name="timeout" default="${descriptor.getDefaultTimeout()}"/>
-    </f:entry>
+  <f:entry title="${%Messaging Provider}" field="providerName">
+      <f:select onchange="javascript: onProviderChange(this, 'subscriber');"/>
+  </f:entry>
+  <f:nested>
+    <j:choose>
+      <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
+      <j:when test="${empty(instance)}">
+        <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
+        <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic();}"/>
+      </j:when>
+      <j:otherwise>
+        <j:set var="checked" value="${instance.getOverrides() != null}"/>
+        <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
+      </j:otherwise>
+    </j:choose>
+    <table>
+      <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
+        <f:entry title="${%Topic name}" field="topic">
+          <f:textbox value="${value}"/>
+        </f:entry>
+      </f:optionalBlock>
+    </table>
+  </f:nested>
+  <f:entry title="${%JMS selector}" field="selector">
+    <f:expandableTextbox />
+  </f:entry>
+
+  <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>
