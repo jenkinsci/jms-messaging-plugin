@@ -505,7 +505,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         notifier.messageType.select("CodeQualityChecksDone");
         notifier.messageProperties.sendKeys("PARAMETER = my parameter");
-        notifier.messageContent.set("This is my content");
+        notifier.messageContent.set("This is my content with ${PARAMETER}");
 
         jobB.save();
         jobB.startBuild().shouldSucceed();
@@ -513,7 +513,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("my parameter"));
-        assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content"));
+        assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content with my parameter"));
     }
 
     @Test
