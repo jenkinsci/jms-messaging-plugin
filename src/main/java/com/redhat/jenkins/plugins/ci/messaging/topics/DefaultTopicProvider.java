@@ -27,11 +27,11 @@ public class DefaultTopicProvider extends TopicProvider {
         }
 
         public String generatePublisherTopic() {
-            return null;
+            return "";
          }
 
         public String generateSubscriberTopic() {
-            return null;
+            return "";
          }
     }
 }
