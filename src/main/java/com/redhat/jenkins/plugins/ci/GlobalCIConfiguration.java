@@ -1,6 +1,9 @@
 package com.redhat.jenkins.plugins.ci;
 
 import hudson.Extension;
+import hudson.ExtensionList;
+import hudson.PluginManager;
+import hudson.PluginWrapper;
 import hudson.model.Failure;
 import hudson.util.Secret;
 
@@ -12,9 +15,11 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -23,6 +28,8 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
+
+import javax.annotation.Nonnull;
 
 /*
  * The MIT License
@@ -46,8 +53,11 @@ import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProvide
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */@Extension
+ */
+@Extension
 public final class GlobalCIConfiguration extends GlobalConfiguration {
+
+    public static final String DEFAULT_PROVIDER = "default";
 
     private transient String broker;
     private transient String topic;
@@ -55,12 +65,8 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     private transient Secret password;
     private transient boolean migrationInProgress = false;
 
-    private static final String PLUGIN_NAME = Messages.PluginName();
 
-    public static final GlobalCIConfiguration EMPTY_CONFIG =
-            new GlobalCIConfiguration(Collections.<JMSMessagingProvider>emptyList());
     private List<JMSMessagingProvider> configs = new ArrayList<JMSMessagingProvider>();
-    public static final String DEFAULT_PROVIDER = "default";
 
     public boolean isMigrationInProgress() {
         return migrationInProgress;
@@ -71,7 +77,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     /**
-
      * The string in global configuration that indicates content is empty.
      */
     public static final String CONTENT_NONE = "-";
@@ -82,6 +87,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         this.configs = configs;
     }
 
+    @DataBoundConstructor
     public GlobalCIConfiguration() {
         load();
     }
@@ -91,7 +97,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             log.info("Legacy Message Provider Broker value is not null.");
             if (configs.size() == 0) {
                 log.info("Current Message Provider size is 0.");
-                if (getProvider(DEFAULT_PROVIDER)==null) {
+                if (getProvider(DEFAULT_PROVIDER) == null) {
                     log.info("There is no default Message Provider.");
                     configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER,
                             broker, topic, new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
@@ -104,7 +110,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         }
         // Examine providers
         if (configs != null) {
-            for (JMSMessagingProvider config: configs) {
+            for (JMSMessagingProvider config : configs) {
                 if (config instanceof ActiveMqMessagingProvider) {
                     ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
                     if (aconfig.IsMigrationInProgress()) {
@@ -168,17 +174,22 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     @Override
     public String getDisplayName() {
-        return PLUGIN_NAME;
+        return Messages.PluginName();
     }
 
-
-    public static GlobalCIConfiguration get() {
-        try {
-            return (GlobalConfiguration.all() == null ? null : GlobalConfiguration.all().get(GlobalCIConfiguration.class));
-        } catch (Exception e) {
-            log.warning("Unable to get global configuration.");
+    public static @Nonnull GlobalCIConfiguration get() {
+        ExtensionList<GlobalConfiguration> all = GlobalConfiguration.all();
+        GlobalCIConfiguration c = all.get(GlobalCIConfiguration.class);
+        if (c == null) {
+            GlobalConfiguration registered = all.getDynamic(GlobalCIConfiguration.class.getCanonicalName());
+            if (registered != null) {
+                PluginManager pm = Jenkins.getInstance().pluginManager;
+                PluginWrapper source = pm.whichPlugin(registered.getClass());
+                throw new AssertionError("Version mismatch: GlobalCIConfiguration provided by other plugin: " + source);
+            }
+            throw new AssertionError("GlobalCIConfiguration is not registered: " + all);
         }
-        return null;
+        return c;
     }
 
     // Jelly helper routines.
