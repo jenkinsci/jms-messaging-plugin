@@ -518,6 +518,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
         if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 log.info("Waiting for message with selector: " + selector);
+                listener.getLogger().println("Waiting for message with selector: " + selector);
                 Connection connection = null;
                 MessageConsumer consumer = null;
                 try {
@@ -542,9 +543,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                             }
                         }
                         log.info("Received message with selector: " + selector + "\n" + formatMessage(message));
+                        listener.getLogger().println("Received message with selector: " + selector + "\n" + formatMessage(message));
                         return value;
                     }
                     log.info("Timed out waiting for message!");
+                    listener.getLogger().println("Timed out waiting for message!");
                 } catch (Exception e) {
                     log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
                 } finally {

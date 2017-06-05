@@ -393,6 +393,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     public String waitForMessage(Run<?, ?> build, TaskListener listener,
                                  String selector, String variable, Integer timeout) {
         log.info("Waiting for message with selector: " + selector);
+        listener.getLogger().println("Waiting for message with selector: " + selector);
         ZMQ.Context lcontext = ZMQ.context(1);
         ZMQ.Poller lpoller = new ZMQ.Poller(1);
         ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
@@ -427,6 +428,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             ZmqMessageSelector selectorObj =
                                     ZmqSimpleMessageSelector.parse(selector);
                             log.info("Evaluating selector: " + selectorObj.toString());
+                            listener.getLogger().println("Evaluating selector: " + selectorObj.toString());
                             if (!selectorObj.evaluate(data.getMsg())) {
                                 log.info("false");
                                 continue;
@@ -445,6 +447,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 }
             }
             log.severe("Timed out waiting for message!");
+            listener.getLogger().println("Timed out waiting for message!");
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
         } finally {
@@ -452,12 +455,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 ZMQ.Socket s = lpoller.getSocket(i);
                 lpoller.unregister(s);
                 s.disconnect(provider.getHubAddr());
-                if (provider.getTopic() == null || provider.getTopic().equals("")) {
-                    lsocket.unsubscribe(DEFAULT_PREFIX.getBytes());
-                } else {
-
-                    lsocket.unsubscribe(provider.getTopic().getBytes());
-                }
+                lsocket.unsubscribe(ltopic.getBytes());
             }
             lsocket.close();
             lcontext.term();

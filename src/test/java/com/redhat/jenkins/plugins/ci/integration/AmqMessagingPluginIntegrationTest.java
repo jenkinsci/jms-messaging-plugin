@@ -10,6 +10,7 @@ import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
+import org.jenkinsci.test.acceptance.po.Build;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.JenkinsLogger;
 import org.jenkinsci.test.acceptance.po.StringParameter;
@@ -214,11 +215,12 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
         wait.script.set("node('master') {\n" +
                 "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
-                "    def scott = waitForCIMessage providerName: \"test\", selector:  \"topic = '${env.MY_TOPIC}'\",        overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
+                "    def scott = waitForCIMessage providerName: \"test\", selector:  \"JMSDestination = 'topic://${env.MY_TOPIC}'\",  overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
                 "    echo \"scott = \" + scott\n" +
                 "}");
         wait.save();
-        wait.startBuild();
+        Build waitBuild = wait.startBuild();
+        elasticSleep(5000);
 
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
         send.script.set("node('master') {\n" +
@@ -229,8 +231,8 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         send.startBuild().shouldSucceed();
 
         elasticSleep(1000);
-        wait.getLastBuild().shouldSucceed();
-        assertThat(wait.getLastBuild().getConsole(), containsString("scott = abcdefg"));
+        waitBuild.waitUntilFinished(240).shouldSucceed();
+        assertThat(waitBuild.getConsole(), containsString("scott = abcdefg"));
 
     }
 
