@@ -188,7 +188,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         wait.script.set("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
                 "selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
-                " topic: 'otopic'" +
+                " topic: 'org.fedoraproject.otopic'" +
                 "\necho \"scott = \" + scott}");
         wait.save();
         wait.startBuild();
@@ -196,46 +196,41 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
         send.script.set("node('master') {\n sendCIMessage" +
                 " providerName: 'test', " +
-                " topic: 'otopic'," +
+                " topic: 'org.fedoraproject.otopic'," +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}");
         send.save();
         send.startBuild().shouldSucceed();
-        send.getLastBuild().getConsole().contains("scott = abcdefg");
 
         elasticSleep(1000);
         wait.getLastBuild().shouldSucceed();
-
+        assertThat(wait.getLastBuild().getConsole(), containsString("scott = abcdefg"));
     }
 
     @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventSendAndWaitPipelineWithVariableTopic() throws Exception {
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
-        wait.script.set("node('master') {\n env.MY_TOPIC = 'my-topic'\n " +
-                " def scott = waitForCIMessage providerName: 'test'," +
-                "selector: " +
-                " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
-                " topic: '$MY_TOPIC'" +
-                "\necho \"scott = \" + scott}");
+        wait.script.set("node('master') {\n" +
+                "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
+                "    def scott = waitForCIMessage providerName: \"test\", selector:  \"topic = '${env.MY_TOPIC}'\",        overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
+                "    echo \"scott = \" + scott\n" +
+                "}");
         wait.save();
         wait.startBuild();
 
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
-        send.script.set("node('master') {\n env.MY_TOPIC = 'my-topic'\n " +
-                " sendCIMessage" +
-                " providerName: 'test', " +
-                " topic: '$MY_TOPIC'," +
-                " messageContent: 'abcdefg', " +
-                " messageProperties: 'CI_STATUS = failed'," +
-                " messageType: 'CodeQualityChecksDone'}");
+        send.script.set("node('master') {\n" +
+                " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
+                " sendCIMessage providerName: \"test\", overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: 'abcdefg', messageProperties: 'CI_STATUS = failed', messageType: 'CodeQualityChecksDone'\n" +
+                "}");
         send.save();
         send.startBuild().shouldSucceed();
-        send.getLastBuild().getConsole().contains("scott = abcdefg");
 
         elasticSleep(1000);
         wait.getLastBuild().shouldSucceed();
+        assertThat(wait.getLastBuild().getConsole(), containsString("scott = abcdefg"));
 
     }
 
@@ -486,7 +481,7 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
     }
 
     @Test
-    public void testSimpleCIEventTriggerWithParamOverride() throws Exception, InterruptedException {
+    public void testSimpleCIEventTriggerWithParamOverride() throws Exception {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
@@ -504,8 +499,8 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
 
         notifier.messageType.select("CodeQualityChecksDone");
-        notifier.messageProperties.sendKeys("PARAMETER = my parameter");
-        notifier.messageContent.set("This is my content with ${PARAMETER}");
+        notifier.messageProperties.sendKeys("PARAMETER = my parameter\nCOMPOUND = Z${PARAMETER}Z");
+        notifier.messageContent.set("This is my content with ${COMPOUND} ${BUILD_STATUS}");
 
         jobB.save();
         jobB.startBuild().shouldSucceed();
@@ -513,7 +508,8 @@ public class AmqMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("my parameter"));
-        assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content with my parameter"));
+        assertThat(jobA.getLastBuild().getConsole(),
+                containsString("This is my content with Zmy parameterZ SUCCESS"));
     }
 
     @Test

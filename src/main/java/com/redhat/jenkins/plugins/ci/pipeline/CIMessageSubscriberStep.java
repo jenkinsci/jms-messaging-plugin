@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci.pipeline;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.TaskListener;

@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
@@ -14,7 +15,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -318,29 +319,54 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             e.printStackTrace();
         }
 
+        TreeMap<String, String> envVarParts = new TreeMap<String, String>();
         HashMap<String, Object> message = new HashMap<String, Object>();
         message.put("CI_NAME", build.getParent().getName());
+        envVarParts.put("CI_NAME", build.getParent().getName());
+
         message.put("CI_TYPE", type.getMessage());
+        envVarParts.put("CI_TYPE", type.getMessage());
         if (!build.isBuilding()) {
-            message.put("CI_STATUS", (build.getResult()
-                    == Result.SUCCESS ? "passed" : "failed"));
+            String ciStatus = (build.getResult()
+                    == Result.SUCCESS ? "passed" : "failed");
+            message.put("CI_STATUS", ciStatus);
+            envVarParts.put("CI_STATUS", ciStatus);
+
+            envVarParts.put("BUILD_STATUS", build.getResult().toString());
         }
 
-        StrSubstitutor sub = null;
         try {
-            sub = new StrSubstitutor(build.getEnvironment(listener));
+            EnvVars baseEnvVars = build.getEnvironment(listener);
+            EnvVars envVars = new EnvVars();
+            envVars.putAll(baseEnvVars);
+            envVars.putAll(envVarParts);
+
             if (props != null && !props.trim().equals("")) {
-                Properties p = new Properties();
+                OrderedProperties p = new OrderedProperties();
                 p.load(new StringReader(props));
                 @SuppressWarnings("unchecked")
                 Enumeration<String> e = (Enumeration<String>) p.propertyNames();
                 while (e.hasMoreElements()) {
                     String key = e.nextElement();
-                    message.put(key, sub.replace(p.getProperty(key)));
+                    EnvVars envVars2 = new EnvVars();
+                    envVars2.putAll(baseEnvVars);
+                    envVars2.putAll(envVarParts);
+                    // This allows us to use recently added key/vals
+                    // to be substituted
+                    String val = PluginUtils.getSubstitutedValue(p.getProperty(key),
+                            envVars2);
+                    message.put(key, val);
+                    envVarParts.put(key, val);
                 }
             }
 
-            message.put(MESSAGECONTENTFIELD, sub.replace(content));
+            EnvVars envVars2 = new EnvVars();
+            envVars2.putAll(baseEnvVars);
+            envVars2.putAll(envVarParts);
+            // This allows us to use recently added key/vals
+            // to be substituted
+            message.put(MESSAGECONTENTFIELD, PluginUtils.getSubstitutedValue(content,
+                    envVars2));
 
             FedmsgMessage blob = new FedmsgMessage();
             blob.setMsg(message);
@@ -349,7 +375,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
             sock.sendMore(blob.getTopic());
             sock.send(blob.toJson().toString());
-            log.fine(blob.toJson().toString());
+            log.info(blob.toJson().toString());
+            listener.getLogger().println(blob.toJson().toString());
 
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception: ", e);

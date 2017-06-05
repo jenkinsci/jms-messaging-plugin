@@ -219,6 +219,7 @@
                     <environmentVariables>
                         <JENKINS_WAR>${user.home}/.m2/repository/org/jenkins-ci/main/jenkins-war/${jenkins.version}/jenkins-war-${jenkins.version}.war</JENKINS_WAR>
                         <LOCAL_SNAPSHOTS>true</LOCAL_SNAPSHOTS>
+                        <JENKINS_JAVA_OPTS2>-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y -Dhudson.model.ParametersAction.keepUndefinedParameters=true</JENKINS_JAVA_OPTS2>
                         <JENKINS_JAVA_OPTS>-Dhudson.model.ParametersAction.keepUndefinedParameters=true</JENKINS_JAVA_OPTS>
                     </environmentVariables>
                 </configuration>
