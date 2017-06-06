@@ -1,17 +1,23 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
+import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 import hudson.util.ListBoxModel;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import jenkins.util.Timer;
+import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
@@ -20,6 +26,10 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
+
+import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.Future;
 
 /*
  * The MIT License
@@ -44,13 +54,23 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class CIMessageSenderStep extends AbstractStepImpl {
+public class CIMessageSenderStep extends Step {
 
     private String providerName;
     private MessagingProviderOverrides overrides;
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
+    private boolean failOnError;
+
+    public boolean isFailOnError() {
+        return failOnError;
+    }
+
+    @DataBoundSetter
+    public void setFailOnError(boolean failOnError) {
+        this.failOnError = failOnError;
+    }
 
     @DataBoundConstructor
     public CIMessageSenderStep(final String providerName,
@@ -98,34 +118,63 @@ public class CIMessageSenderStep extends AbstractStepImpl {
         this.messageContent = messageContent;
     }
 
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
+        return new CIMessageSenderStep.Execution(this, context);
+    }
+
     /**
      * Executes the sendCIMessage step.
      */
-    public static class Execution extends AbstractSynchronousStepExecution<Void> {
+    public static final class Execution extends AbstractStepExecutionImpl {
 
-        @StepContextParameter
-        private transient Run build;
-
-        @StepContextParameter
-        private transient TaskListener listener;
+        Execution(CIMessageSenderStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Inject
         private transient CIMessageSenderStep step;
+        private transient Future task;
 
         @Override
-        protected Void run() throws Exception {
+        public boolean start() throws Exception {
             if (step.getProviderName() == null) {
                 throw new Exception("providerName not specified!");
             }
 
-            MessageUtils.sendMessage(build,
-                    listener,
-                    step.getProviderName(),
-                    step.getOverrides(),
-                    step.getMessageType(),
-                    step.getMessageProperties(),
-                    step.getMessageContent());
-            return null;
+            task = Timer.get().submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        boolean status = MessageUtils.sendMessage(getContext().get(Run.class),
+                                getContext().get(TaskListener.class),
+                                step.getProviderName(),
+                                step.getOverrides(),
+                                step.getMessageType(),
+                                step.isFailOnError(), step.getMessageProperties(),
+                                step.getMessageContent());
+                        if (status) {
+                            getContext().onSuccess(null);
+                        } else {
+                            getContext().onFailure(new Exception("Exception sending message. Please check server logs."));
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        getContext().onFailure(e);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        getContext().onFailure(e);
+                    }
+                }
+            });
+
+            return false;
+        }
+
+        @Override
+        public void stop(@Nonnull Throwable throwable) throws Exception {
+            task.cancel(true);
         }
 
         private static final long serialVersionUID = 1L;
@@ -135,13 +184,10 @@ public class CIMessageSenderStep extends AbstractStepImpl {
      * Adds the step as a workflow extension.
      */
     @Extension(optional = true)
-    public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    public static class DescriptorImpl extends StepDescriptor {
 
-        /**
-         * Constructor.
-         */
-        public DescriptorImpl() {
-            super(Execution.class);
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(Run.class, Launcher.class, TaskListener.class);
         }
 
         @Override

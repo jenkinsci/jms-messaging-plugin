@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 
 import net.sf.json.JSONObject;
 
-import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.commons.lang3.StringUtils;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -307,7 +306,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean sendMessage(Run<?, ?> build, TaskListener listener, MessageUtils.MESSAGE_TYPE type,
-                               String props, String content) {
+                               String props, String content, boolean failOnError) {
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket sock = context.socket(ZMQ.PUB);
         sock.setLinger(0);
@@ -375,12 +374,18 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
             sock.sendMore(blob.getTopic());
             sock.send(blob.toJson().toString());
-            log.info(blob.toJson().toString());
+            log.fine(blob.toJson().toString());
             listener.getLogger().println(blob.toJson().toString());
 
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception: ", e);
-            return false;
+            if (failOnError) {
+                listener.fatalError("Unhandled exception: ", e);
+                return false;
+            } else {
+                listener.error("Unhandled exception: ", e);
+                return true;
+            }
         } finally {
             sock.close();
             context.term();
@@ -427,10 +432,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             data.getMsg().put("topic", data.getTopic());
                             ZmqMessageSelector selectorObj =
                                     ZmqSimpleMessageSelector.parse(selector);
-                            log.info("Evaluating selector: " + selectorObj.toString());
-                            listener.getLogger().println("Evaluating selector: " + selectorObj.toString());
+                            log.fine("Evaluating selector: " + selectorObj.toString());
                             if (!selectorObj.evaluate(data.getMsg())) {
-                                log.info("false");
+                                log.fine("false");
                                 continue;
                             }
                             String value = getMessageBody(data);

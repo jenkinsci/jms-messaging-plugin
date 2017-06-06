@@ -41,7 +41,6 @@ import javax.jms.TopicSubscriber;
 import jenkins.model.Jenkins;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -397,7 +396,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean sendMessage(Run<?, ?> build, TaskListener listener,
-                            MessageUtils.MESSAGE_TYPE type, String props, String content) {
+                               MessageUtils.MESSAGE_TYPE type, String props, String content, boolean failOnError) {
         Connection connection = null;
         Session session = null;
         MessageProducer publisher = null;
@@ -473,7 +472,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             }
 
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception in perform.", e);
+            if (failOnError) {
+                listener.fatalError("Unhandled exception in perform: ", e);
+                return false;
+            } else {
+                listener.error("Unhandled exception in perform: ", e);
+                return true;
+            }
         } finally {
             if (publisher != null) {
                 try {

@@ -38,6 +38,7 @@ public class CINotifierPostBuildStep extends AbstractStep implements PostBuildSt
     public final Control messageType = control("messageType");
     public final Control messageProperties = control("messageProperties");
     public final Control messageContent = control("messageContent");
+    public final Control failOnError = control("failOnError");
 
     public CINotifierPostBuildStep(Job parent, String path) {
         super(parent, path);

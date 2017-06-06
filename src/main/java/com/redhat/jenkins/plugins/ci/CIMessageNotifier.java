@@ -16,6 +16,7 @@ import java.io.IOException;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -56,6 +57,7 @@ import com.redhat.utils.PluginUtils;
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
+    private boolean failOnError = false;
 
     public String getProviderName() {
         return providerName;
@@ -87,6 +89,15 @@ import com.redhat.utils.PluginUtils;
     public void setMessageContent(String messageContent) {
         this.messageContent = messageContent;
     }
+    public boolean isFailOnError() {
+        return failOnError;
+    }
+
+    @DataBoundSetter
+    public void setFailOnError(boolean failOnError) {
+        this.failOnError = failOnError;
+    }
+
 
     @DataBoundConstructor
     public CIMessageNotifier(final String providerName,
@@ -117,7 +128,8 @@ import com.redhat.utils.PluginUtils;
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return MessageUtils.sendMessage(build, listener, getProviderName(), getOverrides(), getMessageType(),
+        return MessageUtils.sendMessage(build, listener, getProviderName(),
+                getOverrides(), getMessageType(), failOnError,
                 PluginUtils.getSubstitutedValue(getMessageProperties(), build.getEnvironment(listener)),
                 PluginUtils.getSubstitutedValue(getMessageContent(), build.getEnvironment(listener)));
     }
@@ -129,6 +141,15 @@ import com.redhat.utils.PluginUtils;
         private MESSAGE_TYPE messageType;
         private String messageProperties;
         private String messageContent;
+        private boolean failOnError;
+
+        public boolean isFailOnError() {
+            return failOnError;
+        }
+
+        public void setFailOnError(boolean failOnError) {
+            this.failOnError = failOnError;
+        }
 
         public DescriptorImpl() {
             load();
@@ -186,11 +207,14 @@ import com.redhat.utils.PluginUtils;
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new CIMessageNotifier(jo.getString("providerName"),
+            boolean failOnError = jo.getBoolean("failOnError");
+            CIMessageNotifier mn = new CIMessageNotifier(jo.getString("providerName"),
                      mpo,
                      MESSAGE_TYPE.fromString(jo.getString("messageType")),
                      jo.getString("messageProperties"),
                      jo.getString("messageContent"));
+            mn.setFailOnError(failOnError);
+            return mn;
         }
 
         @Override
@@ -204,12 +228,16 @@ import com.redhat.utils.PluginUtils;
             setMessageType(MESSAGE_TYPE.fromString(formData.optString("messageType")));
             setMessageProperties(formData.optString("messageProperties"));
             setMessageContent(formData.optString("messageContent"));
+            boolean failOnError = formData.optBoolean("failOnError");
+            setFailOnError(failOnError);
+
             try {
-                new CIMessageNotifier(getProviderName(),
+                CIMessageNotifier mn = new CIMessageNotifier(getProviderName(),
                         getOverrides(),
                         getMessageType(),
                         getMessageProperties(),
                         getMessageContent());
+                mn.setFailOnError(failOnError);
             } catch (Exception e) {
                 throw new FormException("Failed to initialize notifier - check your global notifier configuration settings", e, "");
             }

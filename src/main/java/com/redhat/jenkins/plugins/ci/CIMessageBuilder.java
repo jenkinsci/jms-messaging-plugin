@@ -14,6 +14,7 @@ import java.io.IOException;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -52,6 +53,7 @@ public class CIMessageBuilder extends Builder {
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
+    private boolean failOnError = false;
 
 
     public String getProviderName() {
@@ -85,6 +87,15 @@ public class CIMessageBuilder extends Builder {
         this.messageContent = messageContent;
     }
 
+    public boolean isFailOnError() {
+        return failOnError;
+    }
+
+    @DataBoundSetter
+    public void setFailOnError(boolean failOnError) {
+        this.failOnError = failOnError;
+    }
+
     @DataBoundConstructor
     public CIMessageBuilder(final String providerName,
                             final MessagingProviderOverrides overrides,
@@ -105,7 +116,7 @@ public class CIMessageBuilder extends Builder {
                 getProviderName(),
                 getOverrides(),
                 getMessageType(),
-                getMessageProperties(),
+                failOnError, getMessageProperties(),
                 getMessageContent());
     }
 
@@ -116,6 +127,15 @@ public class CIMessageBuilder extends Builder {
         private MESSAGE_TYPE messageType;
         private String messageProperties;
         private String messageContent;
+        private boolean failOnError;
+
+        public boolean isFailOnError() {
+            return failOnError;
+        }
+
+        public void setFailOnError(boolean failOnError) {
+            this.failOnError = failOnError;
+        }
 
         public DescriptorImpl() {
             load();
@@ -173,11 +193,14 @@ public class CIMessageBuilder extends Builder {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new CIMessageBuilder(jo.getString("providerName"),
+            boolean failOnError = jo.getBoolean("failOnError");
+            CIMessageBuilder mb = new CIMessageBuilder(jo.getString("providerName"),
                     mpo,
                     MESSAGE_TYPE.fromString(jo.getString("messageType")),
                     jo.getString("messageProperties"),
                     jo.getString("messageContent"));
+            mb.setFailOnError(failOnError);
+            return mb;
         }
 
         @Override
@@ -191,12 +214,16 @@ public class CIMessageBuilder extends Builder {
             setMessageType(MESSAGE_TYPE.fromString(formData.optString("messageType")));
             setMessageProperties(formData.optString("messageProperties"));
             setMessageContent(formData.optString("messageContent"));
+            boolean failOnError = formData.optBoolean("failOnError");
+            setFailOnError(failOnError);
+
             try {
-                new CIMessageNotifier(getProviderName(),
-                        getOverrides(),
-                        getMessageType(),
-                        getMessageProperties(),
-                        getMessageContent());
+                CIMessageBuilder mb = new CIMessageBuilder(getProviderName(),
+                    getOverrides(),
+                    getMessageType(),
+                    getMessageProperties(),
+                    getMessageContent());
+                mb.setFailOnError(failOnError);
             } catch (Exception e) {
                 throw new FormException("Failed to initialize notifier - check your global notifier configuration settings", e, "");
             }
