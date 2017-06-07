@@ -1,12 +1,15 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.jenkinsci.test.acceptance.docker.Docker;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
@@ -580,6 +583,28 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         send.save();
         send.startBuild().waitUntilFinished().shouldFail();
         assertThat(send.getLastBuild().getConsole(), containsString("Unhandled exception in perform: "));
+    }
+
+    public void _testAbortWaitingForMessageWithPipelineBuild() throws IOException {
+        WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
+        wait.script.set("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
+                " selector: " +
+                " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \n}");
+        wait.save();
+        Build waitingBuild = wait.startBuild();
+        elasticSleep(3000);
+
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpPost post = new HttpPost(waitingBuild.url("stop").toExternalForm());
+        HttpResponse response = httpclient.execute(post);
+        if (response.getStatusLine().getStatusCode() >= 400) {
+            throw new IOException("Failed to stop build: " + response.getStatusLine() + "\n" +
+                    IOUtils.toString(response.getEntity().getContent()));
+        } else {
+            System.out.println("Build stopped! (status code: " + response.getStatusLine().getStatusCode() + ")");
+        }
+
+        waitingBuild.shouldAbort();
     }
 
     protected String stringFrom(Process proc) throws InterruptedException, IOException {

@@ -435,12 +435,23 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         long start = new Date().getTime();
 
         int timeoutInMs = timeout * 60 * 1000;
+        boolean interrupted = false;
         try {
             while ((new Date().getTime() - start) < timeoutInMs) {
+                if (lpoller.poll(1000) == -1) {
+                    interrupted = true;
+                    log.warning("We have been interrupted");
+                    break;
+                }
                 if (lpoller.poll(1000) > 0) {
                     for (Integer i = 0; i < lpoller.getSize(); i++) {
                         if (lpoller.pollin(i)) {
                             ZMsg z = ZMsg.recvMsg(lpoller.getSocket(i));
+                            if (z == null) {
+                                interrupted = true;
+                                log.warning("We have been interrupted");
+                                break;
+                            }
                             String json = z.getLast().toString();
                             FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                             data.getMsg().put("topic", data.getTopic());
@@ -463,6 +474,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         }
                     }
                 }
+            }
+            if (interrupted) {
+                return null;
             }
             log.severe("Timed out waiting for message!");
             listener.getLogger().println("Timed out waiting for message!");

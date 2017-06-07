@@ -191,6 +191,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testEnsureFailedSendingOfMessageFailsPipelineBuild();
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testAbortWaitingForMessageWithPipelineBuild() throws Exception {
+        _testAbortWaitingForMessageWithPipelineBuild();
+    }
+
     @Before
     public void setUp() throws Exception {
         amq = docker.get();

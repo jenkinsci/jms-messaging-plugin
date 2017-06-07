@@ -196,6 +196,12 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
     public void testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
     }
 
+    @WithPlugins({"workflow-aggregator", "monitoring"})
+    @Test
+    public void testAbortWaitingForMessageWithPipelineBuild() throws Exception {
+        _testAbortWaitingForMessageWithPipelineBuild();
+    }
+
     @Before
     public void setUp() throws Exception {
         fedmsgRelay = docker.get();

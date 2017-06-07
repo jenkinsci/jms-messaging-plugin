@@ -551,7 +551,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                                 EnvVars vars = new EnvVars();
                                 vars.put(variable, value);
                                 build.addAction(new CIEnvironmentContributingAction(vars));
-
                             }
                         }
                         log.info("Received message with selector: " + selector + "\n" + formatMessage(message));

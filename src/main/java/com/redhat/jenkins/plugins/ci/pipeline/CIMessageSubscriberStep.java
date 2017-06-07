@@ -5,20 +5,15 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-import hudson.model.User;
 import hudson.util.ListBoxModel;
-import jenkins.model.CauseOfInterruption;
 import jenkins.util.Timer;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
-import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
-import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -31,7 +26,6 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Future;
 
 /*
@@ -154,13 +148,15 @@ public class CIMessageSubscriberStep extends Step {
                     }
                 }
             });
-
             return false;
         }
 
         @Override
-        public void stop(@Nonnull Throwable throwable) throws Exception {
-            task.cancel(true);
+        public void stop(@Nonnull Throwable cause) throws Exception {
+            if (task != null) {
+                task.cancel(false);
+                getContext().onFailure(cause);
+            }
         }
 
         private static final long serialVersionUID = 1L;
