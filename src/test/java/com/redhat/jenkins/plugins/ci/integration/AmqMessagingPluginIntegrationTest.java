@@ -174,7 +174,25 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testDisabledJobDoesNotGetTriggered();
     }
 
-    @Before public void setUp() throws Exception {
+    @Test
+    public void testEnsureFailedSendingOfMessageFailsBuild() throws Exception {
+        stopContainer(amq);
+        System.out.println("Waiting 30 secs");
+        elasticSleep(30000);
+        _testEnsureFailedSendingOfMessageFailsBuild();
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
+        stopContainer(amq);
+        System.out.println("Waiting 30 secs");
+        elasticSleep(30000);
+        _testEnsureFailedSendingOfMessageFailsPipelineBuild();
+    }
+
+    @Before
+    public void setUp() throws Exception {
         amq = docker.get();
         jenkins.configure();
         elasticSleep(5000);
@@ -204,5 +222,4 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         elasticSleep(1000);
         jenkins.save();
     }
-
 }

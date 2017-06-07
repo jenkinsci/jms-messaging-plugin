@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -372,18 +373,31 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             blob.setTopic(PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener)));
             blob.setTimestamp((new java.util.Date()).getTime() / 1000);
 
-            sock.sendMore(blob.getTopic());
-            sock.send(blob.toJson().toString());
+            boolean successTopic = sock.sendMore(blob.getTopic());
+            if (failOnError && !successTopic) {
+                log.severe("Unhandled exception in perform: Failed to send message (topic)!");
+                return false;
+            }
+            boolean successBody = sock.send(blob.toJson().toString());
+            if (failOnError && !successBody) {
+                log.severe("Unhandled exception in perform: Failed to send message (body)!");
+                return false;
+            }
             log.fine(blob.toJson().toString());
             listener.getLogger().println(blob.toJson().toString());
 
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception: ", e);
             if (failOnError) {
-                listener.fatalError("Unhandled exception: ", e);
+                log.severe("Unhandled exception in perform: ");
+                log.severe(ExceptionUtils.getStackTrace(e));
+                listener.fatalError("Unhandled exception in perform: ");
+                listener.fatalError(ExceptionUtils.getStackTrace(e));
                 return false;
             } else {
-                listener.error("Unhandled exception: ", e);
+                log.warning("Unhandled exception in perform: ");
+                log.warning(ExceptionUtils.getStackTrace(e));
+                listener.error("Unhandled exception in perform: ");
+                listener.error(ExceptionUtils.getStackTrace(e));
                 return true;
             }
         } finally {

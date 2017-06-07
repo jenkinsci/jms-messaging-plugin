@@ -1,11 +1,16 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import org.apache.commons.io.IOUtils;
+import org.jenkinsci.test.acceptance.docker.Docker;
+import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
+import org.jenkinsci.test.acceptance.po.Build;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.JenkinsLogger;
 import org.jenkinsci.test.acceptance.po.Job;
@@ -551,6 +556,32 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
     }
 
+    public void _testEnsureFailedSendingOfMessageFailsBuild() {
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierBuildStep notifier = jobB.addBuildStep(CINotifierBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.failOnError.check();
+        jobB.save();
+        jobB.startBuild().waitUntilFinished().shouldFail();
+        assertThat(jobB.getLastBuild().getConsole(), containsString("Unhandled exception in perform: "));
+    }
+
+    public void _testEnsureFailedSendingOfMessageFailsPipelineBuild() {
+        WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
+        send.configure();
+        send.script.set("node('master') {\n sendCIMessage" +
+                " providerName: 'test', " +
+                " failOnError: true, " +
+                " messageContent: 'abcdefg', " +
+                " messageProperties: 'CI_STATUS = failed'," +
+                " messageType: 'CodeQualityChecksDone'}");
+        send.save();
+        send.startBuild().waitUntilFinished().shouldFail();
+        assertThat(send.getLastBuild().getConsole(), containsString("Unhandled exception in perform: "));
+    }
+
     protected String stringFrom(Process proc) throws InterruptedException, IOException {
         assertThat(proc.waitFor(), is(equalTo(0)));
         StringWriter writer = new StringWriter();
@@ -575,6 +606,24 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
             writer.close();
         }
         return processToRun;
+    }
+
+    protected void stopContainer(DockerContainer container) throws Exception {
+        System.out.println(Docker.cmd("stop", container.getCid())
+                .popen()
+                .verifyOrDieWith("Unable to stop container"));
+        elasticSleep(3000);
+        boolean running = false;
+        try {
+            container.assertRunning();
+            running = false;
+        }
+        catch (Error e) {
+            //This is ok
+        }
+        if (running) {
+            throw new Exception("Container " + container.getCid() + " not stopped");
+        }
     }
 
 
