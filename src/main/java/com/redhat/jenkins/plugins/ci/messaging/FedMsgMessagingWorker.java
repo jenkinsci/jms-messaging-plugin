@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
@@ -14,14 +15,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import net.sf.json.JSONObject;
 
-import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -306,7 +307,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean sendMessage(Run<?, ?> build, TaskListener listener, MessageUtils.MESSAGE_TYPE type,
-                               String props, String content) {
+                               String props, String content, boolean failOnError) {
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket sock = context.socket(ZMQ.PUB);
         sock.setLinger(0);
@@ -318,42 +319,87 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             e.printStackTrace();
         }
 
+        TreeMap<String, String> envVarParts = new TreeMap<String, String>();
         HashMap<String, Object> message = new HashMap<String, Object>();
         message.put("CI_NAME", build.getParent().getName());
+        envVarParts.put("CI_NAME", build.getParent().getName());
+
         message.put("CI_TYPE", type.getMessage());
+        envVarParts.put("CI_TYPE", type.getMessage());
         if (!build.isBuilding()) {
-            message.put("CI_STATUS", (build.getResult()
-                    == Result.SUCCESS ? "passed" : "failed"));
+            String ciStatus = (build.getResult()
+                    == Result.SUCCESS ? "passed" : "failed");
+            message.put("CI_STATUS", ciStatus);
+            envVarParts.put("CI_STATUS", ciStatus);
+
+            envVarParts.put("BUILD_STATUS", build.getResult().toString());
         }
 
-        StrSubstitutor sub = null;
         try {
-            sub = new StrSubstitutor(build.getEnvironment(listener));
+            EnvVars baseEnvVars = build.getEnvironment(listener);
+            EnvVars envVars = new EnvVars();
+            envVars.putAll(baseEnvVars);
+            envVars.putAll(envVarParts);
+
             if (props != null && !props.trim().equals("")) {
-                Properties p = new Properties();
+                OrderedProperties p = new OrderedProperties();
                 p.load(new StringReader(props));
                 @SuppressWarnings("unchecked")
                 Enumeration<String> e = (Enumeration<String>) p.propertyNames();
                 while (e.hasMoreElements()) {
                     String key = e.nextElement();
-                    message.put(key, sub.replace(p.getProperty(key)));
+                    EnvVars envVars2 = new EnvVars();
+                    envVars2.putAll(baseEnvVars);
+                    envVars2.putAll(envVarParts);
+                    // This allows us to use recently added key/vals
+                    // to be substituted
+                    String val = PluginUtils.getSubstitutedValue(p.getProperty(key),
+                            envVars2);
+                    message.put(key, val);
+                    envVarParts.put(key, val);
                 }
             }
 
-            message.put(MESSAGECONTENTFIELD, sub.replace(content));
+            EnvVars envVars2 = new EnvVars();
+            envVars2.putAll(baseEnvVars);
+            envVars2.putAll(envVarParts);
+            // This allows us to use recently added key/vals
+            // to be substituted
+            message.put(MESSAGECONTENTFIELD, PluginUtils.getSubstitutedValue(content,
+                    envVars2));
 
             FedmsgMessage blob = new FedmsgMessage();
             blob.setMsg(message);
             blob.setTopic(PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener)));
             blob.setTimestamp((new java.util.Date()).getTime() / 1000);
 
-            sock.sendMore(blob.getTopic());
-            sock.send(blob.toJson().toString());
+            boolean successTopic = sock.sendMore(blob.getTopic());
+            if (failOnError && !successTopic) {
+                log.severe("Unhandled exception in perform: Failed to send message (topic)!");
+                return false;
+            }
+            boolean successBody = sock.send(blob.toJson().toString());
+            if (failOnError && !successBody) {
+                log.severe("Unhandled exception in perform: Failed to send message (body)!");
+                return false;
+            }
             log.fine(blob.toJson().toString());
+            listener.getLogger().println(blob.toJson().toString());
 
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception: ", e);
-            return false;
+            if (failOnError) {
+                log.severe("Unhandled exception in perform: ");
+                log.severe(ExceptionUtils.getStackTrace(e));
+                listener.fatalError("Unhandled exception in perform: ");
+                listener.fatalError(ExceptionUtils.getStackTrace(e));
+                return false;
+            } else {
+                log.warning("Unhandled exception in perform: ");
+                log.warning(ExceptionUtils.getStackTrace(e));
+                listener.error("Unhandled exception in perform: ");
+                listener.error(ExceptionUtils.getStackTrace(e));
+                return true;
+            }
         } finally {
             sock.close();
             context.term();
@@ -366,6 +412,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     public String waitForMessage(Run<?, ?> build, TaskListener listener,
                                  String selector, String variable, Integer timeout) {
         log.info("Waiting for message with selector: " + selector);
+        listener.getLogger().println("Waiting for message with selector: " + selector);
         ZMQ.Context lcontext = ZMQ.context(1);
         ZMQ.Poller lpoller = new ZMQ.Poller(1);
         ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
@@ -388,20 +435,31 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         long start = new Date().getTime();
 
         int timeoutInMs = timeout * 60 * 1000;
+        boolean interrupted = false;
         try {
             while ((new Date().getTime() - start) < timeoutInMs) {
+                if (lpoller.poll(1000) == -1) {
+                    interrupted = true;
+                    log.warning("We have been interrupted");
+                    break;
+                }
                 if (lpoller.poll(1000) > 0) {
                     for (Integer i = 0; i < lpoller.getSize(); i++) {
                         if (lpoller.pollin(i)) {
                             ZMsg z = ZMsg.recvMsg(lpoller.getSocket(i));
+                            if (z == null) {
+                                interrupted = true;
+                                log.warning("We have been interrupted");
+                                break;
+                            }
                             String json = z.getLast().toString();
                             FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                             data.getMsg().put("topic", data.getTopic());
                             ZmqMessageSelector selectorObj =
                                     ZmqSimpleMessageSelector.parse(selector);
-                            log.info("Evaluating selector: " + selectorObj.toString());
+                            log.fine("Evaluating selector: " + selectorObj.toString());
                             if (!selectorObj.evaluate(data.getMsg())) {
-                                log.info("false");
+                                log.fine("false");
                                 continue;
                             }
                             String value = getMessageBody(data);
@@ -417,7 +475,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     }
                 }
             }
+            if (interrupted) {
+                return null;
+            }
             log.severe("Timed out waiting for message!");
+            listener.getLogger().println("Timed out waiting for message!");
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
         } finally {
@@ -425,12 +487,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 ZMQ.Socket s = lpoller.getSocket(i);
                 lpoller.unregister(s);
                 s.disconnect(provider.getHubAddr());
-                if (provider.getTopic() == null || provider.getTopic().equals("")) {
-                    lsocket.unsubscribe(DEFAULT_PREFIX.getBytes());
-                } else {
-
-                    lsocket.unsubscribe(provider.getTopic().getBytes());
-                }
+                lsocket.unsubscribe(ltopic.getBytes());
             }
             lsocket.close();
             lcontext.term();

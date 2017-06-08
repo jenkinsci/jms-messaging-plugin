@@ -56,6 +56,9 @@
   <f:entry title="${%Message content}" field="messageContent">
     <f:textarea name="messageContent"/>
   </f:entry>
+  <f:entry title="${%Fail On Error}" field="failOnError">
+    <f:checkbox name="failOnError" default="false"/>
+  </f:entry>
 
   <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>

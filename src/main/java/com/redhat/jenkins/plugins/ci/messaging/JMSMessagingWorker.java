@@ -50,10 +50,10 @@ public abstract class JMSMessagingWorker {
     public abstract void disconnect();
 
     public abstract boolean sendMessage(Run<?, ?> build,
-                                     TaskListener listener,
-                                     MessageUtils.MESSAGE_TYPE type,
-                                     String props,
-                                     String content);
+                                        TaskListener listener,
+                                        MessageUtils.MESSAGE_TYPE type,
+                                        String props,
+                                        String content, boolean failOnError);
 
     public abstract String waitForMessage(Run<?, ?> build,
                                           TaskListener listener,

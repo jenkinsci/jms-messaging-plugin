@@ -8,7 +8,6 @@ import java.io.PrintStream;
 import java.util.logging.Logger;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
@@ -109,18 +108,19 @@ public class MessageUtils {
                                       String providerName,
                                       MessagingProviderOverrides overrides,
                                       MESSAGE_TYPE type,
-                                      String props,
+                                      boolean failOnError, String props,
                                       String content) throws InterruptedException, IOException {
         log.info("Sending message for job '" + build.getParent().getName() + "'.");
+        listener.getLogger().println("Sending message for job '" + build.getParent().getName() + "'.");
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
-        JMSMessagingProvider provider = config.getProvider(providerName);
         JMSMessagingWorker worker =
                 config.getProvider(providerName).createWorker(overrides, build.getParent().getName());
         return worker.sendMessage(build,
                 listener,
                 type,
                 props,
-                content);
+                content,
+                failOnError);
     }
 
     private static void logIfPossible(PrintStream stream, String logMessage) {

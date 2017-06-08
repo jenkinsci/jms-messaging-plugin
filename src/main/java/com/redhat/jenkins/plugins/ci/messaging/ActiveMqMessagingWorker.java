@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
 
+import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
@@ -17,7 +18,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,7 +41,7 @@ import javax.jms.TopicSubscriber;
 import jenkins.model.Jenkins;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -396,7 +397,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean sendMessage(Run<?, ?> build, TaskListener listener,
-                            MessageUtils.MESSAGE_TYPE type, String props, String content) {
+                               MessageUtils.MESSAGE_TYPE type, String props, String content, boolean failOnError) {
         Connection connection = null;
         Session session = null;
         MessageProducer publisher = null;
@@ -416,26 +417,52 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message = session.createTextMessage("");
                 message.setJMSType(JSON_TYPE);
 
+                TreeMap<String, String> envVarParts = new TreeMap<String, String>();
                 message.setStringProperty("CI_NAME", build.getParent().getName());
+                envVarParts.put("CI_NAME", build.getParent().getName());
+
                 message.setStringProperty("CI_TYPE", type.getMessage());
+                envVarParts.put("CI_TYPE", type.getMessage());
                 if (!build.isBuilding()) {
-                    message.setStringProperty("CI_STATUS", (build.getResult()== Result.SUCCESS ? "passed" : "failed"));
+                    String ciStatus = (build.getResult()
+                            == Result.SUCCESS ? "passed" : "failed");
+                    message.setStringProperty("CI_STATUS", ciStatus);
+                    envVarParts.put("CI_STATUS", ciStatus);
+
+                    envVarParts.put("BUILD_STATUS", build.getResult().toString());
                 }
 
-                StrSubstitutor sub = new StrSubstitutor(build.getEnvironment(listener));
+
+                EnvVars baseEnvVars = build.getEnvironment(listener);
+                EnvVars envVars = new EnvVars();
+                envVars.putAll(baseEnvVars);
+                envVars.putAll(envVarParts);
 
                 if (props != null && !props.trim().equals("")) {
-                    Properties p = new Properties();
+                    OrderedProperties p = new OrderedProperties();
                     p.load(new StringReader(props));
                     @SuppressWarnings("unchecked")
                     Enumeration<String> e = (Enumeration<String>) p.propertyNames();
                     while (e.hasMoreElements()) {
                         String key = e.nextElement();
-                        message.setStringProperty(key, sub.replace(p.getProperty(key)));
+                        EnvVars envVars2 = new EnvVars();
+                        envVars2.putAll(baseEnvVars);
+                        envVars2.putAll(envVarParts);
+                        // This allows us to use recently added key/vals
+                        // to be substituted
+                        String val = PluginUtils.getSubstitutedValue(p.getProperty(key),
+                                envVars2);
+                        message.setStringProperty(key, val);
+                        envVarParts.put(key, val);
                     }
                 }
 
-                message.setText(sub.replace(content));
+                EnvVars envVars2 = new EnvVars();
+                envVars2.putAll(baseEnvVars);
+                envVars2.putAll(envVarParts);
+
+                message.setText(PluginUtils.getSubstitutedValue(content,
+                        envVars2));
 
                 publisher.send(message);
                 log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
@@ -446,7 +473,19 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             }
 
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception in perform.", e);
+            if (failOnError) {
+                log.severe("Unhandled exception in perform: ");
+                log.severe(ExceptionUtils.getStackTrace(e));
+                listener.fatalError("Unhandled exception in perform: ");
+                listener.fatalError(ExceptionUtils.getStackTrace(e));
+                return false;
+            } else {
+                log.warning("Unhandled exception in perform: ");
+                log.warning(ExceptionUtils.getStackTrace(e));
+                listener.error("Unhandled exception in perform: ");
+                listener.error(ExceptionUtils.getStackTrace(e));
+                return true;
+            }
         } finally {
             if (publisher != null) {
                 try {
@@ -491,6 +530,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
         if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 log.info("Waiting for message with selector: " + selector);
+                listener.getLogger().println("Waiting for message with selector: " + selector);
                 Connection connection = null;
                 MessageConsumer consumer = null;
                 try {
@@ -511,13 +551,14 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                                 EnvVars vars = new EnvVars();
                                 vars.put(variable, value);
                                 build.addAction(new CIEnvironmentContributingAction(vars));
-
                             }
                         }
                         log.info("Received message with selector: " + selector + "\n" + formatMessage(message));
+                        listener.getLogger().println("Received message with selector: " + selector + "\n" + formatMessage(message));
                         return value;
                     }
                     log.info("Timed out waiting for message!");
+                    listener.getLogger().println("Timed out waiting for message!");
                 } catch (Exception e) {
                     log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
                 } finally {

@@ -1,6 +1,7 @@
 package com.redhat.jenkins.plugins.ci.integration.po;
 
 import org.jenkinsci.test.acceptance.po.AbstractStep;
+import org.jenkinsci.test.acceptance.po.BuildStep;
 import org.jenkinsci.test.acceptance.po.Control;
 import org.jenkinsci.test.acceptance.po.Describable;
 import org.jenkinsci.test.acceptance.po.Job;
@@ -30,7 +31,7 @@ import org.jenkinsci.test.acceptance.po.PostBuildStep;
  * THE SOFTWARE.
  */
 @Describable("CI Notifier")
-public class CINotifierPostBuildStep extends AbstractStep implements PostBuildStep {
+public class CINotifierBuildStep extends AbstractStep implements BuildStep {
 
     public final Control providerName = control("providerName");
     public final Control overrides = control("overrides");
@@ -40,7 +41,7 @@ public class CINotifierPostBuildStep extends AbstractStep implements PostBuildSt
     public final Control messageContent = control("messageContent");
     public final Control failOnError = control("failOnError");
 
-    public CINotifierPostBuildStep(Job parent, String path) {
+    public CINotifierBuildStep(Job parent, String path) {
         super(parent, path);
     }
 }
