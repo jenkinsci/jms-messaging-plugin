@@ -7,7 +7,7 @@
     </parent>
 
     <artifactId>jms-messaging</artifactId>
-    <version>1.0.20</version>
+    <version>1.0.21-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>JMS Messaging Plugin</name>
     <description>Plugin to listen and emit messages during the build process using a JMS Messaging Provider.</description>
@@ -60,7 +60,7 @@
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-        <tag>jms-messaging-1.0.20</tag>
+        <tag>HEAD</tag>
     </scm>
 
 
