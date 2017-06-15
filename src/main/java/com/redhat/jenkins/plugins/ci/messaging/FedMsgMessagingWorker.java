@@ -314,7 +314,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean connect() {
         context = ZMQ.context(1);
-        poller = new ZMQ.Poller(1);
+        poller = context.poller(1);
         return true;
     }
 
@@ -436,7 +436,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         log.info("Waiting for message with selector: " + selector);
         listener.getLogger().println("Waiting for message with selector: " + selector);
         ZMQ.Context lcontext = ZMQ.context(1);
-        ZMQ.Poller lpoller = new ZMQ.Poller(1);
+        ZMQ.Poller lpoller = lcontext.poller(1);
         ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
 
         String ltopic = getTopic();
