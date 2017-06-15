@@ -85,6 +85,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private Connection connection;
     private TopicSubscriber subscriber;
     private String topic;
+    private String selector;
 
     public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, MessagingProviderOverrides overrides, String jobname) {
         this.provider = provider;
@@ -95,6 +96,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean subscribe(String jobname, String selector) {
         this.topic = getTopic();
+        this.selector = selector;
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -339,7 +341,24 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
 
     @Override
-    public void receive(String jobname, List<MsgCheck> checks, long timeoutInMs) {
+    public void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs) {
+        while (!subscribe(jobname, selector)) {
+            if (!Thread.currentThread().isInterrupted()) {
+                try {
+                    int WAIT_SECONDS = 2;
+                    Thread.sleep(WAIT_SECONDS * 1000);
+                } catch (InterruptedException e) {
+                    // We were interrupted while waiting to retry. We will
+                    // jump ship on the next iteration.
+
+                    // NB: The interrupt flag was cleared when
+                    // InterruptedException was thrown. We have to
+                    // re-install it to make sure we eventually leave this
+                    // thread.
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
         try {
             Message m = subscriber.receive(timeoutInMs); // In milliseconds!
             if (m != null) {
@@ -583,6 +602,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void prepareForInterrupt() {
+    }
+
+    @Override
+    public boolean isBeingInterrupted() {
+        return false;
     }
 
     private static String formatHeaders (Message message) {

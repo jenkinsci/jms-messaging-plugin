@@ -44,7 +44,7 @@ public abstract class JMSMessagingWorker {
 
     public abstract boolean subscribe(String jobname, String selector);
     public abstract void unsubscribe(String jobname);
-    public abstract void receive(String jobname, List<MsgCheck> checks, long timeoutInMs);
+    public abstract void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs);
     public abstract boolean connect() throws Exception;
     public abstract boolean isConnected();
     public abstract void disconnect();
@@ -72,5 +72,7 @@ public abstract class JMSMessagingWorker {
     }
 
     public abstract void prepareForInterrupt();
+
+    public abstract boolean isBeingInterrupted();
 }
 

@@ -82,6 +82,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean subscribe(String jobname, String selector) {
+        if (interrupt) {
+            return true;
+        }
         this.topic = getTopic();
         this.selector = selector;
         if (this.topic != null) {
@@ -205,7 +208,28 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public void receive(String jobname, List<MsgCheck> checks, long timeoutInMs) {
+    public void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs) {
+        if (interrupt) {
+            log.info("we have been interrupted at start of receive");
+            return;
+        }
+        while (!subscribe(jobname, selector)) {
+            if (!Thread.currentThread().isInterrupted()) {
+                try {
+                    int WAIT_SECONDS = 2;
+                    Thread.sleep(WAIT_SECONDS * 1000);
+                } catch (InterruptedException e) {
+                    // We were interrupted while waiting to retry. We will
+                    // jump ship on the next iteration.
+
+                    // NB: The interrupt flag was cleared when
+                    // InterruptedException was thrown. We have to
+                    // re-install it to make sure we eventually leave this
+                    // thread.
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
         ObjectMapper mapper = new ObjectMapper();
         long start = new Date().getTime();
         try {
@@ -219,9 +243,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             data.getMsg().put("topic", data.getTopic());
                             ZmqMessageSelector selectorObj =
                                     ZmqSimpleMessageSelector.parse(selector);
-                            log.info("Evaluating selector: " + selectorObj.toString());
+                            log.fine("Evaluating selector: " + selectorObj.toString());
                             if (!selectorObj.evaluate(data.getMsg())) {
-                                log.info("false");
+                                log.fine("false");
                                 continue;
                             }
                             //check checks here
@@ -235,11 +259,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             }
                             if (allPassed) {
                                 if (checks.size() > 0) {
-                                    log.info("All msg checks have passed.");
+                                    log.fine("All msg checks have passed.");
                                 }
                                 process(data);
                             } else {
-                                log.info("Some msg checks did not pass.");
+                                log.fine("Some msg checks did not pass.");
                             }
                         }
                     }
@@ -253,8 +277,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             if (!interrupt) {
                 log.info("No message received for the past " + timeoutInMs + " ms, re-subscribing for job '" + jobname + "'.");
                 unsubscribe(jobname);
-            } else {
-                interrupt = false;
             }
         } catch (Exception e) {
             if (!Thread.currentThread().isInterrupted()) {
@@ -498,6 +520,28 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     @Override
     public void prepareForInterrupt() {
         interrupt = true;
+        try {
+            if (poller != null) {
+                for (Integer i = 0; i < poller.getSize(); i++) {
+                    ZMQ.Socket s = poller.getSocket(i);
+                    poller.unregister(s);
+                    s.disconnect(provider.getHubAddr());
+                    log.info("Un-subscribing job '" + jobname + "' from " + this.topic + " topic.");
+                    socket.unsubscribe(this.topic.getBytes());
+                }
+                socket.close();
+            }
+            if (context != null) {
+                context.term();
+            }
+        } catch (Exception e) {
+            log.fine(e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean isBeingInterrupted() {
+        return interrupt;
     }
 
     private String getTopic() {
