@@ -75,4 +75,26 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         if (messagingWorker == null) return false;
         return messagingWorker.isConnected();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CITriggerThread that = (CITriggerThread) o;
+
+        if (jobname != null ? !jobname.equals(that.jobname) : that.jobname != null) return false;
+        if (selector != null ? !selector.equals(that.selector) : that.selector != null) return false;
+        return checks != null ? checks.equals(that.checks) : that.checks == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = messagingWorker != null ? messagingWorker.hashCode() : 0;
+        result = 31 * result + (jobname != null ? jobname.hashCode() : 0);
+        result = 31 * result + (selector != null ? selector.hashCode() : 0);
+        result = 31 * result + (checks != null ? checks.hashCode() : 0);
+        return result;
+    }
+
 }
