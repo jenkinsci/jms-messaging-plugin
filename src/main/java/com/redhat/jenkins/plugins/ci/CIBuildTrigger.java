@@ -212,7 +212,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			CITriggerThread newThread = new CITriggerThread(provider, overrides, job
 					.getFullName(), selector, getChecks());
 			if (thread.equals(newThread)) {
-				log.info("Already have thread " + thread.getId() + "...");
+				log.fine("Already have thread " + thread.getId() + "...");
 				return thread;
 			}
 
