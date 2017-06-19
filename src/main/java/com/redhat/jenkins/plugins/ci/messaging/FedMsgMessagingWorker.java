@@ -535,6 +535,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         } catch (Exception e) {
             log.fine(e.getMessage());
         }
+        poller = null;
+        socket = null;
     }
 
     @Override
