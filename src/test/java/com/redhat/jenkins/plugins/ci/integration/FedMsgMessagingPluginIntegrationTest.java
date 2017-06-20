@@ -294,17 +294,17 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         assertTrue("CIBuildTrigger count is 1", triggers == 1);
 
         String message = "{ \"CI_STATUS\": \"failed\" }";
-        for (int i = 0 ; i < 10 ; i++) {
+        for (int i = 0 ; i < 3 ; i++) {
             sendFedMsgMessageUsingLogger(message);
         }
 
         elasticSleep(2000);
-        assertTrue("there are 11 builds", workflowJob.getLastBuild().getNumber() == 11);
+        assertTrue("there are not 4 builds", workflowJob.getLastBuild().getNumber() == 4);
 
         ioCount = getCurrentThreadCountForName("iothread-");
-        assertTrue("iothread-2 count is 1", ioCount == 1);
+        assertTrue("iothread-2 count is not 1", ioCount == 1);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
-        assertTrue("CIBuildTrigger count is 1", triggers == 1);
+        assertTrue("CIBuildTrigger count is not 1", triggers == 1);
 
         workflowJob.configure();
         workflowJob.script.set("def d = new Double(Math.random())\n" +
@@ -324,27 +324,28 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         workflowJob.sandbox.check(false);
         workflowJob.save();
         workflowJob.startBuild();
-        elasticSleep(2000);
+        elasticSleep(5000);
 
         Double randomStatus = Math.random();
         String message2 = "{ \"CI_STATUS\": " + randomStatus.toString() +" }";
-        for (int i = 0 ; i < 10 ; i++) {
+        for (int i = 0 ; i < 3 ; i++) {
             sendFedMsgMessageUsingLogger(message2);
-            Thread.sleep(1000);
+            elasticSleep(5000);
         }
 
         elasticSleep(2000);
-        assertTrue("there are 22 builds", workflowJob.getLastBuild().getNumber() == 22);
+        assertTrue("there are not 8 builds", workflowJob.getLastBuild().getNumber() == 8);
 
-        for (int i = 0 ; i < 22 ; i++) {
+        for (int i = 0 ; i < 7 ; i++) {
             Build b1 = new Build(workflowJob, i+1);
             assertTrue(b1.isSuccess());
         }
+        printThreadsWithName("iothread-");
+        printThreadsWithName("CIBuildTrigger");
         ioCount = getCurrentThreadCountForName("iothread-");
-        assertTrue("iothread-2 count is 1", ioCount == 1);
+        assertTrue("iothread-2 count is not 1", ioCount == 1);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
-        assertTrue("CIBuildTrigger count is 1", triggers == 1);
-
+        assertTrue("CIBuildTrigger count is not 1", triggers == 1);
     }
 
     private void sendFedMsgMessageUsingLogger(String message) throws Exception {

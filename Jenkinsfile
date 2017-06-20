@@ -29,7 +29,7 @@ node('docker') {
         docker.image('jenkins/ath').inside(containerArgs) {
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
-                mvn test -Dmaven.test.failure.ignore=true -Duser.home=/var/maven -Djenkins.version=2.7.3 -DforkCount=1 -B
+                mvn test -Dmaven.test.failure.ignore=true -Duser.home=/var/maven -Djenkins.version=2.46.3 -DforkCount=1 -B
             '''
         }
     }
