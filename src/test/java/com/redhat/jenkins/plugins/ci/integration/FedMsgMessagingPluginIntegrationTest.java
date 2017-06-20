@@ -285,21 +285,26 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 ")\nnode('master') {\n sleep 1\n}");
         workflowJob.save();
         workflowJob.startBuild();
+        workflowJob.configure();
+        workflowJob.save();
+        workflowJob.startBuild();
         elasticSleep(2000);
         printThreadsWithName("iothread-");
         printThreadsWithName("CIBuildTrigger");
         int ioCount = getCurrentThreadCountForName("iothread-");
-        assertTrue("iothread-2 count is 1", ioCount == 1);
+        assertTrue("iothread-2 count is not 1", ioCount == 1);
         int triggers = getCurrentThreadCountForName("CIBuildTrigger");
-        assertTrue("CIBuildTrigger count is 1", triggers == 1);
+        assertTrue("CIBuildTrigger count is not 1", triggers == 1);
 
+        System.out.println("Starting rapid fire - no property changes.");
         String message = "{ \"CI_STATUS\": \"failed\" }";
         for (int i = 0 ; i < 3 ; i++) {
             sendFedMsgMessageUsingLogger(message);
         }
+        System.out.println("DONE rapid fire - no property changes.");
 
         elasticSleep(2000);
-        assertTrue("there are not 4 builds", workflowJob.getLastBuild().getNumber() == 4);
+        assertTrue("there are not 5 builds", workflowJob.getLastBuild().getNumber() == 5);
 
         ioCount = getCurrentThreadCountForName("iothread-");
         assertTrue("iothread-2 count is not 1", ioCount == 1);
@@ -328,13 +333,15 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
 
         Double randomStatus = Math.random();
         String message2 = "{ \"CI_STATUS\": " + randomStatus.toString() +" }";
+        System.out.println("Starting rapid fire - WITH property changes.");
         for (int i = 0 ; i < 3 ; i++) {
             sendFedMsgMessageUsingLogger(message2);
             elasticSleep(5000);
         }
 
+        System.out.println("DONE rapid fire - WITH property changes.");
         elasticSleep(2000);
-        assertTrue("there are not 8 builds", workflowJob.getLastBuild().getNumber() == 8);
+        assertTrue("there are not 9 builds", workflowJob.getLastBuild().getNumber() == 9);
 
         for (int i = 0 ; i < 7 ; i++) {
             Build b1 = new Build(workflowJob, i+1);

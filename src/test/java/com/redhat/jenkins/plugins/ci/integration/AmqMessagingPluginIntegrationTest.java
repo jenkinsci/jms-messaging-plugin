@@ -261,6 +261,9 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 ")\nnode('master') {\n sleep 1\n}");
         workflowJob.save();
         workflowJob.startBuild();
+        workflowJob.configure();
+        workflowJob.save();
+        workflowJob.startBuild();
         elasticSleep(2000);
         printThreadsWithName("ActiveMQ.*Task-");
         printThreadsWithName("CIBuildTrigger");
@@ -276,7 +279,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         }
 
         elasticSleep(5000);
-        assertTrue("there are not 4 builds", workflowJob.getLastBuild().getNumber() == 4);
+        assertTrue("there are not 5 builds", workflowJob.getLastBuild().getNumber() == 5);
 
         printThreadsWithName("ActiveMQ.*Task-");
         printThreadsWithName("CIBuildTrigger");
@@ -305,7 +308,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         }
 
         elasticSleep(2000);
-        assertTrue("there are not 8 builds", workflowJob.getLastBuild().getNumber() == 8);
+        assertTrue("there are not 9 builds", workflowJob.getLastBuild().getNumber() == 9);
 
         for (int i = 0 ; i < 7 ; i++) {
             Build b1 = new Build(workflowJob, i+1);
