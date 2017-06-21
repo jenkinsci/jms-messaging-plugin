@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -74,7 +73,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private List<MsgCheck> checks = new ArrayList<MsgCheck>();
 	private MessagingProviderOverrides overrides;
 
-	public static final transient WeakHashMap<String, CITriggerThread> triggerInfo = new WeakHashMap<String, CITriggerThread>();
+	public static final transient HashMap<String, CITriggerThread> triggerInfo = new HashMap<>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
@@ -84,7 +83,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         this.providerName = providerName;
         this.overrides = overrides;
 		if (checks == null) {
-			checks = new ArrayList<MsgCheck>();
+			checks = new ArrayList<>();
 		}
 		this.checks = checks;
 	}
@@ -150,7 +149,10 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	@Override
 	public void stop() {
 		super.stop();
-		stopTriggerThread();
+		if (job != null) {
+			log.fine("job is null! Not stopping trigger thread!");
+			stopTriggerThread(job.getFullName());
+		}
 	}
 
     public void rename(String oldFullName) {
@@ -175,7 +177,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		try {
-			if (stopTriggerThread() == null) {
+			if (stopTriggerThread(job.getFullName()) == null) {
 				JMSMessagingProvider provider = GlobalCIConfiguration.get()
 						.getProvider(providerName);
 				if (provider == null) {
@@ -196,13 +198,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		}
 	}
 
-    private CITriggerThread stopTriggerThread() {
-        if (job != null) {
-            return stopTriggerThread(job.getFullName());
-        }
-        return null;
-    }
-
     private CITriggerThread stopTriggerThread(String fullName) {
         CITriggerThread thread = triggerInfo.get(fullName);
         if (thread != null) {
@@ -220,7 +215,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
             try {
                 int waitCount = 0;
                 while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
-                    log.fine("Thread " + thread.getId() + ": Message Provider is NOT connected. Sleeping 1 sec");
+                    log.info("Thread " + thread.getId() + ": Message Provider is NOT connected. Sleeping 1 sec");
                     Thread.sleep(1000);
                     waitCount++;
                 }
@@ -230,8 +225,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 thread.sendInterrupt();
                 thread.interrupt();
                 if (thread.isMessageProviderConnected()) {
-                    log.fine("Thread " + thread.getId() + ": Message Provider is connected");
-                    log.fine("Thread " + thread.getId() + ": trying to join");
+                    log.info("Thread " + thread.getId() + ": Message Provider is connected");
+                    log.info("Thread " + thread.getId() + ": trying to join");
                     thread.join();
                 } else {
                     log.warning("Thread " + thread.getId() + " Message Provider is NOT connected; skipping join!");
@@ -239,10 +234,10 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
             }
-        }
-        CITriggerThread thread2 = triggerInfo.remove(fullName);
-        if (thread2 != null) {
-            log.fine("Removed thread: " + thread2.getId());
+			CITriggerThread thread2 = triggerInfo.remove(fullName);
+			if (thread2 != null) {
+				log.fine("Removed thread: " + thread2.getId());
+			}
         }
         return null;
     }
