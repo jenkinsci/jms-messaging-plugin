@@ -141,6 +141,10 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
+        if (interrupt) {
+            log.info("We are being interrupted. Skipping unsubscribe...");
+            return;
+        }
         try {
             if (poller != null) {
                 for (Integer i = 0; i < poller.getSize(); i++) {
@@ -156,7 +160,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 context.term();
             }
         } catch (Exception e) {
-            log.fine(e.getMessage());
+            log.warning(e.getMessage());
         }
         poller = null;
         context = null;
@@ -537,6 +541,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         }
         poller = null;
         socket = null;
+        interrupt = false;
     }
 
     @Override

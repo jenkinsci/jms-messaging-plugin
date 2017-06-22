@@ -298,7 +298,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
 
         System.out.println("Starting rapid fire - no property changes.");
         String message = "{ \"CI_STATUS\": \"failed\" }";
-        for (int i = 0 ; i < 3 ; i++) {
+        for (int i = 1 ; i <= 3 ; i++) {
             sendFedMsgMessageUsingLogger(message);
         }
         System.out.println("DONE rapid fire - no property changes.");
@@ -334,17 +334,17 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         Double randomStatus = Math.random();
         String message2 = "{ \"CI_STATUS\": " + randomStatus.toString() +" }";
         System.out.println("Starting rapid fire - WITH property changes.");
-        for (int i = 0 ; i < 3 ; i++) {
+        for (int i = 1 ; i <= 3 ; i++) {
             sendFedMsgMessageUsingLogger(message2);
             elasticSleep(5000);
         }
 
         System.out.println("DONE rapid fire - WITH property changes.");
-        elasticSleep(2000);
+        elasticSleep(5000);
         assertTrue("there are not 9 builds", workflowJob.getLastBuild().getNumber() == 9);
 
-        for (int i = 0 ; i < 7 ; i++) {
-            Build b1 = new Build(workflowJob, i+1);
+        for (int i = 1 ; i <= 9 ; i++) {
+            Build b1 = new Build(workflowJob, i);
             assertTrue(b1.isSuccess());
         }
         printThreadsWithName("iothread-");

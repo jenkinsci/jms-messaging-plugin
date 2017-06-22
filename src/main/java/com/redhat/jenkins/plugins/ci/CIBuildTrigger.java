@@ -150,7 +150,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	public void stop() {
 		super.stop();
 		if (job != null) {
-			log.fine("job is null! Not stopping trigger thread!");
+			log.info("job is null! Not stopping trigger thread!");
 			stopTriggerThread(job.getFullName());
 		}
 	}
@@ -190,7 +190,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
 				trigger.setDaemon(true);
 				trigger.start();
-				log.fine("Adding thread: " + trigger.getId());
+				log.info("Adding thread: " + trigger.getId());
 				triggerInfo.put(job.getFullName(), trigger);
 			}
 		} catch (Exception e) {
@@ -207,11 +207,11 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			CITriggerThread newThread = new CITriggerThread(provider, overrides, job
 					.getFullName(), selector, getChecks());
 			if (thread.equals(newThread)) {
-				log.fine("Already have thread " + thread.getId() + "...");
+				log.info("Already have thread " + thread.getId() + "...");
 				return thread;
 			}
 
-            log.fine("Getting thread: " + thread.getId());
+            log.info("Getting thread: " + thread.getId());
             try {
                 int waitCount = 0;
                 while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
@@ -236,7 +236,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
             }
 			CITriggerThread thread2 = triggerInfo.remove(fullName);
 			if (thread2 != null) {
-				log.fine("Removed thread: " + thread2.getId());
+				log.info("Removed thread: " + thread2.getId());
 			}
         }
         return null;
