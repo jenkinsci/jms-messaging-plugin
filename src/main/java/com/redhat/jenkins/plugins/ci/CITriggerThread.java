@@ -73,7 +73,7 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
     public boolean isMessageProviderConnected() {
         if (messagingWorker == null) return false;
-        return messagingWorker.isConnected();
+        return messagingWorker.isConnectedAndSubscribed();
     }
 
     @Override

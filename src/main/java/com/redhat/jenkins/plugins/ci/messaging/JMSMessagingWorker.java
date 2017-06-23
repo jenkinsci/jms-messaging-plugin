@@ -47,6 +47,9 @@ public abstract class JMSMessagingWorker {
     public abstract void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs);
     public abstract boolean connect() throws Exception;
     public abstract boolean isConnected();
+
+    public abstract boolean isConnectedAndSubscribed();
+
     public abstract void disconnect();
 
     public abstract boolean sendMessage(Run<?, ?> build,

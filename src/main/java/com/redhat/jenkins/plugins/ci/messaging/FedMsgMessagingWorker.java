@@ -333,6 +333,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
+    public boolean isConnectedAndSubscribed() {
+        return isConnected();
+    }
+
+    @Override
     public void disconnect() {
     }
 

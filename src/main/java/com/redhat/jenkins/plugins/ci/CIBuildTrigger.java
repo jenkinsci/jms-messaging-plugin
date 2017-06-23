@@ -221,7 +221,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				try {
 					int waitCount = 0;
 					while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
-						log.info("Thread " + thread.getId() + ": Message Provider is NOT connected. Sleeping 1 sec");
+						log.info("Thread " + thread.getId() + ": Message Provider is NOT connected AND subscribed. Sleeping 1 sec");
 						Thread.sleep(1000);
 						waitCount++;
 					}
@@ -231,11 +231,11 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 					thread.sendInterrupt();
 					thread.interrupt();
 					if (thread.isMessageProviderConnected()) {
-						log.info("Thread " + thread.getId() + ": Message Provider is connected");
+						log.info("Thread " + thread.getId() + ": Message Provider is connected and subscribed");
 						log.info("Thread " + thread.getId() + ": trying to join");
 						thread.join();
 					} else {
-						log.warning("Thread " + thread.getId() + " Message Provider is NOT connected; skipping join!");
+						log.warning("Thread " + thread.getId() + " Message Provider is NOT connected AND subscribed; skipping join!");
 					}
 				} catch (Exception e) {
 					log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);

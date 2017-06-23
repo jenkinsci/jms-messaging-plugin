@@ -304,7 +304,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         for (int i = 0 ; i < 3 ; i++) {
             send.startBuild(singletonMap("CI_STATUS2", randomNumber)).shouldSucceed();
-            elasticSleep(5000);
+            elasticSleep(1000);
         }
 
         elasticSleep(2000);

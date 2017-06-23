@@ -373,11 +373,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 }
                 if (allPassed) {
                     if (checks.size() > 0) {
-                        log.info("All msg checks have passed.");
+                        log.fine("All msg checks have passed.");
                     }
                     process(jobname, m);
                 } else {
-                    log.info("Some msg checks did not pass.");
+                    log.fine("Some msg checks did not pass.");
                 }
             } else {
                 log.info("No message received for the past " + timeoutInMs + " ms, re-subscribing job '" + jobname + "'.");
@@ -402,6 +402,14 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
     }
 
+    @Override
+    public boolean isConnectedAndSubscribed() {
+        if (connection != null && subscriber != null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
     @Override
     public void disconnect() {
         if (connection != null) {

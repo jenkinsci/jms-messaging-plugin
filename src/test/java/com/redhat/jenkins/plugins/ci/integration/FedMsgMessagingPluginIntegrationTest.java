@@ -336,7 +336,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         System.out.println("Starting rapid fire - WITH property changes.");
         for (int i = 1 ; i <= 3 ; i++) {
             sendFedMsgMessageUsingLogger(message2);
-            elasticSleep(5000);
+            elasticSleep(1000);
         }
 
         System.out.println("DONE rapid fire - WITH property changes.");
