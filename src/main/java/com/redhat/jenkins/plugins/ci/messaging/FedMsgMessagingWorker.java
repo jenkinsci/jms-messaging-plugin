@@ -73,6 +73,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     private boolean interrupt = false;
     private String topic;
     private String selector;
+    private boolean pollerClosed = false;
 
     public FedMsgMessagingWorker(FedMsgMessagingProvider fedMsgMessagingProvider, MessagingProviderOverrides overrides, String jobname) {
         this.provider = fedMsgMessagingProvider;
@@ -165,6 +166,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         poller = null;
         context = null;
         socket = null;
+        pollerClosed = true;
     }
 
     private String formatMessage(FedmsgMessage data) {
@@ -239,6 +241,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         try {
             while ((new Date().getTime() - lastSeenMessage) < timeoutInMs) {
                 if (poller.poll(1000) > 0) {
+                    pollerClosed = false;
                     if (poller.pollin(0)) {
                         ZMsg z = ZMsg.recvMsg(poller.getSocket(0));
                         // Reset timer
@@ -275,6 +278,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 } else {
                     if (interrupt) {
                         log.info("We have been interrupted...");
+                        pollerClosed = true;
                         break;
                     }
                 }
@@ -525,6 +529,18 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     public void prepareForInterrupt() {
         interrupt = true;
         try {
+            while (!pollerClosed) {
+                if (!Thread.currentThread().isAlive()) {
+                    log.info("poller not closed yet BUT trigger thread is dead. continuing interrupt");
+                    break;
+                }
+                try {
+                    log.info("poller not closed yet");
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             if (poller != null) {
                 ZMQ.Socket s = poller.getSocket(0);
                 poller.unregister(s);

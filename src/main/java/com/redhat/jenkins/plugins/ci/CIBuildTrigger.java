@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -73,7 +75,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private List<MsgCheck> checks = new ArrayList<MsgCheck>();
 	private MessagingProviderOverrides overrides;
 
-	public static final transient HashMap<String, CITriggerThread> triggerInfo = new HashMap<>();
+	public static final transient ConcurrentMap<String, CITriggerThread> triggerInfo = new ConcurrentHashMap<>();
+	public static final transient ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
@@ -177,21 +180,23 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		try {
-			if (stopTriggerThread(job.getFullName()) == null) {
-				JMSMessagingProvider provider = GlobalCIConfiguration.get()
-						.getProvider(providerName);
-				if (provider == null) {
-					log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
-							+ providerName + ". You must update the job configuration. Trigger not started.");
-					return;
+			synchronized(getLock(job.getFullName())) {
+				if (stopTriggerThread(job.getFullName()) == null) {
+					JMSMessagingProvider provider = GlobalCIConfiguration.get()
+							.getProvider(providerName);
+					if (provider == null) {
+						log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
+								+ providerName + ". You must update the job configuration. Trigger not started.");
+						return;
+					}
+					CITriggerThread trigger = new CITriggerThread(provider, overrides, job
+							.getFullName(), selector, getChecks());
+					trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+					trigger.setDaemon(true);
+					trigger.start();
+					log.info("Adding thread: " + trigger.getId());
+					triggerInfo.put(job.getFullName(), trigger);
 				}
-				CITriggerThread trigger = new CITriggerThread(provider, overrides, job
-						.getFullName(), selector, getChecks());
-				trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
-				trigger.setDaemon(true);
-				trigger.start();
-				log.info("Adding thread: " + trigger.getId());
-				triggerInfo.put(job.getFullName(), trigger);
 			}
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Unhandled exception in trigger start.", e);
@@ -199,47 +204,51 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	}
 
     private CITriggerThread stopTriggerThread(String fullName) {
-        CITriggerThread thread = triggerInfo.get(fullName);
-        if (thread != null) {
+		synchronized(getLock(fullName)) {
+			CITriggerThread thread = triggerInfo.get(fullName);
+			if (thread != null) {
 
-			JMSMessagingProvider provider = GlobalCIConfiguration.get()
-					.getProvider(providerName);
-			CITriggerThread newThread = new CITriggerThread(provider, overrides, job
-					.getFullName(), selector, getChecks());
-			if (thread.equals(newThread)) {
-				log.info("Already have thread " + thread.getId() + "...");
-				return thread;
-			}
+				JMSMessagingProvider provider = GlobalCIConfiguration.get()
+						.getProvider(providerName);
+				CITriggerThread newThread = new CITriggerThread(provider, overrides, job
+						.getFullName(), selector, getChecks());
+				if (thread.equals(newThread)) {
+					log.info("Already have thread " + thread.getId() + "...");
+					return thread;
+				}
 
-            log.info("Getting thread: " + thread.getId());
-            try {
-                int waitCount = 0;
-                while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
-                    log.info("Thread " + thread.getId() + ": Message Provider is NOT connected. Sleeping 1 sec");
-                    Thread.sleep(1000);
-                    waitCount++;
-                }
-                if (waitCount > 60) {
-                    log.warning("Wait time of 60 secs elapsed trying to connect before interrupting...");
-                }
-                thread.sendInterrupt();
-                thread.interrupt();
-                if (thread.isMessageProviderConnected()) {
-                    log.info("Thread " + thread.getId() + ": Message Provider is connected");
-                    log.info("Thread " + thread.getId() + ": trying to join");
-                    thread.join();
-                } else {
-                    log.warning("Thread " + thread.getId() + " Message Provider is NOT connected; skipping join!");
-                }
-            } catch (Exception e) {
-                log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
-            }
-			CITriggerThread thread2 = triggerInfo.remove(fullName);
-			if (thread2 != null) {
-				log.info("Removed thread: " + thread2.getId());
+				log.info("Getting thread: " + thread.getId());
+				try {
+					int waitCount = 0;
+					while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
+						log.info("Thread " + thread.getId() + ": Message Provider is NOT connected. Sleeping 1 sec");
+						Thread.sleep(1000);
+						waitCount++;
+					}
+					if (waitCount > 60) {
+						log.warning("Wait time of 60 secs elapsed trying to connect before interrupting...");
+					}
+					thread.sendInterrupt();
+					thread.interrupt();
+					if (thread.isMessageProviderConnected()) {
+						log.info("Thread " + thread.getId() + ": Message Provider is connected");
+						log.info("Thread " + thread.getId() + ": trying to join");
+						thread.join();
+					} else {
+						log.warning("Thread " + thread.getId() + " Message Provider is NOT connected; skipping join!");
+					}
+				} catch (Exception e) {
+					log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
+				}
+				CITriggerThread thread2 = triggerInfo.remove(fullName);
+				if (thread2 != null) {
+					log.info("Removed thread: " + thread2.getId());
+				}
+				locks.remove(fullName);
+				log.info("Removed thread LOCK");
 			}
-        }
-        return null;
+			return null;
+		}
     }
 
 	public String getSelector() {
@@ -462,5 +471,17 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		public String getDisplayName() {
 			return Messages.PluginName();
 		}
+	}
+
+	Object getLock(String name) {
+		Object lock = locks.get(name);
+		if (lock == null) {
+			Object newLock = new Object();
+			lock = locks.putIfAbsent(name, newLock);
+			if (lock == null) {
+				lock = newLock;
+			}
+		}
+		return lock;
 	}
 }
