@@ -173,7 +173,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
 
     private int getCurrentAMQThreadCount() {
         String threadCount =
-                jenkins.runScript("println D.runtime.threads.grep { it.name =~ /^ActiveMQ / }.size()");
+                jenkins.runScript("println D.runtime.threads.grep { it.name =~ /^ActiveMQ Transport/ }.size()");
         return Integer.parseInt(threadCount.trim());
     }
 
@@ -220,7 +220,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         String script = "import java.util.*\n" +
                 "import com.github.olivergondza.dumpling.model.ThreadSet;\n" +
                 "import static com.github.olivergondza.dumpling.model.ProcessThread.nameContains;\n" +
-                "ThreadSet ts =  D.runtime.threads.where(nameContains(\"ActiveMQ\"))\n" +
+                "ThreadSet ts =  D.runtime.threads.where(nameContains(\"ActiveMQ Transport\"))\n" +
                 "println(\"Filtered Thread Size: \" + ts.size());\n" +
                 "Iterator it = ts.iterator();\n" +
                 "while (it.hasNext()) {\n" +
