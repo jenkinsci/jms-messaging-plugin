@@ -540,10 +540,10 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     break;
                 }
                 try {
-                    log.info("poller not closed yet");
+                    log.info("poller not closed yet. Sleeping for 1 sec...");
                     Thread.currentThread().sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    // swallow
                 }
             }
             if (poller != null) {
