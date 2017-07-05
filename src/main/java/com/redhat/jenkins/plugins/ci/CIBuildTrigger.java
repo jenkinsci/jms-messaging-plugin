@@ -210,6 +210,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 				JMSMessagingProvider provider = GlobalCIConfiguration.get()
 						.getProvider(providerName);
+				// We create a new thread here only to be able to
+				// use .equals() to compare.
+				// The thread is never started.
 				CITriggerThread newThread = new CITriggerThread(provider, overrides, job
 						.getFullName(), selector, getChecks());
 				if (thread.equals(newThread)) {
