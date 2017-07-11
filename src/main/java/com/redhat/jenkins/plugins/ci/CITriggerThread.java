@@ -61,29 +61,8 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
     public void run() {
         SecurityContext old = ACL.impersonate(ACL.SYSTEM);
         try {
-            while (!Thread.currentThread().isInterrupted()) {
-                if (messagingWorker.subscribe(jobname, selector)) {
-                    messagingWorker.receive(jobname, checks, WAIT_HOURS * 60 * 60 * 1000);
-                } else {
-                    // Should not get here unless subscribe failed. This could be
-                    // because global configuration may not yet be available or
-                    // because we were interrupted. If not the latter, let's sleep
-                    // for a bit before retrying.
-                    if (!Thread.currentThread().isInterrupted()) {
-                        try {
-                            Thread.sleep(WAIT_SECONDS * 1000);
-                        } catch (InterruptedException e) {
-                            // We were interrupted while waiting to retry. We will
-                            // jump ship on the next iteration.
-
-                            // NB: The interrupt flag was cleared when
-                            // InterruptedException was thrown. We have to
-                            // re-install it to make sure we eventually leave this
-                            // thread.
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                }
+            while (!Thread.currentThread().isInterrupted() && !messagingWorker.isBeingInterrupted()) {
+                messagingWorker.receive(jobname, selector, checks, WAIT_HOURS * 60 * 60 * 1000);
             }
             log.info("Shutting down trigger thread for job '" + jobname + "'.");
             messagingWorker.unsubscribe(jobname);
@@ -94,6 +73,28 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
     public boolean isMessageProviderConnected() {
         if (messagingWorker == null) return false;
-        return messagingWorker.isConnected();
+        return messagingWorker.isConnectedAndSubscribed();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CITriggerThread that = (CITriggerThread) o;
+
+        if (jobname != null ? !jobname.equals(that.jobname) : that.jobname != null) return false;
+        if (selector != null ? !selector.equals(that.selector) : that.selector != null) return false;
+        return checks != null ? checks.equals(that.checks) : that.checks == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = messagingWorker != null ? messagingWorker.hashCode() : 0;
+        result = 31 * result + (jobname != null ? jobname.hashCode() : 0);
+        result = 31 * result + (selector != null ? selector.hashCode() : 0);
+        result = 31 * result + (checks != null ? checks.hashCode() : 0);
+        return result;
+    }
+
 }

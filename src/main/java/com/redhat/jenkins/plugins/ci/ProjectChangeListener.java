@@ -44,7 +44,7 @@ public class ProjectChangeListener extends ItemListener {
             if (item instanceof AbstractProject) {
                 AbstractProject project = (AbstractProject) item;
                 CITriggerThread triggerThread = CIBuildTrigger.triggerInfo.get(item.getFullName());
-                if (triggerThread == null) {
+                if (triggerThread != null) {
                     log.info("Getting thread: " + triggerThread.getId());
                 }
                 if (triggerThread != null && project.isDisabled()) {

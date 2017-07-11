@@ -1,13 +1,17 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
+import static java.util.Collections.singletonMap;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
+import org.jenkinsci.test.acceptance.po.Build;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
+import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
@@ -228,4 +232,94 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         elasticSleep(1000);
         jenkins.save();
     }
+
+    @WithPlugins({"workflow-aggregator", "monitoring", "dumpling"})
+    @Test
+    public void testPipelineJobProperties() throws Exception {
+        WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
+        send.configure();
+        StringParameter ciStatusParam = send.addParameter(StringParameter.class);
+        ciStatusParam.setName("CI_STATUS2");
+        ciStatusParam.setDefault("");
+        send.script.set("node('master') {\n sendCIMessage" +
+                " providerName: 'test', " +
+                " failOnError: true, " +
+                " messageContent: 'abcdefg', " +
+                " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}', " +
+                " messageType: 'CodeQualityChecksDone'}");
+        send.save();
+
+        //[expectedValue: number + '0.0234', field: 'CI_STATUS2']
+        WorkflowJob workflowJob = jenkins.jobs.create(WorkflowJob.class);
+        workflowJob.script.set("def number = currentBuild.getNumber().toString()\n" +
+                "properties(\n" +
+                "        [\n" +
+                "                pipelineTriggers(\n" +
+                "  [[$class: 'CIBuildTrigger', checks: [], providerName: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]\n" +
+                "                )\n" +
+                "        ]\n" +
+                ")\nnode('master') {\n sleep 1\n}");
+        workflowJob.save();
+        workflowJob.startBuild();
+        workflowJob.configure();
+        workflowJob.save();
+        workflowJob.startBuild();
+        elasticSleep(2000);
+        printThreadsWithName("ActiveMQ.*Task-");
+        printThreadsWithName("CIBuildTrigger");
+        int ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        int triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        assertTrue("CIBuildTrigger count is 1", triggers == 1);
+
+        //checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
+        String randomNumber = "123456789";
+        for (int i = 0 ; i < 3 ; i++) {
+            send.startBuild(singletonMap("CI_STATUS2", randomNumber)).shouldSucceed();
+        }
+
+        elasticSleep(5000);
+        assertTrue("there are not 5 builds", workflowJob.getLastBuild().getNumber() == 5);
+
+        printThreadsWithName("ActiveMQ.*Task-");
+        printThreadsWithName("CIBuildTrigger");
+        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        assertTrue("CIBuildTrigger count is not 1", triggers == 1);
+
+        workflowJob.configure();
+        workflowJob.script.set("def number = currentBuild.getNumber().toString()\n" +
+                "properties(\n" +
+                "        [\n" +
+                "                pipelineTriggers(\n" +
+                "  [[$class: 'CIBuildTrigger', checks: [[expectedValue: '.*' + number + '.*', field: 'CI_STATUS2']], providerName: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]\n" +
+                "                )\n" +
+                "        ]\n" +
+                ")\nnode('master') {\n sleep 1\n}");
+        workflowJob.sandbox.check(false);
+        workflowJob.save();
+        workflowJob.startBuild();
+        elasticSleep(5000);
+
+        for (int i = 0 ; i < 3 ; i++) {
+            send.startBuild(singletonMap("CI_STATUS2", randomNumber)).shouldSucceed();
+            elasticSleep(1000);
+        }
+
+        elasticSleep(2000);
+        assertTrue("there are not 9 builds", workflowJob.getLastBuild().getNumber() == 9);
+
+        for (int i = 0 ; i < 7 ; i++) {
+            Build b1 = new Build(workflowJob, i+1);
+            assertTrue(b1.isSuccess());
+        }
+        printThreadsWithName("ActiveMQ.*Task-");
+        printThreadsWithName("CIBuildTrigger");
+        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        assertTrue("CIBuildTrigger count is not 1", triggers == 1);
+    }
+
 }

@@ -651,6 +651,27 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         }
     }
 
+    protected void printThreadsWithName(String tName) {
+        System.out.println("Looking for Threads with name that contains: " + tName);
+        String script = "import java.util.*\n" +
+                "import java.util.regex.*\n" +
+                "import com.github.olivergondza.dumpling.model.ThreadSet;\n" +
+                "import static com.github.olivergondza.dumpling.model.ProcessThread.nameContains;\n" +
+                "ThreadSet ts =  D.runtime.threads.where(nameContains(Pattern.compile(\"" + tName + "\")))\n" +
+                "println(\"Filtered Thread Size: \" + ts.size());\n" +
+                "Iterator it = ts.iterator();\n" +
+                "while (it.hasNext()) {\n" +
+                "  println(it.next().name)\n" +
+                "}";
+        String threads = jenkins.runScript(script);
+        System.out.println(threads);
+    }
+
+    protected int getCurrentThreadCountForName(String name) {
+        String threadCount =
+                jenkins.runScript("println D.runtime.threads.grep { it.name =~ /^" + name + "/ }.size()");
+        return Integer.parseInt(threadCount.trim());
+    }
 
 }
 

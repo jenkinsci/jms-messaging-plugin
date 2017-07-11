@@ -116,8 +116,11 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         waitForNoAMQTaskThreads();
 
         int currentThreadCount = getCurrentAMQThreadCount();
+        int previousThreadCount = currentThreadCount;
         System.out.println("Current AMQ Thread Count: " + currentThreadCount);
-        printAMQThreads();
+        String previousThreads = printAMQThreads();
+        System.out.println(previousThreads);
+
 
         FreeStyleJob jobB = jenkins.jobs.create(FreeStyleJob.class, "sender");
         jobB.configure();
@@ -141,7 +144,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         elasticSleep(60000);
 
         //Check for unconnection AMQ threads
-        printAMQThreads();
+        System.out.println(printAMQThreads());
         ensureNoUnconnectedThreads();
 
         //Now startup
@@ -152,8 +155,8 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         elasticSleep(10000);
         waitForNoAMQTaskThreads();
 
-        printAMQThreads();
-        ensureNoLeakingThreads(currentThreadCount);
+        System.out.println(printAMQThreads());
+        ensureNoLeakingThreads(previousThreadCount, previousThreads);
 
         jobB.startBuild().shouldSucceed();
 
@@ -162,7 +165,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
             job.getLastBuild().shouldSucceed().shouldExist();
             assertThat(job.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
         }
-        printAMQThreads();
+        System.out.println(printAMQThreads());
         System.out.println("Waiting 10 secs");
         elasticSleep(10000);
         waitForNoAMQTaskThreads();
@@ -170,7 +173,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
 
     private int getCurrentAMQThreadCount() {
         String threadCount =
-                jenkins.runScript("println D.runtime.threads.grep { it.name =~ /^ActiveMQ / }.size()");
+                jenkins.runScript("println D.runtime.threads.grep { it.name =~ /^ActiveMQ Transport/ }.size()");
         return Integer.parseInt(threadCount.trim());
     }
 
@@ -213,35 +216,43 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         System.out.println("currentThreadCount == 0");
     }
 
-    private void printAMQThreads() {
+    private String printAMQThreads() {
         String script = "import java.util.*\n" +
                 "import com.github.olivergondza.dumpling.model.ThreadSet;\n" +
                 "import static com.github.olivergondza.dumpling.model.ProcessThread.nameContains;\n" +
-                "ThreadSet ts =  D.runtime.threads.where(nameContains(\"ActiveMQ\"))\n" +
+                "ThreadSet ts =  D.runtime.threads.where(nameContains(\"ActiveMQ Transport\"))\n" +
                 "println(\"Filtered Thread Size: \" + ts.size());\n" +
                 "Iterator it = ts.iterator();\n" +
                 "while (it.hasNext()) {\n" +
                 "  println(it.next().name)\n" +
                 "}";
         String threads = jenkins.runScript(script);
-        System.out.println(threads);
-
+        return threads;
     }
-    private void ensureNoLeakingThreads(int previousThreadCount) {
+    private void ensureNoLeakingThreads(int previousThreadCount, String previousThreads) {
         int currentThreadCount = getCurrentAMQThreadCount();
         System.out.println("Current AMQ Thread Count: " + currentThreadCount);
         int counter = 0;
         int MAXWAITTIME = 60;
         while (abs(currentThreadCount- previousThreadCount) > 2 &&
                 counter < MAXWAITTIME ) {
-            System.out.println("abs(currentThreadCount- previousThreadCount) > 2");
-            System.out.println(abs(currentThreadCount- previousThreadCount));
+            System.out.println("abs(currentThreadCount [" + currentThreadCount
+                    + "] - previousThreadCount [" + previousThreadCount + "] ) > 2");
+            System.out.println(abs(currentThreadCount - previousThreadCount));
             elasticSleep(1000);
             counter++;
             currentThreadCount = getCurrentAMQThreadCount();
         }
-        boolean equal = abs(currentThreadCount- previousThreadCount) <= 2;
-        assertTrue("abs(currentThreadCount- previousThreadCount) > 2", equal);
+        boolean equal = abs(currentThreadCount - previousThreadCount) <= 2;
+        if (!equal) {
+            System.out.println("*** Previous Threads ***");
+            System.out.println(previousThreads);
+            System.out.println("************************");
+            System.out.println("************************");
+            System.out.println("*** Current  Threads ***");
+            System.out.println(printAMQThreads());
+        }
+        assertTrue("abs(currentThreadCount - previousThreadCount) > 2", equal);
     }
 
     private void stopAMQ() throws Exception {
