@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.jayway.jsonpath.JsonPath;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
@@ -304,11 +305,18 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         if (msg == null) {
             return false;
         }
-
-        Object val = msg.get(check.getField());
         String sVal = "";
-        if (val != null) {
-            sVal = val.toString();
+
+        String field = check.getField();
+        if (field.startsWith("$")) {
+            log.info("field " + field + " contains $, therefore using jsonPath");
+            String jsonMsg = message.getMsgJson();
+            sVal = JsonPath.parse(jsonMsg).read(field);
+        } else {
+            Object val = msg.get(check.getField());
+            if (val != null) {
+                sVal = val.toString();
+            }
         }
         String eVal = "";
         if (check.getExpectedValue() != null) {

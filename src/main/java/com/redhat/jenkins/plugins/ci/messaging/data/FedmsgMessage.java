@@ -142,4 +142,19 @@ public class FedmsgMessage {
         }
         return message;
     }
+
+    public String getMsgJson() {
+        String message = "";
+        try {
+            ByteArrayOutputStream var1 = new ByteArrayOutputStream();
+            ObjectMapper var2 = new ObjectMapper();
+            ObjectWriter var3 = var2.writer();
+            var3.with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValue(var1, msg);
+            var1.close();
+            message = new String(var1.toByteArray(), "UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return message;
+    }
 }
