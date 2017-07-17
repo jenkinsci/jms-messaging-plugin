@@ -46,7 +46,10 @@ import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProvide
  */
 public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
+    private static final boolean DEFAULT_USE_QUEUES = false;
+
     private String broker;
+    private Boolean useQueues = DEFAULT_USE_QUEUES;
     private String topic;
     private transient String user;
     private transient Secret password;
@@ -56,9 +59,10 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
 
     @DataBoundConstructor
-    public ActiveMqMessagingProvider(String name, String broker, String topic, TopicProvider topicProvider, ActiveMQAuthenticationMethod authenticationMethod) {
+    public ActiveMqMessagingProvider(String name, String broker, Boolean useQueues, String topic, TopicProvider topicProvider, ActiveMQAuthenticationMethod authenticationMethod) {
         this.name = name;
         this.broker = broker;
+        this.useQueues = useQueues;
         this.topic = topic;
         this.topicProvider = topicProvider;
         this.authenticationMethod = authenticationMethod;
@@ -84,6 +88,11 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     @DataBoundSetter
+    public void setUseQueues(Boolean useQueues) {
+        this.useQueues = useQueues;
+    }
+
+    @DataBoundSetter
     public void setTopic(String topic) {
         this.topic = topic;
     }
@@ -105,6 +114,10 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     public String getBroker() {
         return broker;
+    }
+
+    public Boolean getUseQueues() {
+        return (useQueues != null ? useQueues : false);
     }
 
     public String getTopic() {

@@ -31,6 +31,9 @@
     <f:entry title="${%CI Broker URL}" field="broker">
       <f:textbox />
     </f:entry>
+    <f:entry field="useQueues">
+        <f:checkbox title="Use queues rather than topics." name="useQueues" default="${descriptor.getDefaultQueue()}" />
+    </f:entry>
     <f:entry title="${%Topic name}" field="topic">
       <f:textbox />
     </f:entry>

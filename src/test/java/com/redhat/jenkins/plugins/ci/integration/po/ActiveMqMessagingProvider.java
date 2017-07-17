@@ -32,6 +32,7 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
 
     public final Control name       = control("name");
     public final Control broker     = control("broker");
+    public final Control useQueues  = control("useQueues");
     public final Control topic      = control("topic");
 
     public ActiveMqMessagingProvider(PageObject parent, String path) {
@@ -48,6 +49,10 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
     }
     public ActiveMqMessagingProvider broker(String brokerVal) {
         broker.set(brokerVal);
+        return this;
+    }
+    public ActiveMqMessagingProvider useQueues(boolean value) {
+        useQueues.check(value);
         return this;
     }
     public ActiveMqMessagingProvider topic(String topicVal) {
