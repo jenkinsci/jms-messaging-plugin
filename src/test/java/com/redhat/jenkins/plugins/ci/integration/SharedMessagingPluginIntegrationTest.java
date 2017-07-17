@@ -1,10 +1,15 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.regex.Pattern;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -20,15 +25,11 @@ import org.jenkinsci.test.acceptance.po.Job;
 import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.regex.Pattern;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 
 /**
  * Created by shebert on 06/06/17.
@@ -39,6 +40,12 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(5000);
         jenkins.save();
         assertThat(driver, hasContent("Attempt to add a duplicate JMS Message Provider - test"));
+    }
+
+    public void _testAddQueueMessageProvider() throws IOException {
+        elasticSleep(5000);
+        jenkins.save();
+        // Not sure what else to do here....
     }
 
     public void _testSimpleCIEventSubscribe() throws Exception {

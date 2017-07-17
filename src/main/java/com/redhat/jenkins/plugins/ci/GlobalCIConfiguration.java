@@ -14,6 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.annotation.Nonnull;
+
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
@@ -28,8 +30,6 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
-
-import javax.annotation.Nonnull;
 
 /*
  * The MIT License
@@ -100,7 +100,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                 if (getProvider(DEFAULT_PROVIDER) == null) {
                     log.info("There is no default Message Provider.");
                     configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER,
-                            broker, topic, new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
+                            broker, false, topic, new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
                     log.info("Added default Message Provider using deprecated configuration.");
                     setMigrationInProgress(true);
                 } else {

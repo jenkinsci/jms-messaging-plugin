@@ -1,9 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
-
-import com.redhat.utils.OrderedProperties;
-import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -33,10 +30,10 @@ import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
-import javax.jms.TopicSubscriber;
 
 import jenkins.model.Jenkins;
 
@@ -51,6 +48,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.utils.MessageUtils;
+import com.redhat.utils.OrderedProperties;
+import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
@@ -83,7 +82,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private final MessagingProviderOverrides overrides;
 
     private Connection connection;
-    private TopicSubscriber subscriber;
+    private MessageConsumer subscriber;
     private String topic;
     private String selector;
 
@@ -108,11 +107,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     if (subscriber == null) {
                         log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' topic.");
                         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                        Topic destination = session.createTopic(this.topic);
-
-                        subscriber = session
-                                .createDurableSubscriber(destination, jobname,
-                                        selector, false);
+                        if (provider.getUseQueues()) {
+                            Queue destination = session.createQueue(this.topic);
+                            subscriber = session.createConsumer(destination, selector, false);
+                        } else {
+                            Topic destination = session.createTopic(this.topic);
+                            subscriber = session.createDurableSubscriber(destination, jobname, selector, false);
+                        }
                         log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' topic with selector: " + selector);
                     } else {
                         log.fine("Already subscribed to '" + this.topic + "' topic with selector: " + selector + " for job '" + jobname);
@@ -339,7 +340,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
     }
 
-
     @Override
     public void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs) {
         while (!subscribe(jobname, selector)) {
@@ -469,7 +469,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     OrderedProperties p = new OrderedProperties();
                     p.load(new StringReader(props));
                     @SuppressWarnings("unchecked")
-                    Enumeration<String> e = (Enumeration<String>) p.propertyNames();
+                    Enumeration<String> e = p.propertyNames();
                     while (e.hasMoreElements()) {
                         String key = e.nextElement();
                         EnvVars envVars2 = new EnvVars();

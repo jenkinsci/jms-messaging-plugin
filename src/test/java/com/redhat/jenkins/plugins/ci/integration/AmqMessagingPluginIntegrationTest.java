@@ -69,6 +69,19 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testAddQueueMessageProvider() throws IOException {
+        jenkins.configure();
+        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
+        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
+        msgConfig.name("queue")
+                .broker(amq.getBroker())
+                .useQueues(true)
+                .topic("CI")
+                .userNameAuthentication("admin", "redhat");
+        _testAddQueueMessageProvider();
+    }
+
+    @Test
     public void testSimpleCIEventSubscribe() throws Exception {
         _testSimpleCIEventSubscribe();
     }
