@@ -566,9 +566,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     connection.setClientID(ip + "_" + UUID.randomUUID().toString());
                     connection.start();
                     Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    Topic destination = session.createTopic(ltopic);
-
-                    consumer = session.createConsumer(destination, selector);
+                    if (provider.getUseQueues()) {
+                        Queue destination = session.createQueue(ltopic);
+                        consumer = session.createConsumer(destination, selector, false);
+                    } else {
+                        Topic destination = session.createTopic(ltopic);
+                        consumer = session.createDurableSubscriber(destination, jobname, selector, false);
+                    }
 
                     Message message = consumer.receive(timeout*60*1000);
                     if (message != null) {
