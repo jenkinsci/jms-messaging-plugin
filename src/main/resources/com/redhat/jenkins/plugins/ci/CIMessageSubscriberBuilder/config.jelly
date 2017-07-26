@@ -38,7 +38,7 @@
         <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
       </j:otherwise>
     </j:choose>
-    <table>
+    <table width="100%">
       <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
         <f:entry title="${%Topic name}" field="topic">
           <f:textbox value="${value}"/>
