@@ -82,6 +82,11 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         return this;
     }
 
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
     @DataBoundSetter
     public void setBroker(String broker) {
         this.broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
