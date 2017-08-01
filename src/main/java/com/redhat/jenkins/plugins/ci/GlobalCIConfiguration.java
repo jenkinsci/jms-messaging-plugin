@@ -194,15 +194,28 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     // Jelly helper routines.
     public Boolean getFirstProviderOverrides() {
-        return getFirstProviderOverrideTopic().length() > 0;
+        if (configs != null && configs.size() > 0) {
+            JMSMessagingProvider prov = configs.get(0);
+            if (prov instanceof ActiveMqMessagingProvider && !(((ActiveMqMessagingProvider) prov).getTopicProvider() instanceof DefaultTopicProvider)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public String getFirstProviderOverrideTopic() {
+    public String getFirstProviderOverrideTopic(String type) {
         if (configs != null && configs.size() > 0) {
             JMSMessagingProvider prov = configs.get(0);
             if (prov instanceof ActiveMqMessagingProvider) {
                 TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider) prov).getTopicProvider().getDescriptor();
-                return tpd.generateSubscriberTopic();
+                if (type.equals("subscriber")) {
+                    return tpd.generateSubscriberTopic();
+                } else if (type.equals("publisher")) {
+                    return tpd.generatePublisherTopic();
+                } else {
+                    log.severe("Unknown topic provider type '" + type + "'.");
+                    return "<unknown>";
+                }
             }
         }
         return "";
