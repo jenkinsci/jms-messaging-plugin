@@ -31,6 +31,16 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MessagingProviderOverrides that = (MessagingProviderOverrides) o;
+
+        return topic != null ? topic.equals(that.topic) : that.topic == null;
+    }
+
+    @Override
     public Descriptor<MessagingProviderOverrides> getDescriptor() {
         return Jenkins.getInstance().getDescriptorByType(MessagingProviderOverridesDescriptor.class);
     }

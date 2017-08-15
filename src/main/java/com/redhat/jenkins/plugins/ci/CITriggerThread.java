@@ -35,12 +35,15 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class CITriggerThread extends Thread {
+ */
+public class CITriggerThread extends Thread {
     private static final Logger log = Logger.getLogger(CITriggerThread.class.getName());
 
     private static final Integer WAIT_HOURS = 1;
     private static final Integer WAIT_SECONDS = 2;
 
+    private final JMSMessagingProvider messagingProvider;
+    private final MessagingProviderOverrides overrides;
     private final JMSMessagingWorker messagingWorker;
     private final String jobname;
     private final String selector;
@@ -48,6 +51,8 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
     public CITriggerThread(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
                            String jobname, String selector, List<MsgCheck> checks) {
+        this.messagingProvider = messagingProvider;
+        this.overrides = overrides;
         this.jobname = jobname;
         this.selector = selector;
         this.messagingWorker = messagingProvider.createWorker(overrides, this.jobname);
@@ -83,6 +88,8 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
         CITriggerThread that = (CITriggerThread) o;
 
+        if (messagingProvider != null ? messagingProvider.equals(that.messagingProvider) : that.messagingProvider != null) return false;
+        if (overrides != null ? overrides.equals(that.overrides) : that.overrides != null) return false;
         if (jobname != null ? !jobname.equals(that.jobname) : that.jobname != null) return false;
         if (selector != null ? !selector.equals(that.selector) : that.selector != null) return false;
         return checks != null ? checks.equals(that.checks) : that.checks == null;
