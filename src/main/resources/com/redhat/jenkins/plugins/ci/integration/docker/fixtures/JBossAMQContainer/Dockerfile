@@ -1,6 +1,6 @@
 from java:7
 
-ENV FUSE_VERSION 6.3.0.redhat-155
+ENV FUSE_VERSION 6.3.0.redhat-198
 ENV FUSE_PUBLIC_OPENWIRE_PORT 61616
 
 # Install fuse in the image.
