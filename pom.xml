@@ -158,7 +158,7 @@
         <dependency>
             <groupId>org.jenkins-ci</groupId>
             <artifactId>acceptance-test-harness</artifactId>
-            <version>1.55</version>
+            <version>1.56</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
