@@ -21,7 +21,9 @@ node('docker') {
         def gid = sh(script: 'id -g', returnStdout: true).trim()
 
         def buildArgs = "--build-arg=uid=${uid} --build-arg=gid=${gid} src/test/resources/ath-container"
-        docker.build('jenkins/ath', buildArgs)
+        retry(3) {
+            docker.build('jenkins/ath', buildArgs)
+        }
 
     }
 
