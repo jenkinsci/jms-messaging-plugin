@@ -1,0 +1,65 @@
+<div>
+    <p><b>Message Checks</b></p>
+    Only trigger the build if received message passes all the
+    checks specified by user.
+    <p>Each check consists of <b>name</b> / <b>expected value</b> pair. To pass
+        the check, the received message must contain field matching
+        "name" and its value must match the "expected value".</p>
+
+    <p><b>JSON Matching:</b></p>
+
+You may specify the field using the <a href="https://github.com/json-path/JsonPath">JsonPath</a> notation.
+
+<br>
+<br>
+<b>Example:</b>
+<br>
+<br>
+    Consider a message body of:
+
+    <pre>
+    "commit": {
+    "username": "hadess",
+    "stats": {
+    "files": {
+    "0001-comics-Remove-support-for-tar-and-tar-like-commands.patch": {
+    "deletions": 0,
+    "additions": 227,
+    "lines": 227
+    },
+    "evince.spec": {
+    "deletions": 1,
+    "additions": 7,
+    "lines": 8
+    }
+    },
+    "total": {
+    "deletions": 1,
+    "files": 2,
+    "additions": 234,
+    "lines": 235
+    }
+    },
+    "name": "Bastien Nocera",
+    "rev": "743c528abd1e817b34e5736e16a2b2f4d6d44e9a",
+    "namespace": "rpms",
+    "agent": "hadess",
+    "summary": "+ evince-3.20.1-3",
+    "repo": "evince",
+    "branch": "f26",
+    "seen": false,
+    "path": "/srv/git/repositories/rpms/evince.git",
+    "message": "+ evince-3.20.1-3\nResolves: #1468488\n",
+    "email": "hadess@hadess.net"
+    }
+    </pre>
+
+    <br><br>To check if <b>branch</b> is <b>f26</b>, you would specify the field and expected value as shown below:
+
+    <br>
+    <br><b>Field: </b><font color="red">$.commit.branch</font>
+    <br><b>Expected Value: </b><font color="red">f26</font>
+
+    <p><b>Note: The expected value can be specfied as a regex.</b></p>
+
+</div>
