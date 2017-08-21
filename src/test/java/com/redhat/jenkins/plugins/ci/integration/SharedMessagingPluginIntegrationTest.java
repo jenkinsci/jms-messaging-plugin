@@ -331,9 +331,13 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         StringParameter ciStatusParam = jobA.addParameter(StringParameter.class);
         ciStatusParam.setName("PARAMETER");
         ciStatusParam.setDefault("bad parameter value");
+        StringParameter jenkinsStatusParam = jobA.addParameter(StringParameter.class);
+        jenkinsStatusParam.setName("status");
+        jenkinsStatusParam.setDefault("unknown status");
 
         jobA.addShellStep("echo $PARAMETER");
         jobA.addShellStep("echo $CI_MESSAGE");
+        jobA.addShellStep("echo status::$status");
         jobA.save();
 
         FreeStyleJob jobB = jenkins.jobs.create();
@@ -341,7 +345,7 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
 
         notifier.messageType.select("CodeQualityChecksDone");
-        notifier.messageProperties.sendKeys("PARAMETER = my parameter\nCOMPOUND = Z${PARAMETER}Z");
+        notifier.messageProperties.sendKeys("PARAMETER = my parameter\nstatus=${BUILD_STATUS}\nCOMPOUND = Z${PARAMETER}Z");
         notifier.messageContent.set("This is my content with ${COMPOUND} ${BUILD_STATUS}");
 
         jobB.save();
@@ -349,6 +353,7 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("status::SUCCESS"));
         assertThat(jobA.getLastBuild().getConsole(), containsString("my parameter"));
         assertThat(jobA.getLastBuild().getConsole(),
                 containsString("This is my content with Zmy parameterZ SUCCESS"));

@@ -1,5 +1,7 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
@@ -304,11 +306,23 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         if (msg == null) {
             return false;
         }
-
-        Object val = msg.get(check.getField());
         String sVal = "";
-        if (val != null) {
-            sVal = val.toString();
+
+        String field = check.getField();
+        if (field.startsWith("$")) {
+            log.info("field " + field + " contains $, therefore using jsonPath");
+            String jsonMsg = message.getMsgJson();
+            try {
+                sVal = JsonPath.parse(jsonMsg).read(field);
+            } catch (PathNotFoundException pnfe) {
+                log.fine(pnfe.getMessage());
+                return false;
+            }
+        } else {
+            Object val = msg.get(check.getField());
+            if (val != null) {
+                sVal = val.toString();
+            }
         }
         String eVal = "";
         if (check.getExpectedValue() != null) {
