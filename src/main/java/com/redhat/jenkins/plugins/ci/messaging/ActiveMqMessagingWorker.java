@@ -472,15 +472,16 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     Enumeration<String> e = p.propertyNames();
                     while (e.hasMoreElements()) {
                         String key = e.nextElement();
-                        EnvVars envVars2 = new EnvVars();
-                        envVars2.putAll(baseEnvVars);
-                        envVars2.putAll(envVarParts);
-                        // This allows us to use recently added key/vals
-                        // to be substituted
-                        String val = PluginUtils.getSubstitutedValue(p.getProperty(key),
-                                envVars2);
-                        message.setStringProperty(key, val);
-                        envVarParts.put(key, val);
+                        if (!key.toLowerCase().startsWith("jms") || !setMessageHeader(message, key, p.getProperty(key), session)) {
+                            EnvVars envVars2 = new EnvVars();
+                            envVars2.putAll(baseEnvVars);
+                            envVars2.putAll(envVarParts);
+                            // This allows us to use recently added key/vals
+                            // to be substituted
+                            String val = PluginUtils.getSubstitutedValue(p.getProperty(key), envVars2);
+                            message.setStringProperty(key, val);
+                            envVarParts.put(key, val);
+                        }
                     }
                 }
 
@@ -488,8 +489,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 envVars2.putAll(baseEnvVars);
                 envVars2.putAll(envVarParts);
 
-                message.setText(PluginUtils.getSubstitutedValue(content,
-                        envVars2));
+                message.setText(PluginUtils.getSubstitutedValue(content, envVars2));
 
                 publisher.send(message);
                 log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
@@ -812,5 +812,27 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         } else {
             return null;
         }
+    }
+
+    private boolean setMessageHeader(Message m, String key, String value, Session session) {
+        try {
+            switch (key.toLowerCase()) {
+            case "jmscorrelationid":
+                m.setJMSCorrelationID(value);
+                return true;
+            case "jmsreplyto":
+                Destination destination = session.createTopic(value);
+                m.setJMSReplyTo(destination);
+                return true;
+            case "jmstype":
+                m.setJMSType(value);
+                return true;
+            default:
+                log.log(Level.WARNING, "Unable to set message header '" + key + "'.");
+            }
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Unhandled exception setting message header '" + key + "'.", e);
+        }
+        return false;
     }
 }
