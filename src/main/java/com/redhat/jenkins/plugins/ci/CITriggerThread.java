@@ -12,6 +12,7 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /*
  * The MIT License
@@ -84,15 +85,18 @@ public class CITriggerThread extends Thread {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+
         if (o == null || getClass() != o.getClass()) return false;
 
-        CITriggerThread that = (CITriggerThread) o;
+        CITriggerThread thread = (CITriggerThread) o;
 
-        if (messagingProvider != null ? messagingProvider.equals(that.messagingProvider) : that.messagingProvider != null) return false;
-        if (overrides != null ? overrides.equals(that.overrides) : that.overrides != null) return false;
-        if (jobname != null ? !jobname.equals(that.jobname) : that.jobname != null) return false;
-        if (selector != null ? !selector.equals(that.selector) : that.selector != null) return false;
-        return checks != null ? checks.equals(that.checks) : that.checks == null;
+        return new EqualsBuilder()
+                .append(messagingProvider, thread.messagingProvider)
+                .append(overrides, thread.overrides)
+                .append(jobname, thread.jobname)
+                .append(selector, thread.selector)
+                .append(checks, thread.checks)
+                .isEquals();
     }
 
     @Override

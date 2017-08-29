@@ -8,6 +8,8 @@ import java.io.Serializable;
 import java.util.logging.Logger;
 
 import jenkins.model.Jenkins;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /*
  * The MIT License
@@ -51,17 +53,21 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+
         if (o == null || getClass() != o.getClass()) return false;
 
         JMSMessagingProvider that = (JMSMessagingProvider) o;
 
-        return name != null ? name.equals(that.name) : that.name == null;
-
+        return new EqualsBuilder()
+                .append(name, that.name)
+                .isEquals();
     }
 
     @Override
     public int hashCode() {
-        return name != null ? name.hashCode() : 0;
+        return new HashCodeBuilder(17, 37)
+                .append(name)
+                .toHashCode();
     }
 
     public abstract static class MessagingProviderDescriptor extends Descriptor<JMSMessagingProvider> {
