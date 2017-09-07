@@ -29,6 +29,24 @@ public class MsgCheck {
     private String field;
     private String expectedValue;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MsgCheck msgCheck = (MsgCheck) o;
+
+        if (field != null ? !field.equals(msgCheck.field) : msgCheck.field != null) return false;
+        return expectedValue != null ? expectedValue.equals(msgCheck.expectedValue) : msgCheck.expectedValue == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = field != null ? field.hashCode() : 0;
+        result = 31 * result + (expectedValue != null ? expectedValue.hashCode() : 0);
+        return result;
+    }
+
     @DataBoundConstructor
     public MsgCheck(String field, String expectedValue) {
         super();

@@ -215,6 +215,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				// The thread is never started.
 				CITriggerThread newThread = new CITriggerThread(provider, overrides, job
 						.getFullName(), selector, getChecks());
+				newThread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+
 				if (thread.equals(newThread)) {
 					log.info("Already have thread " + thread.getId() + "...");
 					return thread;
