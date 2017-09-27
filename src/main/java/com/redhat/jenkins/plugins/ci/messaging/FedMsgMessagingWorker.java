@@ -460,9 +460,20 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener,
-                                 String selector, String variable, Integer timeout) {
+                                 String selector, String variable,
+                                 List<MsgCheck> checks,
+                                 Integer timeout) {
         log.info("Waiting for message with selector: " + selector);
+        for (MsgCheck msgCheck: checks) {
+            log.info(" with check: " + msgCheck.toString());
+        }
         listener.getLogger().println("Waiting for message with selector: " + selector);
+        for (MsgCheck msgCheck: checks) {
+            listener.getLogger().println(" with check: " + msgCheck.toString());
+        }
+        log.info(" with timeout: " + timeout);
+        listener.getLogger().println(" with timeout: " + timeout);
+
         ZMQ.Context lcontext = ZMQ.context(1);
         ZMQ.Poller lpoller = lcontext.poller(1);
         ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
@@ -482,28 +493,16 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         lpoller.register(lsocket, ZMQ.Poller.POLLIN);
 
         ObjectMapper mapper = new ObjectMapper();
-        long lastSeenMessage = new Date().getTime();
+        long startTime = new Date().getTime();
 
         int timeoutInMs = timeout * 60 * 1000;
         boolean interrupted = false;
         try {
-            while ((new Date().getTime() - lastSeenMessage) < timeoutInMs) {
-                if (lpoller.poll(1000) == -1) {
-                    interrupted = true;
-                    log.warning("We have been interrupted");
-                    break;
-                }
+            while ((new Date().getTime() - startTime) < timeoutInMs) {
                 if (lpoller.poll(1000) > 0) {
                     if (lpoller.pollin(0)) {
                         ZMsg z = ZMsg.recvMsg(lpoller.getSocket(0));
-                        if (z == null) {
-                            interrupted = true;
-                            log.warning("We have been interrupted");
-                            break;
-                        }
-                        // Reset timer
-                        lastSeenMessage = new Date().getTime();
-                        //
+
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         data.getMsg().put("topic", data.getTopic());
@@ -512,6 +511,23 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         log.fine("Evaluating selector: " + selectorObj.toString());
                         if (!selectorObj.evaluate(data.getMsg())) {
                             log.fine("false");
+                            continue;
+                        }
+                        //check checks here
+                        boolean allPassed = true;
+                        for (MsgCheck check: checks) {
+                            if (!verify(data, check)) {
+                                allPassed = false;
+                                log.fine("msg check: " + check.toString() + " failed against: " + formatMessage(data));
+                            }
+                        }
+                        if (allPassed) {
+                            if (checks.size() > 0) {
+                                log.fine("All msg checks have passed.");
+                            }
+                            process(data);
+                        } else {
+                            log.fine("Some msg checks did not pass.");
                             continue;
                         }
                         String value = getMessageBody(data);

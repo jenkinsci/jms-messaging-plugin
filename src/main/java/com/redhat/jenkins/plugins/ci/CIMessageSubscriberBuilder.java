@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -13,6 +14,8 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
@@ -59,6 +62,7 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
     private MessagingProviderOverrides overrides;
     private String selector;
     private String variable;
+    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private Integer timeout;
 
     @DataBoundConstructor
@@ -66,19 +70,29 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
                                       MessagingProviderOverrides overrides,
                                       String selector,
                                       String variable,
-                                      Integer timeout) {
+                                      List<MsgCheck> checks,
+                                      Integer timeout
+                                      ) {
         this.providerName = providerName;
         this.overrides = overrides;
         this.selector = selector;
         this.variable = variable;
+        if (checks == null) {
+            checks = new ArrayList<>();
+        }
+        this.checks = checks;
         this.timeout = timeout;
     }
 
     public CIMessageSubscriberBuilder(String providerName, MessagingProviderOverrides overrides,
-                                      String selector, Integer timeout) {
+                                      String selector, List<MsgCheck> checks, Integer timeout) {
         this.providerName = providerName;
         this.overrides = overrides;
         this.selector = selector;
+        if (checks == null) {
+            checks = new ArrayList<>();
+        }
+        this.checks = checks;
         this.timeout = timeout;
     }
 
@@ -139,7 +153,7 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
         JMSMessagingWorker worker =
                 provider.createWorker(overrides, build.getParent().getName());
-        return worker.waitForMessage(build, listener, selector, variable, timeout);
+        return worker.waitForMessage(build, listener, selector, variable, checks, timeout);
     }
 
     @Override
@@ -171,11 +185,13 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
             if (jo.getString("timeout") != null && !jo.getString("timeout").isEmpty()) {
                 timeout = jo.getInt("timeout");
             }
+            List<MsgCheck> checks = new ArrayList<>();
             return new CIMessageSubscriberBuilder(
                     jo.getString("providerName"),
                     mpo,
                     jo.getString("selector"),
                     jo.getString("variable"),
+                    checks,
                     timeout);
         }
 

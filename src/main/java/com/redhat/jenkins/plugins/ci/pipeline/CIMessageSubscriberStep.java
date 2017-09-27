@@ -3,6 +3,8 @@ package com.redhat.jenkins.plugins.ci.pipeline;
 import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.Run;
@@ -25,6 +27,8 @@ import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -56,18 +60,21 @@ public class CIMessageSubscriberStep extends Step {
     private String providerName;
     private MessagingProviderOverrides overrides;
     private String selector;
+    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private Integer timeout;
 
     @DataBoundConstructor
     public CIMessageSubscriberStep(final String providerName,
                                    final MessagingProviderOverrides overrides,
                                    final String selector,
-                                   final Integer timeout) {
+                                   final Integer timeout,
+                                   List<MsgCheck> checks) {
         super();
         this.providerName = providerName;
         this.overrides = overrides;
         this.selector = selector;
         this.timeout = timeout;
+        this.checks = checks;
     }
 
     public String getProviderName() {
@@ -100,6 +107,10 @@ public class CIMessageSubscriberStep extends Step {
 
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
+    }
+
+    public List<MsgCheck> getChecks() {
+        return checks;
     }
 
     @Override
@@ -136,11 +147,17 @@ public class CIMessageSubscriberStep extends Step {
                     CIMessageSubscriberBuilder builder = new CIMessageSubscriberBuilder(step.getProviderName(),
                             step.getOverrides(),
                             step.getSelector(),
-                            timeout);
+                            step.getChecks(),
+                            timeout
+                            );
                     try {
                         String msg = builder.waitforCIMessage(getContext().get(Run.class), getContext().get(Launcher.class),
                                 getContext().get(TaskListener.class));
-                        getContext().onSuccess(msg);
+                        if (msg == null) {
+                            getContext().onFailure(new AbortException("Timeout waiting for message!"));
+                        } else {
+                            getContext().onSuccess(msg);
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (InterruptedException e) {
@@ -154,7 +171,7 @@ public class CIMessageSubscriberStep extends Step {
         @Override
         public void stop(@Nonnull Throwable cause) throws Exception {
             if (task != null) {
-                task.cancel(false);
+                task.cancel(true);
                 getContext().onFailure(cause);
             }
         }
