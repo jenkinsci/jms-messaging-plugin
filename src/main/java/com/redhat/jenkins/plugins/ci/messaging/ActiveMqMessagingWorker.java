@@ -538,7 +538,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener,
-                                 String selector, String variable, Integer timeout) {
+                                 String selector, String variable,
+                                 List<MsgCheck> checks,
+                                 Integer timeout) {
         String ip = null;
         try {
             ip = Inet4Address.getLocalHost().getHostAddress();
