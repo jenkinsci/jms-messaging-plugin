@@ -1,13 +1,17 @@
 package com.redhat.jenkins.plugins.ci.messaging.data;
 
-public class SendResult {
+import java.io.Serializable;
+
+public class SendResult implements Serializable {
 
     private boolean succeeded;
-    private Object message;
+    private String messageId;
+    private String messageContent;
 
-    public SendResult(boolean succeeded, Object message) {
+    public SendResult(boolean succeeded, String messageId, String messageContent) {
         this.succeeded = succeeded;
-        this.message = message;
+        this.messageId = messageId;
+        this.messageContent = messageContent;
     }
 
     public boolean isSucceeded() {
@@ -18,11 +22,19 @@ public class SendResult {
         this.succeeded = succeeded;
     }
 
-    public Object getMessage() {
-        return message;
+    public String getMessageId() {
+        return messageId;
     }
 
-    public void setMessage(Object message) {
-        this.message = message;
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public String getMessageContent() {
+        return messageContent;
+    }
+
+    public void setMessageContent(String messageContent) {
+        this.messageContent = messageContent;
     }
 }

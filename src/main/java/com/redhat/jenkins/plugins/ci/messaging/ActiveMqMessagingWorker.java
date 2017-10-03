@@ -432,6 +432,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         MessageProducer publisher = null;
 
         TextMessage message = null;
+        String mesgId = "0";
+        String mesgContent = "";
+
         try {
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
@@ -493,13 +496,15 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
                 message.setText(PluginUtils.getSubstitutedValue(content, envVars2));
 
+                mesgId = message.getJMSMessageID();
+                mesgContent = message.getText();
+
                 publisher.send(message);
                 log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
                         + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
-                return new SendResult(false, message);
-
+                return new SendResult(false, mesgId, mesgContent);
             }
 
         } catch (Exception e) {
@@ -508,13 +513,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
                 listener.fatalError(ExceptionUtils.getStackTrace(e));
-                return new SendResult(false, message);
+                return new SendResult(false, mesgId, mesgContent);
             } else {
                 log.warning("Unhandled exception in perform: ");
                 log.warning(ExceptionUtils.getStackTrace(e));
                 listener.error("Unhandled exception in perform: ");
                 listener.error(ExceptionUtils.getStackTrace(e));
-                return new SendResult(true, message);
+                return new SendResult(true, mesgId, mesgContent);
             }
         } finally {
             if (publisher != null) {
@@ -536,7 +541,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 }
             }
         }
-        return new SendResult(true, message);
+        return new SendResult(true, mesgId, mesgContent);
     }
 
     @Override

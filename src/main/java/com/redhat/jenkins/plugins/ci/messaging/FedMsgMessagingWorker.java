@@ -178,8 +178,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private void process(FedmsgMessage data) {
         Map<String, String> params = new HashMap<String, String>();
-        params.put("CI_MESSAGE", getMessageBody(data));
-        params.put("MESSAGE_HEADERS", getMessageHeaders(data));
+        params.put("CI_MESSAGE", data.getMessageBody());
+        params.put("MESSAGE_HEADERS", data.getMessageHeaders());
 
         Iterator<String> it = data.getMsg().keySet().iterator();
         while (it.hasNext()) {
@@ -193,27 +193,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             }
         }
         trigger(jobname, formatMessage(data), params);
-    }
-
-    private String getMessageBody(FedmsgMessage data) {
-        return JSONObject.fromObject(data.getMsg()).toString();
-    }
-
-    public String getMessageHeaders(FedmsgMessage data) {
-        // fedmsg messages don't have headers or properties like JMS messages.
-        // The only real header is the topic.  This is here to maintain
-        // symmetry with MESSAGE_HEADERS provided by the AmqMessagingWorker.
-        // https://github.com/jenkinsci/jms-messaging-plugin/pull/20
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode root = mapper.createObjectNode();
-            root.set("topic", mapper.convertValue(data.getTopic(), JsonNode.class));
-            return mapper.writer().writeValueAsString(root);
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception retrieving message headers:\n" + getMessageBody(data), e);
-        }
-
-        return "";
     }
 
     @Override
@@ -427,12 +406,12 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             boolean successTopic = sock.sendMore(blob.getTopic());
             if (failOnError && !successTopic) {
                 log.severe("Unhandled exception in perform: Failed to send message (topic)!");
-                return new SendResult(false, blob);
+                return new SendResult(false, blob.getMsgId(), blob.getMessageBody());
             }
             boolean successBody = sock.send(blob.toJson().toString());
             if (failOnError && !successBody) {
                 log.severe("Unhandled exception in perform: Failed to send message (body)!");
-                return new SendResult(false, blob);
+                return new SendResult(false, blob.getMsgId(), blob.getMessageBody());
             }
             log.fine(blob.toJson().toString());
             listener.getLogger().println(blob.toJson().toString());
@@ -443,20 +422,20 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
                 listener.fatalError(ExceptionUtils.getStackTrace(e));
-                return new SendResult(false, blob);
+                return new SendResult(false, blob.getMsgId(), blob.getMessageBody());
             } else {
                 log.warning("Unhandled exception in perform: ");
                 log.warning(ExceptionUtils.getStackTrace(e));
                 listener.error("Unhandled exception in perform: ");
                 listener.error(ExceptionUtils.getStackTrace(e));
-                return new SendResult(true, blob);
+                return new SendResult(true, blob.getMsgId(), blob.getMessageBody());
             }
         } finally {
             sock.close();
             context.term();
         }
 
-        return new SendResult(true, blob);
+        return new SendResult(true, blob.getMsgId(), blob.getMessageBody());
     }
 
     @Override
@@ -531,7 +510,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             log.fine("Some msg checks did not pass.");
                             continue;
                         }
-                        String value = getMessageBody(data);
+                        String value = data.getMessageBody();
                         if (build != null) {
                             if (StringUtils.isNotEmpty(variable)) {
                                 EnvVars vars = new EnvVars();

@@ -26,9 +26,12 @@ package com.redhat.jenkins.plugins.ci.messaging.data;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import net.sf.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,6 +40,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /*
  * The MIT License
@@ -142,6 +146,28 @@ public class FedmsgMessage {
         }
         return message;
     }
+
+    public String getMessageBody() {
+        return JSONObject.fromObject(getMsg()).toString();
+    }
+
+    public String getMessageHeaders() {
+        // fedmsg messages don't have headers or properties like JMS messages.
+        // The only real header is the topic.  This is here to maintain
+        // symmetry with MESSAGE_HEADERS provided by the AmqMessagingWorker.
+        // https://github.com/jenkinsci/jms-messaging-plugin/pull/20
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode root = mapper.createObjectNode();
+            root.set("topic", mapper.convertValue(getTopic(), JsonNode.class));
+            return mapper.writer().writeValueAsString(root);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return "";
+    }
+
 
     public String getMsgJson() {
         String message = "";
