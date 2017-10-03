@@ -286,7 +286,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
         wait.script.set("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
                 "selector: " +
-                " \"topic = 'org.fedoraproject.dev.logger.log'\",  " +
+                " \"topic = 'org.fedoraproject.dev.logger.log' OR topic = 'org.fedoraproject.dev.logger.log2'\",  " +
                 " checks: [[expectedValue: '" + packages +"', field: '$.commit.repo']]," +
                 " topic: 'org.fedoraproject'" +
                 "\necho \"scott = \" + scott}");
@@ -404,6 +404,21 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
 
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("This is a message"));
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testPipelineSendMsgReturnMessage() throws Exception {
+        WorkflowJob job = jenkins.jobs.create(WorkflowJob.class);
+        job.script.set("node('master') {\n def message = sendCIMessage " +
+                " providerName: 'test', " +
+                " messageContent: '', " +
+                " messageProperties: 'CI_STATUS = failed'," +
+                " messageType: 'CodeQualityChecksDone'\n"  +
+                " echo message.getMessage().getMsgId()\n}");
+        job.sandbox.check(false);
+        job.save();
+        job.startBuild().shouldSucceed();
     }
 
     @WithPlugins({"workflow-aggregator", "monitoring", "dumpling"})

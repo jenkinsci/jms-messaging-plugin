@@ -1,5 +1,6 @@
 package com.redhat.utils;
 
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
@@ -104,12 +105,12 @@ public class MessageUtils {
         }
     }
 
-    public static boolean sendMessage(Run<?, ?> build, TaskListener listener,
-                                      String providerName,
-                                      MessagingProviderOverrides overrides,
-                                      MESSAGE_TYPE type,
-                                      boolean failOnError, String props,
-                                      String content) throws InterruptedException, IOException {
+    public static SendResult sendMessage(Run<?, ?> build, TaskListener listener,
+                                         String providerName,
+                                         MessagingProviderOverrides overrides,
+                                         MESSAGE_TYPE type,
+                                         boolean failOnError, String props,
+                                         String content) throws InterruptedException, IOException {
         log.info("Sending message for job '" + build.getParent().getName() + "'.");
         listener.getLogger().println("Sending message for job '" + build.getParent().getName() + "'.");
         GlobalCIConfiguration config = GlobalCIConfiguration.get();

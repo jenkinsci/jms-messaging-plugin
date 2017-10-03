@@ -1,6 +1,8 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
+
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -423,12 +425,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public boolean sendMessage(Run<?, ?> build, TaskListener listener,
-                               MessageUtils.MESSAGE_TYPE type, String props, String content, boolean failOnError) {
+    public SendResult sendMessage(Run<?, ?> build, TaskListener listener,
+                                  MessageUtils.MESSAGE_TYPE type, String props, String content, boolean failOnError) {
         Connection connection = null;
         Session session = null;
         MessageProducer publisher = null;
 
+        TextMessage message = null;
         try {
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
@@ -440,7 +443,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 Destination destination = session.createTopic(ltopic);
                 publisher = session.createProducer(destination);
 
-                TextMessage message;
                 message = session.createTextMessage("");
                 message.setJMSType(JSON_TYPE);
 
@@ -496,7 +498,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
-                return false;
+                return new SendResult(false, message);
+
             }
 
         } catch (Exception e) {
@@ -505,13 +508,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
                 listener.fatalError(ExceptionUtils.getStackTrace(e));
-                return false;
+                return new SendResult(false, message);
             } else {
                 log.warning("Unhandled exception in perform: ");
                 log.warning(ExceptionUtils.getStackTrace(e));
                 listener.error("Unhandled exception in perform: ");
                 listener.error(ExceptionUtils.getStackTrace(e));
-                return true;
+                return new SendResult(true, message);
             }
         } finally {
             if (publisher != null) {
@@ -533,7 +536,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 }
             }
         }
-        return true;
+        return new SendResult(true, message);
     }
 
     @Override

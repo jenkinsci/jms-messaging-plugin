@@ -1,6 +1,8 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
+
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
@@ -52,11 +54,11 @@ public abstract class JMSMessagingWorker {
 
     public abstract void disconnect();
 
-    public abstract boolean sendMessage(Run<?, ?> build,
-                                        TaskListener listener,
-                                        MessageUtils.MESSAGE_TYPE type,
-                                        String props,
-                                        String content, boolean failOnError);
+    public abstract SendResult sendMessage(Run<?, ?> build,
+                                           TaskListener listener,
+                                           MessageUtils.MESSAGE_TYPE type,
+                                           String props,
+                                           String content, boolean failOnError);
 
     public abstract String waitForMessage(Run<?, ?> build,
                                           TaskListener listener,

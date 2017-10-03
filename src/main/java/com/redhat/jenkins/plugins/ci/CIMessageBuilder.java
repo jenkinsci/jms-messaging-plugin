@@ -117,7 +117,7 @@ public class CIMessageBuilder extends Builder {
                 getOverrides(),
                 getMessageType(),
                 failOnError, getMessageProperties(),
-                getMessageContent());
+                getMessageContent()).isSucceeded();
     }
 
     @Extension
