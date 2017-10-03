@@ -1,6 +1,7 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
 import com.google.common.collect.ImmutableSet;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.TaskListener;
@@ -147,15 +148,15 @@ public class CIMessageSenderStep extends Step {
                 @Override
                 public void run() {
                     try {
-                        boolean status = MessageUtils.sendMessage(getContext().get(Run.class),
+                        SendResult status = MessageUtils.sendMessage(getContext().get(Run.class),
                                 getContext().get(TaskListener.class),
                                 step.getProviderName(),
                                 step.getOverrides(),
                                 step.getMessageType(),
                                 step.isFailOnError(), step.getMessageProperties(),
                                 step.getMessageContent());
-                        if (status) {
-                            getContext().onSuccess(null);
+                        if (status.isSucceeded()) {
+                            getContext().onSuccess(status);
                         } else {
                             getContext().onFailure(new Exception("Exception sending message. Please check server logs."));
                         }

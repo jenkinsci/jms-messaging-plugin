@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci.messaging;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
@@ -356,8 +357,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public boolean sendMessage(Run<?, ?> build, TaskListener listener, MessageUtils.MESSAGE_TYPE type,
-                               String props, String content, boolean failOnError) {
+    public SendResult sendMessage(Run<?, ?> build, TaskListener listener, MessageUtils.MESSAGE_TYPE type,
+                                  String props, String content, boolean failOnError) {
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket sock = context.socket(ZMQ.PUB);
         sock.setLinger(0);
@@ -385,6 +386,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             envVarParts.put("BUILD_STATUS", build.getResult().toString());
         }
 
+        FedmsgMessage blob = new FedmsgMessage();
         try {
             EnvVars baseEnvVars = build.getEnvironment(listener);
             EnvVars envVars = new EnvVars();
@@ -418,7 +420,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             message.put(MESSAGECONTENTFIELD, PluginUtils.getSubstitutedValue(content,
                     envVars2));
 
-            FedmsgMessage blob = new FedmsgMessage();
             blob.setMsg(message);
             blob.setTopic(PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener)));
             blob.setTimestamp((new java.util.Date()).getTime() / 1000);
@@ -426,12 +427,12 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             boolean successTopic = sock.sendMore(blob.getTopic());
             if (failOnError && !successTopic) {
                 log.severe("Unhandled exception in perform: Failed to send message (topic)!");
-                return false;
+                return new SendResult(false, blob);
             }
             boolean successBody = sock.send(blob.toJson().toString());
             if (failOnError && !successBody) {
                 log.severe("Unhandled exception in perform: Failed to send message (body)!");
-                return false;
+                return new SendResult(false, blob);
             }
             log.fine(blob.toJson().toString());
             listener.getLogger().println(blob.toJson().toString());
@@ -442,20 +443,20 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
                 listener.fatalError(ExceptionUtils.getStackTrace(e));
-                return false;
+                return new SendResult(false, blob);
             } else {
                 log.warning("Unhandled exception in perform: ");
                 log.warning(ExceptionUtils.getStackTrace(e));
                 listener.error("Unhandled exception in perform: ");
                 listener.error(ExceptionUtils.getStackTrace(e));
-                return true;
+                return new SendResult(true, blob);
             }
         } finally {
             sock.close();
             context.term();
         }
 
-        return true;
+        return new SendResult(true, blob);
     }
 
     @Override

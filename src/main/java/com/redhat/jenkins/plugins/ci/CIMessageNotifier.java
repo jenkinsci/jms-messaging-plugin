@@ -131,7 +131,7 @@ import com.redhat.utils.PluginUtils;
         return MessageUtils.sendMessage(build, listener, getProviderName(),
                 getOverrides(), getMessageType(), failOnError,
                 PluginUtils.getSubstitutedValue(getMessageProperties(), build.getEnvironment(listener)),
-                PluginUtils.getSubstitutedValue(getMessageContent(), build.getEnvironment(listener)));
+                PluginUtils.getSubstitutedValue(getMessageContent(), build.getEnvironment(listener))).isSucceeded();
     }
 
     @Extension

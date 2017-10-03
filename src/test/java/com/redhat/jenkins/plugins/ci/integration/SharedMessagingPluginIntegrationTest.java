@@ -148,11 +148,11 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.save();
 
         WorkflowJob job = jenkins.jobs.create(WorkflowJob.class);
-        job.script.set("node('master') {\n sendCIMessage " +
+        job.script.set("node('master') {\n def message = sendCIMessage " +
                 " providerName: 'test', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
-                " messageType: 'CodeQualityChecksDone'}");
+                " messageType: 'CodeQualityChecksDone'}\n");
         job.save();
         job.startBuild().shouldSucceed();
 
