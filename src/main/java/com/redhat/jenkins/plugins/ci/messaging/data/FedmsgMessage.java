@@ -23,6 +23,7 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -40,7 +41,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 
 /*
  * The MIT License
@@ -147,10 +147,12 @@ public class FedmsgMessage {
         return message;
     }
 
+    @JsonIgnore
     public String getMessageBody() {
         return JSONObject.fromObject(getMsg()).toString();
     }
 
+    @JsonIgnore
     public String getMessageHeaders() {
         // fedmsg messages don't have headers or properties like JMS messages.
         // The only real header is the topic.  This is here to maintain
@@ -168,7 +170,7 @@ public class FedmsgMessage {
         return "";
     }
 
-
+    @JsonIgnore
     public String getMsgJson() {
         String message = "";
         try {

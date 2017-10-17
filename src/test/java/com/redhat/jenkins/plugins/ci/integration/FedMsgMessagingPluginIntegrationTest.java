@@ -415,8 +415,8 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'\n"  +
-                " echo message.getMessageId()\n}");
-        job.sandbox.check(false);
+                " echo message.getMessageId()\necho message.getMessageContent()\n}");
+        job.sandbox.check(true);
         job.save();
         job.startBuild().shouldSucceed();
     }

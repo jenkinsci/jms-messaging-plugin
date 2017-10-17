@@ -483,14 +483,18 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     if (lpoller.pollin(0)) {
                         ZMsg z = ZMsg.recvMsg(lpoller.getSocket(0));
 
+                        listener.getLogger().println("Received a message");
                         String json = z.getLast().toString();
+
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         data.getMsg().put("topic", data.getTopic());
                         ZmqMessageSelector selectorObj =
                                 ZmqSimpleMessageSelector.parse(selector);
                         log.fine("Evaluating selector: " + selectorObj.toString());
+                        listener.getLogger().println("Evaluating selector: " + selectorObj.toString());
                         if (!selectorObj.evaluate(data.getMsg())) {
                             log.fine("false");
+                            listener.getLogger().println("selector match failed");
                             continue;
                         }
                         //check checks here
@@ -498,16 +502,18 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         for (MsgCheck check: checks) {
                             if (!verify(data, check)) {
                                 allPassed = false;
-                                log.fine("msg check: " + check.toString() + " failed against: " + formatMessage(data));
+                                log.info("msg check: " + check.toString() + " failed against: " + formatMessage(data));
+                                listener.getLogger().println("msg check: " + check.toString() + " failed against: " + formatMessage(data));
                             }
                         }
                         if (allPassed) {
                             if (checks.size() > 0) {
-                                log.fine("All msg checks have passed.");
+                                log.info("All msg checks have passed.");
+                                listener.getLogger().println("All msg checks have passed.");
                             }
-                            process(data);
                         } else {
-                            log.fine("Some msg checks did not pass.");
+                            log.info("Some msg checks did not pass.");
+                            listener.getLogger().println("Some msg checks did not pass.");
                             continue;
                         }
                         String value = data.getMessageBody();
@@ -530,12 +536,16 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
         } finally {
-            ZMQ.Socket s = lpoller.getSocket(0);
-            lpoller.unregister(s);
-            s.disconnect(provider.getHubAddr());
-            lsocket.unsubscribe(ltopic.getBytes());
-            lsocket.close();
-            lcontext.term();
+            try {
+                ZMQ.Socket s = lpoller.getSocket(0);
+                lpoller.unregister(s);
+                s.disconnect(provider.getHubAddr());
+                lsocket.unsubscribe(ltopic.getBytes());
+                lsocket.close();
+                lcontext.term();
+            } catch (Exception e) {
+                listener.getLogger().println("exception in finally");
+            }
         }
         return null;
     }

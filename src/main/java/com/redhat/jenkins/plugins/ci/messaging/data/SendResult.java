@@ -1,6 +1,7 @@
 package com.redhat.jenkins.plugins.ci.messaging.data;
 
 import java.io.Serializable;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 
 public class SendResult implements Serializable {
 
@@ -14,6 +15,7 @@ public class SendResult implements Serializable {
         this.messageContent = messageContent;
     }
 
+    @Whitelisted
     public boolean isSucceeded() {
         return succeeded;
     }
@@ -22,6 +24,7 @@ public class SendResult implements Serializable {
         this.succeeded = succeeded;
     }
 
+    @Whitelisted
     public String getMessageId() {
         return messageId;
     }
@@ -30,6 +33,7 @@ public class SendResult implements Serializable {
         this.messageId = messageId;
     }
 
+    @Whitelisted
     public String getMessageContent() {
         return messageContent;
     }
