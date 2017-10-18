@@ -1,8 +1,8 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import hudson.EnvVars;
 import hudson.model.TaskListener;
-import org.jenkinsci.plugins.workflow.steps.EnvironmentExpander;
 
 import java.util.List;
 
@@ -13,7 +13,7 @@ public abstract class JMSMessageWatcher {
     protected String selector;
     protected List<MsgCheck> checks;
     protected JMSMessagingProvider provider;
-    protected EnvironmentExpander environmentExpander;
+    protected EnvVars environment;
     protected TaskListener taskListener;
 
     public void setTimeout(int timeout) {
@@ -50,8 +50,8 @@ public abstract class JMSMessageWatcher {
 
     public abstract void interrupt();
 
-    public void setEnvironmentExpander(EnvironmentExpander environmentExpander) {
-        this.environmentExpander = environmentExpander;
+    public void setEnvironment(EnvVars environment) {
+        this.environment = environment;
     }
 
     public void setTaskListener(TaskListener taskListener) {

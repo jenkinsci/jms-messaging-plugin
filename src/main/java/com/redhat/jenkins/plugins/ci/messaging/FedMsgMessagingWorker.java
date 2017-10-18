@@ -465,8 +465,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         for (MsgCheck check: checks) {
                             if (!provider.verify(data, check)) {
                                 allPassed = false;
-                                log.info("msg check: " + check.toString() + " failed against: " + formatMessage(data));
-                                listener.getLogger().println("msg check: " + check.toString() + " failed against: " + formatMessage(data));
+                                log.info("msg check: " + check.toString() + " failed against: " + provider.formatMessage(data));
+                                listener.getLogger().println("msg check: " + check.toString() + " failed against: " + provider.formatMessage(data));
                             }
                         }
                         if (allPassed) {

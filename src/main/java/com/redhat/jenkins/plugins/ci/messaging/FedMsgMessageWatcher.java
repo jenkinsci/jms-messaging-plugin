@@ -4,22 +4,43 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 import com.redhat.utils.PluginUtils;
-import hudson.EnvVars;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 import org.zeromq.jms.selector.ZmqMessageSelector;
 import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_PREFIX;
 
+/*
+ * The MIT License
+ *
+ * Copyright (c) Red Hat, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 public class FedMsgMessageWatcher extends JMSMessageWatcher {
 
-    private static final Logger log = Logger.getLogger(FedMsgMessagingWorker.class.getName());
+    private static final Logger log = Logger.getLogger(FedMsgMessageWatcher.class.getName());
 
     private ZMQ.Context lcontext;
     private ZMQ.Poller lpoller;
@@ -50,17 +71,7 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
         lpoller = lcontext.poller(1);
         lsocket = lcontext.socket(ZMQ.SUB);
 
-        topic = getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_PREFIX);
-        try {
-            EnvVars envVars = new EnvVars();
-            environmentExpander.expand(envVars);
-
-            topic = PluginUtils.getSubstitutedValue(topic, envVars);
-        } catch (IOException e) {
-            log.warning(e.getMessage());
-        } catch (InterruptedException e) {
-            log.warning(e.getMessage());
-        }
+        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_PREFIX), environment);
 
         lsocket.subscribe(topic.getBytes());
         lsocket.setLinger(0);

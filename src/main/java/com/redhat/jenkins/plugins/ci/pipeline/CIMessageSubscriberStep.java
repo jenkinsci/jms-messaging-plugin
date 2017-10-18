@@ -76,6 +76,9 @@ public class CIMessageSubscriberStep extends Step {
         this.overrides = overrides;
         this.selector = selector;
         this.timeout = timeout;
+        if (checks == null) {
+            checks = new ArrayList<>();
+        }
         this.checks = checks;
     }
 
@@ -158,7 +161,7 @@ public class CIMessageSubscriberStep extends Step {
             watcher.setSelector(step.selector);
             watcher.setChecks(step.checks);
             watcher.setProvider(provider);
-            watcher.setEnvironmentExpander(getContext().get(EnvironmentExpander.class));
+            watcher.setEnvironment(getContext().get(Run.class).getEnvironment(getContext().get(TaskListener.class)));
             watcher.setTaskListener(getContext().get(TaskListener.class));
 
             task = Timer.get().submit(new Runnable() {
