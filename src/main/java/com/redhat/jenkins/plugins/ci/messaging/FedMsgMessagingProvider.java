@@ -1,9 +1,17 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 import hudson.Extension;
 import hudson.model.Descriptor;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import jenkins.model.Jenkins;
 
@@ -59,9 +67,51 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
         return topic;
     }
 
+    public String formatMessage(FedmsgMessage data) {
+        return data.getMsg().toString();
+    }
+
+    public boolean verify(FedmsgMessage message, MsgCheck check) {
+        Map<String, Object> msg = message.getMsg();
+        if (msg == null) {
+            return false;
+        }
+        String sVal = "";
+
+        String field = check.getField();
+        if (field.startsWith("$")) {
+            log.info("field " + field + " contains $, therefore using jsonPath");
+            String jsonMsg = message.getMsgJson();
+            try {
+                sVal = JsonPath.parse(jsonMsg).read(field);
+            } catch (PathNotFoundException pnfe) {
+                log.fine(pnfe.getMessage());
+                return false;
+            }
+        } else {
+            Object val = msg.get(check.getField());
+            if (val != null) {
+                sVal = val.toString();
+            }
+        }
+        String eVal = "";
+        if (check.getExpectedValue() != null) {
+            eVal = check.getExpectedValue();
+        }
+        if (Pattern.compile(eVal).matcher(sVal).find()) {
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
         return new FedMsgMessagingWorker(this, overrides, jobname);
+    }
+
+    @Override
+    public JMSMessageWatcher createWatcher() {
+        return new FedMsgMessageWatcher();
     }
 
     @Override
@@ -83,4 +133,5 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
         }
 
     }
+
 }

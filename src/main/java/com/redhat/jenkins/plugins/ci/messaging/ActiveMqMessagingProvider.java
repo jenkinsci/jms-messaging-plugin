@@ -50,7 +50,6 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     private String broker;
     private Boolean useQueues = DEFAULT_USE_QUEUES;
-    private String topic;
     private transient String user;
     private transient Secret password;
     private transient boolean migrationInProgress = false;
@@ -148,6 +147,11 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     @Override
     public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
         return new ActiveMqMessagingWorker(this, overrides, jobname);
+    }
+
+    @Override
+    public JMSMessageWatcher createWatcher() {
+        return null;
     }
 
     public boolean IsMigrationInProgress() {

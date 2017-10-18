@@ -172,10 +172,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         pollerClosed = true;
     }
 
-    private String formatMessage(FedmsgMessage data) {
-        return data.getMsg().toString();
-    }
-
     private void process(FedmsgMessage data) {
         Map<String, String> params = new HashMap<String, String>();
         params.put("CI_MESSAGE", data.getMessageBody());
@@ -192,7 +188,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 params.put(key, ((Integer)obj).toString());
             }
         }
-        trigger(jobname, formatMessage(data), params);
+        trigger(jobname, provider.formatMessage(data), params);
     }
 
     @Override
@@ -242,9 +238,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         //check checks here
                         boolean allPassed = true;
                         for (MsgCheck check: checks) {
-                            if (!verify(data, check)) {
+                            if (!provider.verify(data, check)) {
                                 allPassed = false;
-                                log.fine("msg check: " + check.toString() + " failed against: " + formatMessage(data));
+                                log.fine("msg check: " + check.toString() + " failed against: " + provider.formatMessage(data));
                                 break;
                             }
                         }
@@ -279,39 +275,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             }
         }
 
-    }
-
-    private boolean verify(FedmsgMessage message, MsgCheck check) {
-        Map<String, Object> msg = message.getMsg();
-        if (msg == null) {
-            return false;
-        }
-        String sVal = "";
-
-        String field = check.getField();
-        if (field.startsWith("$")) {
-            log.info("field " + field + " contains $, therefore using jsonPath");
-            String jsonMsg = message.getMsgJson();
-            try {
-                sVal = JsonPath.parse(jsonMsg).read(field);
-            } catch (PathNotFoundException pnfe) {
-                log.fine(pnfe.getMessage());
-                return false;
-            }
-        } else {
-            Object val = msg.get(check.getField());
-            if (val != null) {
-                sVal = val.toString();
-            }
-        }
-        String eVal = "";
-        if (check.getExpectedValue() != null) {
-            eVal = check.getExpectedValue();
-        }
-        if (Pattern.compile(eVal).matcher(sVal).find()) {
-            return true;
-        }
-        return false;
     }
 
     @Override
@@ -500,7 +463,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         //check checks here
                         boolean allPassed = true;
                         for (MsgCheck check: checks) {
-                            if (!verify(data, check)) {
+                            if (!provider.verify(data, check)) {
                                 allPassed = false;
                                 log.info("msg check: " + check.toString() + " failed against: " + formatMessage(data));
                                 listener.getLogger().println("msg check: " + check.toString() + " failed against: " + formatMessage(data));
