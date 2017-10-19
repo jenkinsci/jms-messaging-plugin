@@ -37,11 +37,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public abstract class JMSMessagingProvider implements Describable<JMSMessagingProvider>, Serializable {
 
     protected String name;
-    private static final Logger log = Logger.getLogger(JMSMessagingProvider.class.getName());
+    protected String topic;
+    protected static final Logger log = Logger.getLogger(JMSMessagingProvider.class.getName());
     public final static String DEFAULT_PROVIDERNAME = "default";
 
     public String getName() {
         return name;
+    }
+    public String getTopic() {
+        return topic;
     }
 
     public JMSMessagingWorker createWorker(String jobname) {
@@ -49,6 +53,7 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
     }
 
     public abstract JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname);
+    public abstract JMSMessageWatcher  createWatcher();
 
     @Override
     public boolean equals(Object o) {
