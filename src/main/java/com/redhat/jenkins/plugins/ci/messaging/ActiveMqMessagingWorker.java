@@ -1,8 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
-
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -49,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
@@ -87,6 +86,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private MessageConsumer subscriber;
     private String topic;
     private String selector;
+    private String uuid = UUID.randomUUID();
 
     public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, MessagingProviderOverrides overrides, String jobname) {
         this.provider = provider;
@@ -158,12 +158,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         connection = null;
         ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
 
-        String ip = null;
-        try {
-            ip = Inet4Address.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            log.severe("Unable to get localhost IP address.");
-        }
         Connection connectiontmp = null;
         try {
             connectiontmp = connectionFactory
@@ -173,7 +167,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 url = Jenkins.getInstance().getRootUrl();
             }
             connectiontmp.setClientID(provider.getName() + "_"
-                    + url + "_" + ip + "_" + jobname);
+                    + url + "_" + uuid + "_" + jobname);
             connectiontmp.start();
         } catch (JMSException e) {
             log.severe("Unable to connect to " + provider.getBroker() + " " + e.getMessage());
