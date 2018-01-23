@@ -1,8 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
-
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -49,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
