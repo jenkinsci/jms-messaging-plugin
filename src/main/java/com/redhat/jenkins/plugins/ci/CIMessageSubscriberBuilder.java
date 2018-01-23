@@ -1,6 +1,5 @@
 package com.redhat.jenkins.plugins.ci;
 
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -28,6 +27,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 /*
  * The MIT License
@@ -156,12 +156,16 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
         return worker.waitForMessage(build, listener, selector, variable, checks, timeout);
     }
 
-    @Override
-    public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        if (waitforCIMessage(build, launcher, listener) == null) {
+    public boolean doMessageSubscribe(Run<?,?> run, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+        if (waitforCIMessage(run, launcher, listener) == null) {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        return doMessageSubscribe(build, launcher, listener);
     }
 
     @Extension
