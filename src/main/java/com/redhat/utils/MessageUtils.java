@@ -1,6 +1,5 @@
 package com.redhat.utils;
 
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
@@ -11,6 +10,7 @@ import java.util.logging.Logger;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 
 /*
  * The MIT License
