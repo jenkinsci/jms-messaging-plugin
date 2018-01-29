@@ -1,36 +1,36 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
-import com.google.common.collect.ImmutableSet;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 import hudson.util.ListBoxModel;
 
+import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.Future;
+
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
 import jenkins.util.Timer;
+
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+import com.google.common.collect.ImmutableSet;
+import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.utils.MessageUtils;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
-
-import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.Future;
 
 /*
  * The MIT License
@@ -64,13 +64,12 @@ public class CIMessageSenderStep extends Step {
     private String messageContent;
     private boolean failOnError;
 
-    public boolean isFailOnError() {
-        return failOnError;
-    }
-
-    @DataBoundSetter
-    public void setFailOnError(boolean failOnError) {
-        this.failOnError = failOnError;
+    public CIMessageSenderStep(final String providerName,
+                               final MessagingProviderOverrides overrides,
+                               final MESSAGE_TYPE messageType,
+                               final String messageProperties,
+                               final String messageContent) {
+        this(providerName, overrides, messageType, messageProperties, messageContent, false);
     }
 
     @DataBoundConstructor
@@ -78,13 +77,18 @@ public class CIMessageSenderStep extends Step {
                                final MessagingProviderOverrides overrides,
                                final MESSAGE_TYPE messageType,
                                final String messageProperties,
-                               final String messageContent) {
+                               final String messageContent,
+                               Boolean failOnError) {
         super();
         this.providerName = providerName;
         this.overrides = overrides;
         this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
+        if (failOnError == null) {
+            failOnError = false;
+        }
+        this.failOnError = failOnError;
     }
 
 
@@ -118,6 +122,12 @@ public class CIMessageSenderStep extends Step {
     public void setMessageContent(String messageContent) {
         this.messageContent = messageContent;
     }
+    public boolean getFailOnError() {
+        return failOnError;
+    }
+    public void setFailOnError(boolean failOnError) {
+        this.failOnError = failOnError;
+    }
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
@@ -148,13 +158,16 @@ public class CIMessageSenderStep extends Step {
                 @Override
                 public void run() {
                     try {
-                        SendResult status = MessageUtils.sendMessage(getContext().get(Run.class),
-                                getContext().get(TaskListener.class),
+                        CIMessageNotifier notifier = new CIMessageNotifier(
                                 step.getProviderName(),
                                 step.getOverrides(),
                                 step.getMessageType(),
-                                step.isFailOnError(), step.getMessageProperties(),
-                                step.getMessageContent());
+                                step.getMessageProperties(),
+                                step.getMessageContent(),
+                                step.getFailOnError()
+                        );
+                        StepContext c = getContext();
+                        SendResult status = notifier.doMessageNotifier(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
                         if (status.isSucceeded()) {
                             getContext().onSuccess(status);
                         } else {
