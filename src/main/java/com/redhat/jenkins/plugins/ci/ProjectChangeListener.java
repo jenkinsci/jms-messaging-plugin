@@ -1,14 +1,15 @@
 package com.redhat.jenkins.plugins.ci;
 
 import hudson.Extension;
-import hudson.model.AbstractProject;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
+import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.listeners.ItemListener;
-import jenkins.model.ParameterizedJobMixIn;
 
 import java.util.logging.Logger;
+
+import jenkins.model.ParameterizedJobMixIn;
 
 @Extension
 public class ProjectChangeListener extends ItemListener {
@@ -17,10 +18,7 @@ public class ProjectChangeListener extends ItemListener {
     @Override
     public void onDeleted (Item item) {
         if (item instanceof Job) {
-            CIBuildTrigger cibt = CIBuildTrigger.findTrigger(item.getFullName());
-            if (cibt != null) {
-                cibt.stop();
-            }
+            CIBuildTrigger.force(item.getFullName());
         }
     }
 
@@ -51,7 +49,7 @@ public class ProjectChangeListener extends ItemListener {
                     // there is a trigger thread AND it is disabled. we stop it.
                     log.info("Job " + item.getFullName() + " may have been previously been enabled." +
                             " But now disabled. Attempting to stop Trigger Thread...");
-                    cibt.stop();
+                    CIBuildTrigger.force(item.getFullName());
                 } else {
                     if (triggerThread == null && !project.isDisabled()) {
                         // Job may have been enabled. Let's start the trigger thread.
@@ -61,6 +59,9 @@ public class ProjectChangeListener extends ItemListener {
                     }
                 }
             }
+        } else {
+            log.info("No CIBuildTrigger found, forcing thread stop.");
+            CIBuildTrigger.force(item.getFullName());
         }
     }
 }
