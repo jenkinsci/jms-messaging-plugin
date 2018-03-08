@@ -3,9 +3,11 @@ package com.redhat.jenkins.plugins.ci.messaging;
 import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
 
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.utils.PluginUtils;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -44,6 +46,9 @@ public abstract class JMSMessagingWorker {
     private static final Logger log = Logger.getLogger(JMSMessagingWorker.class.getName());
     public static final Integer RETRY_MINUTES = 1;
 
+    protected MessagingProviderOverrides overrides;
+    protected String topic;
+
     public abstract boolean subscribe(String jobname, String selector);
     public abstract void unsubscribe(String jobname);
     public abstract void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs);
@@ -81,5 +86,17 @@ public abstract class JMSMessagingWorker {
     public abstract void prepareForInterrupt();
 
     public abstract boolean isBeingInterrupted();
+
+    protected String getTopic(JMSMessagingProvider provider) {
+        String ltopic;
+        if (overrides != null && overrides.getTopic() != null && !overrides.getTopic().isEmpty()) {
+            ltopic = overrides.getTopic();
+        } else if (provider.getTopic() != null && !provider.getTopic().isEmpty()) {
+            ltopic = provider.getTopic();
+        } else {
+            ltopic = FedMsgMessagingWorker.DEFAULT_PREFIX;
+        }
+        return PluginUtils.getSubstitutedValue(ltopic, null);
+    }
 }
 

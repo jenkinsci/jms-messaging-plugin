@@ -443,6 +443,58 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.getLastBuild().shouldSucceed();
     }
 
+    public void _testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic() {
+
+        String script = "import hudson.slaves.EnvironmentVariablesNodeProperty\n" +
+                "import jenkins.model.Jenkins\n" +
+                "\n" +
+                "instance = Jenkins.getInstance()\n" +
+                "globalNodeProperties = instance.getGlobalNodeProperties()\n" +
+                "envVarsNodePropertyList = globalNodeProperties.getAll(EnvironmentVariablesNodeProperty.class)\n" +
+                "\n" +
+                "newEnvVarsNodeProperty = null\n" +
+                "envVars = null\n" +
+                "\n" +
+                "if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {\n" +
+                "  newEnvVarsNodeProperty = new EnvironmentVariablesNodeProperty();\n" +
+                "  globalNodeProperties.add(newEnvVarsNodeProperty)\n" +
+                "  envVars = newEnvVarsNodeProperty.getEnvVars()\n" +
+                "} else {\n" +
+                "  envVars = envVarsNodePropertyList.get(0).getEnvVars()\n" +
+                "}\n" +
+                "\n" +
+                "envVars.put(\"MY_TOPIC_ID\", \"MY_UUID\")\n" +
+                "\n" +
+                "instance.save()";
+        jenkins.runScript(script);
+
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.script.set("node('master') {\n sleep 10\n}");
+        jobA.save();
+
+        elasticSleep(1000);
+        jobA.configure();
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.overrides.check();
+        ciEvent.topic.set("$MY_TOPIC_ID");
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.save();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("$MY_TOPIC_ID");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set("Hello World");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed();
+    }
+
     public void _testSimpleCIEventTriggerWithPipelineWaitForMsg() {
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
         wait.script.set("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
