@@ -215,6 +215,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testAbortWaitingForMessageWithPipelineBuild();
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
+        _testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic();
+    }
+
     @Before
     public void setUp() throws Exception {
         amq = docker.get();

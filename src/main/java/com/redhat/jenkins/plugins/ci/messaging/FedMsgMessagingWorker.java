@@ -66,15 +66,16 @@ import com.redhat.utils.MessageUtils;
 public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private static final Logger log = Logger.getLogger(FedMsgMessagingWorker.class.getName());
+
     private final FedMsgMessagingProvider provider;
-    private final MessagingProviderOverrides overrides;
+
     public static final String DEFAULT_PREFIX = "org.fedoraproject";
 
     private ZMQ.Context context;
     private ZMQ.Poller poller;
     private ZMQ.Socket socket;
     private boolean interrupt = false;
-    private String topic;
+
     private String selector;
     private boolean pollerClosed = false;
 
@@ -89,7 +90,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         if (interrupt) {
             return true;
         }
-        this.topic = getTopic();
+        this.topic = getTopic(provider);
         this.selector = selector;
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
@@ -363,7 +364,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     envVars2));
 
             blob.setMsg(message);
-            blob.setTopic(PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener)));
+            blob.setTopic(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)));
             blob.setTimestamp((new java.util.Date()).getTime() / 1000);
 
             boolean successTopic = sock.sendMore(blob.getTopic());
@@ -421,9 +422,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         ZMQ.Poller lpoller = lcontext.poller(1);
         ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
 
-        String ltopic = getTopic();
+        String ltopic = getTopic(provider);
         try {
-            ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
+            ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
         } catch (IOException e) {
             log.warning(e.getMessage());
         } catch (InterruptedException e) {
@@ -553,13 +554,4 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         return interrupt;
     }
 
-    private String getTopic() {
-        if (overrides != null && overrides.getTopic() != null && !overrides.getTopic().isEmpty()) {
-            return overrides.getTopic();
-        } else if (provider.getTopic() != null && !provider.getTopic().isEmpty()) {
-            return provider.getTopic();
-        } else {
-            return DEFAULT_PREFIX;
-        }
-    }
 }
