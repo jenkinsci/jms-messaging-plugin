@@ -184,6 +184,12 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         _testDisabledJobDoesNotGetTriggered();
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
+        _testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic();
+    }
+
     @Ignore("failonError does not work in FedMsg/ZMQ")
     @Test
     public void testEnsureFailedSendingOfMessageFailsBuild() throws Exception {

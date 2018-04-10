@@ -119,7 +119,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	public static CIBuildTrigger findTrigger(String fullname) {
 		Jenkins jenkins = Jenkins.getInstance();
 
-		final Job p = jenkins.getItemByFullName(fullname, Job.class);
+		final Job<?, ?> p = jenkins.getItemByFullName(fullname, Job.class);
 		if (p != null) {
 			return ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
 		}
@@ -153,14 +153,19 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		startTriggerThread();
 	}
 
-	@Override
-	public void stop() {
-		super.stop();
-		if (job != null) {
-			log.info("job is null! Not stopping trigger thread!");
-			stopTriggerThread(job.getFullName());
-		}
-	}
+    @Override
+    public void stop() {
+        super.stop();
+        if (job != null) {
+            stopTriggerThread(job.getFullName());
+        } else {
+            log.info("job is null! Not stopping trigger thread!");
+        }
+    }
+
+    public static void force(String fullName) {
+        stopTriggerThread(fullName, null);
+    }
 
     public void rename(String oldFullName) {
         stopTriggerThread(oldFullName);
@@ -177,7 +182,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		if (job instanceof AbstractProject) {
-			AbstractProject aJob = (AbstractProject) job;
+			AbstractProject<?, ?> aJob = (AbstractProject<?, ?>) job;
 			if (aJob.isDisabled()) {
 				log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
 					return;
@@ -207,57 +212,63 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		}
 	}
 
-    private CITriggerThread stopTriggerThread(String fullName) {
+	private CITriggerThread stopTriggerThread(String fullName) {
+	    return stopTriggerThread(fullName, getComparisonThread());
+	}
+
+    private static CITriggerThread stopTriggerThread(String fullName, CITriggerThread comparisonThread) {
 		synchronized(getLock(fullName)) {
 			CITriggerThread thread = triggerInfo.get(fullName);
 			if (thread != null) {
 
-				JMSMessagingProvider provider = GlobalCIConfiguration.get()
-						.getProvider(providerName);
-				// We create a new thread here only to be able to
-				// use .equals() to compare.
-				// The thread is never started.
-				CITriggerThread newThread = new CITriggerThread(provider, overrides, job
-						.getFullName(), selector, getChecks());
-				newThread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+			    // If threads are the same we have start/stop sequence, so don't bother stopping.
+                if (thread.equals(comparisonThread)) {
+                    log.info("Already have thread " + thread.getId() + "...");
+                    return thread;
+                }
 
-				if (thread.equals(newThread)) {
-					log.info("Already have thread " + thread.getId() + "...");
-					return thread;
-				}
-
-				log.info("Getting thread: " + thread.getId());
-				try {
-					int waitCount = 0;
-					while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
-						log.info("Thread " + thread.getId() + ": Message Provider is NOT connected AND subscribed. Sleeping 1 sec");
-						Thread.sleep(1000);
-						waitCount++;
-					}
-					if (waitCount > 60) {
-						log.warning("Wait time of 60 secs elapsed trying to connect before interrupting...");
-					}
-					thread.sendInterrupt();
-					thread.interrupt();
-					if (thread.isMessageProviderConnected()) {
-						log.info("Thread " + thread.getId() + ": Message Provider is connected and subscribed");
-						log.info("Thread " + thread.getId() + ": trying to join");
-						thread.join();
-					} else {
-						log.warning("Thread " + thread.getId() + " Message Provider is NOT connected AND subscribed; skipping join!");
-					}
-				} catch (Exception e) {
-					log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
-				}
-				CITriggerThread thread2 = triggerInfo.remove(fullName);
-				if (thread2 != null) {
-					log.info("Removed thread: " + thread2.getId());
-				}
-				locks.remove(fullName);
-				log.info("Removed thread LOCK");
+		        log.info("Stopping thread: " + thread.getId());
+		        try {
+		            int waitCount = 0;
+		            while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
+		                log.info("Thread " + thread.getId() + ": Message Provider is NOT connected AND subscribed. Sleeping 1 sec");
+		                Thread.sleep(1000);
+		                waitCount++;
+		            }
+		            if (waitCount > 60) {
+		                log.warning("Wait time of 60 secs elapsed trying to connect before interrupting...");
+		            }
+		            thread.sendInterrupt();
+		            thread.interrupt();
+		            if (thread.isMessageProviderConnected()) {
+		                log.info("Thread " + thread.getId() + ": Message Provider is connected and subscribed");
+		                log.info("Thread " + thread.getId() + ": trying to join");
+		                thread.join();
+		            } else {
+		                log.warning("Thread " + thread.getId() + " Message Provider is NOT connected AND subscribed; skipping join!");
+		            }
+		        } catch (Exception e) {
+		            log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
+		        }
+		        CITriggerThread thread2 = triggerInfo.remove(fullName);
+		        if (thread2 != null) {
+		            log.info("Removed thread: " + thread2.getId());
+		        }
+		        locks.remove(fullName);
+		        log.info("Removed thread LOCK");
 			}
 			return null;
 		}
+    }
+
+    private CITriggerThread getComparisonThread() {
+        JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerName);
+        // We create a new thread here only to be able to
+        // use .equals() to compare.
+        // The thread is never started.
+        CITriggerThread newThread = new CITriggerThread(provider, overrides, job.getFullName(), selector, getChecks());
+        newThread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+        return newThread;
     }
 
 	public String getSelector() {
@@ -394,10 +405,10 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         ParametersAction parameters = createParameters(job, messageParams);
 	    List<ParameterValue> definedParameters = getDefinedParameters(job);
 	    List<ParameterValue> buildParameters = getUpdatedParameters(messageParams, definedParameters);
-        ParameterizedJobMixIn jobMixIn = new ParameterizedJobMixIn() {
+        ParameterizedJobMixIn<?, ?> jobMixIn = new ParameterizedJobMixIn() {
             @Override
-            protected Job asJob() {
-                return (Job)job;
+            protected Job<?, ?> asJob() {
+                return (Job<?, ?>)job;
             }
         };
 
@@ -425,8 +436,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	private List<ParameterValue> getDefinedParameters(BuildableItem project) {
 	    List<ParameterValue> parameters = new ArrayList<ParameterValue>();
-	    ParametersDefinitionProperty properties = (ParametersDefinitionProperty)
-                ((Job)project).getProperty(ParametersDefinitionProperty.class);
+	    ParametersDefinitionProperty properties = ((Job<?, ?>)project).getProperty(ParametersDefinitionProperty.class);
 
 	    if (properties != null  && properties.getParameterDefinitions() != null) {
 	        for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {
@@ -482,7 +492,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		}
 	}
 
-	Object getLock(String name) {
+	static Object getLock(String name) {
 		Object lock = locks.get(name);
 		if (lock == null) {
 			Object newLock = new Object();

@@ -78,13 +78,10 @@ import com.redhat.utils.PluginUtils;
 public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
 
-
     private final ActiveMqMessagingProvider provider;
-    private final MessagingProviderOverrides overrides;
 
     private Connection connection;
     private MessageConsumer subscriber;
-    private String topic;
     private String selector;
 
     public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, MessagingProviderOverrides overrides, String jobname) {
@@ -95,7 +92,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean subscribe(String jobname, String selector) {
-        this.topic = getTopic();
+        this.topic = getTopic(provider);
         this.selector = selector;
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
@@ -435,7 +432,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         String mesgContent = "";
 
         try {
-            String ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
+            String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
@@ -555,9 +552,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             log.severe("Unable to get localhost IP address.");
         }
 
-        String ltopic = getTopic();
+        String ltopic = getTopic(provider);
         try {
-            ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
+            ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
         } catch (IOException e) {
             log.warning(e.getMessage());
         } catch (InterruptedException e) {
@@ -811,16 +808,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
 
         return sb.toString();
-    }
-
-    private String getTopic() {
-        if (overrides != null && overrides.getTopic() != null && !overrides.getTopic().isEmpty()) {
-            return overrides.getTopic();
-        } else if (provider.getTopic() != null && !provider.getTopic().isEmpty()) {
-            return provider.getTopic();
-        } else {
-            return null;
-        }
     }
 
     private boolean setMessageHeader(Message m, String key, String value, Session session) {
