@@ -14,7 +14,7 @@ node('docker') {
 
 
         //check
-        docker.image('maven:3.3-jdk-8').inside(containerArgs) {
+        docker.image('maven:3.5.0').inside(containerArgs) {
             timestamps {
                 sh 'mvn -B -U -e -Dmaven.test.failure.ignore=true -Duser.home=/var/maven clean install -DskipTests'
             }
