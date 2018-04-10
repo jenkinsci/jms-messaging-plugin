@@ -1,10 +1,5 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.utils.OrderedProperties;
-import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -21,24 +16,20 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
-import org.zeromq.jms.selector.ZmqMessageSelector;
-import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.utils.MessageUtils;
+import com.redhat.utils.OrderedProperties;
+import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
@@ -75,7 +66,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     private ZMQ.Socket socket;
     private boolean interrupt = false;
     private String topic;
-    private String selector;
     private boolean pollerClosed = false;
 
     public FedMsgMessagingWorker(FedMsgMessagingProvider fedMsgMessagingProvider, MessagingProviderOverrides overrides, String jobname) {
@@ -90,7 +80,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             return true;
         }
         this.topic = getTopic();
-        this.selector = selector;
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -106,9 +95,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         socket.setLinger(0);
                         socket.connect(provider.getHubAddr());
                         poller.register(socket, ZMQ.Poller.POLLIN);
-                        log.info("Successfully subscribed job '" + jobname + "' to " + this.topic + " topic with selector: " + selector);
+                        log.info("Successfully subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
                     } else {
-                        log.info("Already subscribed to " + this.topic + " topic with selector: " + selector + " for job '" + jobname);
+                        log.info("Already subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
                     }
                     return true;
                 } catch (Exception ex) {
@@ -197,7 +186,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             log.info("we have been interrupted at start of receive");
             return;
         }
-        while (!subscribe(jobname, selector)) {
+        while (!subscribe(jobname)) {
             if (!Thread.currentThread().isInterrupted()) {
                 try {
                     int WAIT_SECONDS = 2;
@@ -228,13 +217,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         data.getMsg().put("topic", data.getTopic());
-                        ZmqMessageSelector selectorObj =
-                                ZmqSimpleMessageSelector.parse(selector);
-                        log.fine("Evaluating selector: " + selectorObj.toString());
-                        if (!selectorObj.evaluate(data.getMsg())) {
-                            log.fine("false");
-                            continue;
-                        }
                         //check checks here
                         boolean allPassed = true;
                         for (MsgCheck check: checks) {
@@ -270,11 +252,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 // Something other than an interrupt causes this.
                 // Unsubscribe, but stay in our loop and try to reconnect..
                 log.log(Level.WARNING, "JMS exception raised, going to re-subscribe for job '" + jobname + "'.", e);
-                log.log(Level.SEVERE, org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
                 unsubscribe(jobname); // Try again next time.
             }
         }
-
     }
 
     @Override
@@ -339,7 +319,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 OrderedProperties p = new OrderedProperties();
                 p.load(new StringReader(props));
                 @SuppressWarnings("unchecked")
-                Enumeration<String> e = (Enumeration<String>) p.propertyNames();
+                Enumeration<String> e = p.propertyNames();
                 while (e.hasMoreElements()) {
                     String key = e.nextElement();
                     EnvVars envVars2 = new EnvVars();
@@ -406,11 +386,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                                  String selector, String variable,
                                  List<MsgCheck> checks,
                                  Integer timeout) {
-        log.info("Waiting for message with selector: " + selector);
+        log.info("Waiting for message:");
         for (MsgCheck msgCheck: checks) {
             log.info(" with check: " + msgCheck.toString());
         }
-        listener.getLogger().println("Waiting for message with selector: " + selector);
+        listener.getLogger().println("Waiting for message: ");
         for (MsgCheck msgCheck: checks) {
             listener.getLogger().println(" with check: " + msgCheck.toString());
         }
@@ -451,15 +431,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         data.getMsg().put("topic", data.getTopic());
-                        ZmqMessageSelector selectorObj =
-                                ZmqSimpleMessageSelector.parse(selector);
-                        log.fine("Evaluating selector: " + selectorObj.toString());
-                        listener.getLogger().println("Evaluating selector: " + selectorObj.toString());
-                        if (!selectorObj.evaluate(data.getMsg())) {
-                            log.fine("false");
-                            listener.getLogger().println("selector match failed");
-                            continue;
-                        }
                         //check checks here
                         boolean allPassed = true;
                         for (MsgCheck check: checks) {
@@ -524,7 +495,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 }
                 try {
                     log.info("poller not closed yet. Sleeping for 1 sec...");
-                    Thread.currentThread().sleep(1000);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     // swallow
                 }

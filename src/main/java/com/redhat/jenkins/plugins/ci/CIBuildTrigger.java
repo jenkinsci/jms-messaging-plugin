@@ -112,6 +112,10 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		return Collections.unmodifiableList(checks);
 	}
 
+	public JMSMessagingProvider getProvider() {
+	    return GlobalCIConfiguration.get().getProvider(providerName);
+	}
+
 	public static CIBuildTrigger findTrigger(String fullname) {
 		Jenkins jenkins = Jenkins.getInstance();
 

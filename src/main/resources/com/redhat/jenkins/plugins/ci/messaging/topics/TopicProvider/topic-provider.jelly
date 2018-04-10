@@ -31,8 +31,12 @@
         <j:choose>
           <j:when test="${provider.getTopicProvider() != null}">
             pmap['${provider.getName()}'] = { publisher  : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generatePublisherTopic/',
-                                              subscriber : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generateSubscriberTopic/' };
+                                              subscriber : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generateSubscriberTopic/',
+                                              kind       : '${provider.getDescriptor().getDisplayName()}' };
           </j:when>
+          <j:otherwise>
+            pmap['${provider.getName()}'] = { kind       : '${provider.getDescriptor().getDisplayName()}' };
+          </j:otherwise>
         </j:choose>
       </j:forEach>
       function onProviderChange(prov, type) {
@@ -40,7 +44,7 @@
           
           var cb = t.querySelector("tr input[name='_.overrides']");
           var tb = t.querySelector("tr input[name='_.topic']");
-          if (pmap[prov.value]) {             
+          if (pmap[prov.value][type]) {
               var xhttp = new XMLHttpRequest();
               xhttp.onreadystatechange = function() {
                   if (this.readyState == 4 &amp;&amp; this.status == 200) {
@@ -59,6 +63,12 @@
               }
               tb.value = "";
           }
+          var sel = getParentByTag(getParentByTag(t.querySelector("tr input[name='_.selector']"), 'TR').parentNode, 'TR');
+          if (pmap[prov.value]['kind'] == 'FedMsg') {
+              sel.style.display = "none";
+          } else {
+              sel.style.display = "";
+          }
       }
       
       function getParentByTag(obj, tag) {
@@ -68,7 +78,6 @@
          }
          return pobj;
       }
-      
     </script>
   </st:once>
 </j:jelly>
