@@ -92,13 +92,13 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         this.timeout = timeout;
     }
 
+    public String getProviderName() {
+        return providerName;
+    }
+
     @DataBoundSetter
     public void setProviderName(String providerName) {
         this.providerName = providerName;
-    }
-
-    public String getProviderName() {
-        return providerName;
     }
 
     public MessagingProviderOverrides getOverrides() {
@@ -110,9 +110,8 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         this.overrides = overrides;
     }
 
-    @DataBoundSetter
-    public void setVariable(String variable) {
-        this.variable = variable;
+    public String getSelector() {
+        return selector;
     }
 
     @DataBoundSetter
@@ -120,21 +119,35 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         this.selector = selector;
     }
 
+    public String getVariable() {
+        return variable;
+    }
+
+    @DataBoundSetter
+    public void setVariable(String variable) {
+        this.variable = variable;
+    }
+
+    public List<MsgCheck> getChecks() {
+        return checks;
+    }
+
+    @DataBoundSetter
+    public void setChecks(List<MsgCheck> checks) {
+        this.checks = checks;
+    }
+
+    public Integer getTimeout() {
+        return timeout;
+    }
+
     @DataBoundSetter
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
     }
 
-    public String getSelector() {
-        return selector;
-    }
-
-    public String getVariable() {
-        return variable;
-    }
-
-    public Integer getTimeout() {
-        return timeout;
+    public JMSMessagingProvider getProvider() {
+        return GlobalCIConfiguration.get().getProvider(providerName);
     }
 
     public String waitforCIMessage(Run<?, ?> build, Launcher launcher, TaskListener listener) {
@@ -181,7 +194,7 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
             if (jo.getString("timeout") != null && !jo.getString("timeout").isEmpty()) {
                 timeout = jo.getInt("timeout");
             }
-            List<MsgCheck> checks = new ArrayList<>();
+            List<MsgCheck> checks = sr.bindJSONToList(MsgCheck.class, jo.get("checks"));
             return new CIMessageSubscriberBuilder(
                     jo.getString("providerName"),
                     mpo,

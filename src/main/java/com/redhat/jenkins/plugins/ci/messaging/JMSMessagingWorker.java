@@ -1,13 +1,9 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
-
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.utils.PluginUtils;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -15,7 +11,9 @@ import java.util.logging.Logger;
 
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.utils.MessageUtils;
+import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
@@ -50,8 +48,14 @@ public abstract class JMSMessagingWorker {
     protected String topic;
 
     public abstract boolean subscribe(String jobname, String selector);
+    public boolean subscribe(String jobname) {
+        return subscribe(jobname, null);
+    }
     public abstract void unsubscribe(String jobname);
     public abstract void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs);
+    public void receive(String jobname, List<MsgCheck> checks, long timeoutInMs) {
+        receive(jobname, null, checks, timeoutInMs);
+    }
     public abstract boolean connect() throws Exception;
     public abstract boolean isConnected();
 
@@ -66,11 +70,19 @@ public abstract class JMSMessagingWorker {
                                            String content, boolean failOnError);
 
     public abstract String waitForMessage(Run<?, ?> build,
-                                          TaskListener listener,
-                                          String selector,
-                                          String variable,
-                                          List<MsgCheck> checks,
-                                          Integer timeout);
+            TaskListener listener,
+            String selector,
+            String variable,
+            List<MsgCheck> checks,
+            Integer timeout);
+
+    public String waitForMessage(Run<?, ?> build,
+            TaskListener listener,
+            String variable,
+            List<MsgCheck> checks,
+            Integer timeout) {
+        return waitForMessage(build, listener, null, variable, checks, timeout);
+    }
 
     public void trigger(String jobname, String messageSummary,
                         Map<String, String> params) {

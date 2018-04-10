@@ -1,21 +1,19 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 import hudson.Extension;
 import hudson.model.Descriptor;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import jenkins.model.Jenkins;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 
 /*
  * The MIT License
@@ -41,6 +39,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * THE SOFTWARE.
  */
 public class FedMsgMessagingProvider extends JMSMessagingProvider {
+    private static final long serialVersionUID = 8505616943128586024L;
 
     private String hubAddr;
     private String pubAddr;
@@ -125,13 +124,9 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
 
     @Extension
     public static class FedMsgMessagingProviderDescriptor extends MessagingProviderDescriptor {
-        private final Logger log = Logger.getLogger(FedMsgMessagingProviderDescriptor.class.getName());
-
         @Override
         public String getDisplayName() {
             return "FedMsg";
         }
-
     }
-
 }
