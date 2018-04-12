@@ -24,12 +24,13 @@
      * THE SOFTWARE.
      *
   -->
+  <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
+
   <f:entry title="${%Messaging Provider}" field="providerName">
       <f:select onchange="javascript: onProviderChange(this, 'subscriber');"/>
   </f:entry>
   <f:nested>
     <j:choose>
-      <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
       <j:when test="${empty(instance)}">
         <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
         <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic('subscriber');}"/>
@@ -47,9 +48,40 @@
       </f:optionalBlock>
     </table>
   </f:nested>
+
   <f:entry title="${%JMS selector}" field="selector">
-    <f:expandableTextbox />
+    <f:expandableTextbox/>
+    <j:choose>
+      <j:when test="${empty(instance)}">
+        <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
+        <j:set var="dname" value="${gdescriptor.getFirstProviderDisplayName();}"/>
+      </j:when>
+      <j:otherwise>
+        <j:set var="dname" value="${instance.getProvider().getDescriptor().getDisplayName();}"/>
+      </j:otherwise>
+    </j:choose>
+    <j:choose>
+      <j:when test="${dname == 'FedMsg'}">
+        <script type="text/javascript">
+          <!-- Ugly. If the provider is FedMsg, the JMS selector field is hidden. This is a problem when
+               the trigger checkbox is first selected.  When that happens all fields are displayed by removing
+               the style tag. This is done from the onclick function on the checkbox. To counteract that 
+               an additional onclick handler is added that will again hide the JMS selector field.
+          -->
+          var pobj = document.currentScript;
+          while (pobj != null &amp;&amp; pobj.tagName != 'TR') {
+            pobj = pobj.parentNode;
+          }
+          function hideJMSSelector() {
+            pobj.style.display = "none";
+          }
+          var cb = document.getElementsByName('com-redhat-jenkins-plugins-ci-CIBuildTrigger')[0];
+          cb.addEventListener("click", hideJMSSelector, false);
+        </script>
+      </j:when>
+    </j:choose>
   </f:entry>
+
   <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
       <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}">
         <table width="100%">

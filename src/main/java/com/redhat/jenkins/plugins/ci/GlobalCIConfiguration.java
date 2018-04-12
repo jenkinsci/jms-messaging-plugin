@@ -220,4 +220,12 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         }
         return "";
     }
+
+    public String getFirstProviderDisplayName() {
+        if (configs != null && configs.size() > 0) {
+            JMSMessagingProvider prov = configs.get(0);
+            return prov.getDescriptor().getDisplayName();
+        }
+        return null;
+    }
 }
