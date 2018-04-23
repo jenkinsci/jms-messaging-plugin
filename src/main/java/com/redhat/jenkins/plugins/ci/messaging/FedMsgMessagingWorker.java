@@ -1,44 +1,31 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.utils.OrderedProperties;
-import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
-import org.zeromq.jms.selector.ZmqMessageSelector;
-import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.utils.MessageUtils;
+import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
@@ -76,7 +63,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     private ZMQ.Socket socket;
     private boolean interrupt = false;
 
-    private String selector;
     private boolean pollerClosed = false;
 
     public FedMsgMessagingWorker(FedMsgMessagingProvider fedMsgMessagingProvider, MessagingProviderOverrides overrides, String jobname) {
@@ -91,7 +77,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             return true;
         }
         this.topic = getTopic(provider);
-        this.selector = selector;
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -173,25 +158,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         pollerClosed = true;
     }
 
-    private void process(FedmsgMessage data) {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("CI_MESSAGE", data.getMessageBody());
-        params.put("MESSAGE_HEADERS", data.getMessageHeaders());
-
-        Iterator<String> it = data.getMsg().keySet().iterator();
-        while (it.hasNext()) {
-            String key = it.next();
-            Object obj = data.getMsg().get(key);
-            if (obj instanceof String) {
-                params.put(key, (String)obj);
-            }
-            if (obj instanceof Integer) {
-                params.put(key, ((Integer)obj).toString());
-            }
-        }
-        trigger(jobname, provider.formatMessage(data), params);
-    }
-
     @Override
     public void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs) {
         if (interrupt) {
@@ -216,6 +182,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             }
         }
         ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
         long lastSeenMessage = new Date().getTime();
         try {
             while ((new Date().getTime() - lastSeenMessage) < timeoutInMs) {
@@ -228,30 +195,10 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         //
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        data.getMsg().put("topic", data.getTopic());
-                        ZmqMessageSelector selectorObj =
-                                ZmqSimpleMessageSelector.parse(selector);
-                        log.fine("Evaluating selector: " + selectorObj.toString());
-                        if (!selectorObj.evaluate(data.getMsg())) {
-                            log.fine("false");
-                            continue;
-                        }
-                        //check checks here
-                        boolean allPassed = true;
-                        for (MsgCheck check: checks) {
-                            if (!provider.verify(data, check)) {
-                                allPassed = false;
-                                log.fine("msg check: " + check.toString() + " failed against: " + provider.formatMessage(data));
-                                break;
-                            }
-                        }
-                        if (allPassed) {
-                            if (checks.size() > 0) {
-                                log.fine("All msg checks have passed.");
-                            }
-                            process(data);
-                        } else {
-                            log.fine("Some msg checks did not pass.");
+                        if (provider.verify(data.getBodyJson(), checks)) {
+                            Map<String, String> params = new HashMap<String, String>();
+                            params.put("CI_MESSAGE", data.getBodyJson());
+                            trigger(jobname, provider.formatMessage(data), params);
                         }
                     }
                 } else {
@@ -313,72 +260,31 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             e.printStackTrace();
         }
 
-        TreeMap<String, String> envVarParts = new TreeMap<String, String>();
-        HashMap<String, Object> message = new HashMap<String, Object>();
-        message.put("CI_NAME", build.getParent().getName());
-        envVarParts.put("CI_NAME", build.getParent().getName());
-
-        message.put("CI_TYPE", type.getMessage());
-        envVarParts.put("CI_TYPE", type.getMessage());
-        if (!build.isBuilding()) {
-            String ciStatus = (build.getResult()
-                    == Result.SUCCESS ? "passed" : "failed");
-            message.put("CI_STATUS", ciStatus);
-            envVarParts.put("CI_STATUS", ciStatus);
-
-            envVarParts.put("BUILD_STATUS", build.getResult().toString());
-        }
-
-        FedmsgMessage blob = new FedmsgMessage();
+        String body = "";
         try {
-            EnvVars baseEnvVars = build.getEnvironment(listener);
-            EnvVars envVars = new EnvVars();
-            envVars.putAll(baseEnvVars);
-            envVars.putAll(envVarParts);
 
-            if (props != null && !props.trim().equals("")) {
-                OrderedProperties p = new OrderedProperties();
-                p.load(new StringReader(props));
-                @SuppressWarnings("unchecked")
-                Enumeration<String> e = (Enumeration<String>) p.propertyNames();
-                while (e.hasMoreElements()) {
-                    String key = e.nextElement();
-                    EnvVars envVars2 = new EnvVars();
-                    envVars2.putAll(baseEnvVars);
-                    envVars2.putAll(envVarParts);
-                    // This allows us to use recently added key/vals
-                    // to be substituted
-                    String val = PluginUtils.getSubstitutedValue(p.getProperty(key),
-                            envVars2);
-                    message.put(key, val);
-                    envVarParts.put(key, val);
-                }
+            EnvVars env = new EnvVars();
+            env.putAll(build.getEnvironment(listener));
+            env.put("CI_NAME", build.getParent().getName());
+            if (!build.isBuilding()) {
+                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed" : "failed"));
+                env.put("BUILD_STATUS", build.getResult().toString());
             }
 
-            EnvVars envVars2 = new EnvVars();
-            envVars2.putAll(baseEnvVars);
-            envVars2.putAll(envVarParts);
-            // This allows us to use recently added key/vals
-            // to be substituted
-            message.put(MESSAGECONTENTFIELD, PluginUtils.getSubstitutedValue(content,
-                    envVars2));
+            FedmsgMessage fm = new FedmsgMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
+                                                 PluginUtils.getSubstitutedValue(content, env));
 
-            blob.setMsg(message);
-            blob.setTopic(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)));
-            blob.setTimestamp((new java.util.Date()).getTime() / 1000);
-
-            boolean successTopic = sock.sendMore(blob.getTopic());
-            if (failOnError && !successTopic) {
+            body = fm.getBodyJson();
+            if (!sock.sendMore(fm.getTopic()) && failOnError) {
                 log.severe("Unhandled exception in perform: Failed to send message (topic)!");
-                return new SendResult(false, blob.getMsgId(), blob.getMessageBody());
+                return new SendResult(false, body);
             }
-            boolean successBody = sock.send(blob.toJson().toString());
-            if (failOnError && !successBody) {
+            if (!sock.send(body) && failOnError) {
                 log.severe("Unhandled exception in perform: Failed to send message (body)!");
-                return new SendResult(false, blob.getMsgId(), blob.getMessageBody());
+                return new SendResult(false, body);
             }
-            log.fine(blob.toJson().toString());
-            listener.getLogger().println(blob.toJson().toString());
+            log.fine("JSON message body:\n" + body);
+            listener.getLogger().println("JSON message body:\n" + body);
 
         } catch (Exception e) {
             if (failOnError) {
@@ -386,20 +292,19 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
                 listener.fatalError(ExceptionUtils.getStackTrace(e));
-                return new SendResult(false, blob.getMsgId(), blob.getMessageBody());
+                return new SendResult(false, body);
             } else {
                 log.warning("Unhandled exception in perform: ");
                 log.warning(ExceptionUtils.getStackTrace(e));
                 listener.error("Unhandled exception in perform: ");
                 listener.error(ExceptionUtils.getStackTrace(e));
-                return new SendResult(true, blob.getMsgId(), blob.getMessageBody());
+                return new SendResult(true, body);
             }
         } finally {
             sock.close();
             context.term();
         }
-
-        return new SendResult(true, blob.getMsgId(), blob.getMessageBody());
+        return new SendResult(true, body);
     }
 
     @Override
@@ -448,47 +353,23 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         ZMsg z = ZMsg.recvMsg(lpoller.getSocket(0));
 
                         listener.getLogger().println("Received a message");
-                        String json = z.getLast().toString();
 
+                        String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        data.getMsg().put("topic", data.getTopic());
-                        ZmqMessageSelector selectorObj =
-                                ZmqSimpleMessageSelector.parse(selector);
-                        log.fine("Evaluating selector: " + selectorObj.toString());
-                        listener.getLogger().println("Evaluating selector: " + selectorObj.toString());
-                        if (!selectorObj.evaluate(data.getMsg())) {
-                            log.fine("false");
-                            listener.getLogger().println("selector match failed");
+                        String body = data.getBodyJson();
+
+                        if (!provider.verify(body, checks)) {
                             continue;
                         }
-                        //check checks here
-                        boolean allPassed = true;
-                        for (MsgCheck check: checks) {
-                            if (!provider.verify(data, check)) {
-                                allPassed = false;
-                                log.info("msg check: " + check.toString() + " failed against: " + provider.formatMessage(data));
-                                listener.getLogger().println("msg check: " + check.toString() + " failed against: " + provider.formatMessage(data));
-                            }
-                        }
-                        if (allPassed) {
-                            if (checks.size() > 0) {
-                                log.info("All msg checks have passed.");
-                                listener.getLogger().println("All msg checks have passed.");
-                            }
-                        } else {
-                            log.info("Some msg checks did not pass.");
-                            listener.getLogger().println("Some msg checks did not pass.");
-                            continue;
-                        }
-                        String value = data.getMessageBody();
+
                         if (build != null) {
                             if (StringUtils.isNotEmpty(variable)) {
                                 EnvVars vars = new EnvVars();
-                                vars.put(variable, value);
+                                vars.put(variable, body);
                                 build.addAction(new CIEnvironmentContributingAction(vars));
                             }
                         }
-                        return value;
+                        return body;
                     }
                 }
             }
@@ -525,7 +406,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 }
                 try {
                     log.info("poller not closed yet. Sleeping for 1 sec...");
-                    Thread.currentThread().sleep(1000);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     // swallow
                 }
