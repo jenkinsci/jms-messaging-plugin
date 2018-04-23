@@ -14,7 +14,6 @@ import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.inject.Inject;
@@ -88,13 +87,28 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testSimpleCIEventSubscribeWithCheck() throws Exception {
+        _testSimpleCIEventSubscribeWithCheck();
+    }
+
+    @Test
     public void testSimpleCIEventSubscribeWithTopicOverride() throws Exception, InterruptedException {
         _testSimpleCIEventSubscribeWithTopicOverride();
     }
 
     @Test
+    public void testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception, InterruptedException {
+        _testSimpleCIEventSubscribeWithCheckWithTopicOverride();
+    }
+
+    @Test
     public void testSimpleCIEventSubscribeWithTopicOverrideAndVariableTopic() throws Exception {
         _testSimpleCIEventSubscribeWithTopicOverrideAndVariableTopic();
+    }
+
+    @Test
+    public void testSimpleCIEventSubscribeWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
+        _testSimpleCIEventSubscribeWithCheckWithTopicOverrideAndVariableTopic();
     }
 
     @WithPlugins("workflow-aggregator")
@@ -103,14 +117,20 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testSimpleCIEventTriggerWithPipelineSendMsg();
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventTriggerWithCheckWithPipelineSendMsg() throws Exception {
+        _testSimpleCIEventTriggerWithCheckWithPipelineSendMsg();
+    }
+
     @Test
     public void testSimpleCIEventTrigger() throws Exception {
         _testSimpleCIEventTrigger();
     }
 
-    @Ignore
     @Test
     public void testSimpleCIEventTriggerWithCheck() throws Exception {
+        _testSimpleCIEventTriggerWithCheck();
     }
 
     @Test
@@ -129,8 +149,18 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithCheckWithTopicOverride() throws Exception {
+        _testSimpleCIEventTriggerWithCheckWithTopicOverride();
+    }
+
+    @Test
     public void testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic() throws Exception {
         _testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic();
+    }
+
+    @Test
+    public void testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
+        _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic();
     }
 
     @Test
@@ -161,8 +191,20 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @WithPlugins("workflow-aggregator")
     @Test
+    public void testSimpleCIEventTriggerWithCheckOnPipelineJob() throws Exception {
+        _testSimpleCIEventTriggerWithCheckOnPipelineJob();
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
     public void testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
         _testSimpleCIEventTriggerWithPipelineWaitForMsg();
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
+        _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg();
     }
 
     @WithPlugins("workflow-aggregator")
@@ -193,6 +235,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testDisabledJobDoesNotGetTriggeredWithCheck() throws Exception {
+        _testDisabledJobDoesNotGetTriggeredWithCheck();
+    }
+
+    @Test
     public void testEnsureFailedSendingOfMessageFailsBuild() throws Exception {
         stopContainer(amq);
         System.out.println("Waiting 30 secs");
@@ -219,6 +266,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
         _testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic();
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
+        _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic();
     }
 
     @Before
@@ -264,7 +317,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         send.script.set("node('master') {\n sendCIMessage" +
                 " providerName: 'test', " +
                 " failOnError: true, " +
-                " messageContent: 'abcdefg', " +
+                " messageContent: '" + MESSAGE_CHECK_CONTENT + "', " +
                 " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}', " +
                 " messageType: 'CodeQualityChecksDone'}");
         send.save();
@@ -313,7 +366,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "properties(\n" +
                 "        [\n" +
                 "                pipelineTriggers(\n" +
-                "  [[$class: 'CIBuildTrigger', checks: [[expectedValue: '.*' + number + '.*', field: 'CI_STATUS2']], providerName: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]\n" +
+                "  [[$class: 'CIBuildTrigger', checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], providerName: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]\n" +
                 "                )\n" +
                 "        ]\n" +
                 ")\nnode('master') {\n sleep 1\n}");

@@ -1,13 +1,19 @@
 package com.redhat.jenkins.plugins.ci.messaging.data;
 
 import java.io.Serializable;
+
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 
 public class SendResult implements Serializable {
+    private static final long serialVersionUID = 7922547493388410558L;
 
     private boolean succeeded;
     private String messageId;
     private String messageContent;
+
+    public SendResult(boolean succeeded, String messageContent) {
+        this(succeeded, null, messageContent);
+    }
 
     public SendResult(boolean succeeded, String messageId, String messageContent) {
         this.succeeded = succeeded;
