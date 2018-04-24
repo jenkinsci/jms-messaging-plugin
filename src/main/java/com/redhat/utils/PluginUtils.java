@@ -1,14 +1,15 @@
 package com.redhat.utils;
 
 import hudson.EnvVars;
-import hudson.model.Hudson;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.text.StrSubstitutor;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.lang.text.StrSubstitutor;
 
 /*
  * The MIT License
@@ -35,6 +36,9 @@ import java.util.Map;
  */public class PluginUtils {
 
     public static String getSubstitutedValue(String id, EnvVars env) {
+        if (id == null) {
+            return id;
+        }
         String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); //replace $VAR instances with ${VAR}.
         if (env != null) {
             StrSubstitutor sub1 = new StrSubstitutor(env);

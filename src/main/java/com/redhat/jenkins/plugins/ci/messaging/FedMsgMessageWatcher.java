@@ -1,19 +1,18 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.utils.PluginUtils;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-import org.zeromq.jms.selector.ZmqMessageSelector;
-import org.zeromq.jms.selector.ZmqSimpleMessageSelector;
+import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_PREFIX;
 
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_PREFIX;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
@@ -91,33 +90,11 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
 
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        data.getMsg().put("topic", data.getTopic());
-                        ZmqMessageSelector selectorObj =
-                                ZmqSimpleMessageSelector.parse(selector);
-                        log.fine("Evaluating selector: " + selectorObj.toString());
-                        if (!selectorObj.evaluate(data.getMsg())) {
-                            log.fine("false");
+
+                        if (!provider.verify(data.getBodyJson(), checks)) {
                             continue;
                         }
-                        //check checks here
-                        boolean allPassed = true;
-                        for (MsgCheck check: checks) {
-                            if (!fedMsgMessagingProvider.verify(data, check)) {
-                                allPassed = false;
-                                log.fine("msg check: " + check.toString() + " failed against: "
-                                        + fedMsgMessagingProvider.formatMessage(data));
-                            }
-                        }
-                        if (allPassed) {
-                            if (checks.size() > 0) {
-                                log.fine("All msg checks have passed.");
-                            }
-                        } else {
-                            log.fine("Some msg checks did not pass.");
-                            continue;
-                        }
-                        String value = data.getMessageBody();
-                        return value;
+                        return data.getBodyJson();
                     }
                 }
             }

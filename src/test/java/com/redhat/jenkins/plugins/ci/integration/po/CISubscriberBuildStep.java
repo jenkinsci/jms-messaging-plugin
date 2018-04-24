@@ -5,6 +5,7 @@ import org.jenkinsci.test.acceptance.po.BuildStep;
 import org.jenkinsci.test.acceptance.po.Control;
 import org.jenkinsci.test.acceptance.po.Describable;
 import org.jenkinsci.test.acceptance.po.Job;
+import org.jenkinsci.test.acceptance.po.PageAreaImpl;
 
 /*
  * The MIT License
@@ -36,10 +37,25 @@ public class CISubscriberBuildStep extends AbstractStep implements BuildStep {
     public final Control overrides = control("overrides");
     public final Control topic = control("overrides/topic");
     public final Control selector = control("selector");
+    public final Control checks = control("repeatable-add");
     public final Control variable = control("variable");
     public final Control timeout = control("timeout");
 
     public CISubscriberBuildStep(Job parent, String path) {
         super(parent, path);
+    }
+
+    public MsgCheck addMsgCheck() {
+        checks.click();
+        return new MsgCheck(this, "checks");
+    }
+
+    public static class MsgCheck extends PageAreaImpl {
+        public final Control expectedValue = control("expectedValue");
+        public final Control field = control("field");
+
+        protected MsgCheck(CISubscriberBuildStep area, String path) {
+            super(area, path);
+        }
     }
 }
