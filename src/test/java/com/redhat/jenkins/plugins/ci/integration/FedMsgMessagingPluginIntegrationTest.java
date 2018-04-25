@@ -179,8 +179,8 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
     }
 
     @Test
-    public void testJobRename() throws Exception {
-        _testJobRename();
+    public void testJobRenameWithCheck() throws Exception {
+        _testJobRenameWithCheck();
     }
 
     @Test

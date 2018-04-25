@@ -47,8 +47,14 @@ public abstract class JMSMessagingWorker {
     protected MessagingProviderOverrides overrides;
     protected String topic;
 
+    public boolean subscribe(String jobname) {
+        return subscribe(jobname, null);
+    }
     public abstract boolean subscribe(String jobname, String selector);
     public abstract void unsubscribe(String jobname);
+    public void receive(String jobname, List<MsgCheck> checks, long timeoutInMs) {
+        receive(jobname, null, checks, timeoutInMs);
+    }
     public abstract void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs);
     public abstract boolean connect() throws Exception;
     public abstract boolean isConnected();
@@ -63,6 +69,14 @@ public abstract class JMSMessagingWorker {
                                            String props,
                                            String content, boolean failOnError);
 
+
+    public String waitForMessage(Run<?, ?> build,
+                                          TaskListener listener,
+                                          String variable,
+                                          List<MsgCheck> checks,
+                                          Integer timeout) {
+        return waitForMessage(build, listener, null, variable, checks, timeout);
+    }
     public abstract String waitForMessage(Run<?, ?> build,
                                           TaskListener listener,
                                           String selector,

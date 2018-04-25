@@ -230,6 +230,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testJobRenameWithCheck() throws Exception {
+        _testJobRenameWithCheck();
+    }
+
+    @Test
     public void testDisabledJobDoesNotGetTriggered() throws Exception {
         _testDisabledJobDoesNotGetTriggered();
     }

@@ -858,6 +858,22 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat("Trigger not subscribed", isSubscribed("ABC"));
     }
 
+    public void _testJobRenameWithCheck() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.save();
+        elasticSleep(1000);
+
+        jobA.renameTo("ABC");
+        elasticSleep(3000);
+        assertThat("Trigger not subscribed", isSubscribed("ABC"));
+    }
+
     public void _testDisabledJobDoesNotGetTriggered() {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();

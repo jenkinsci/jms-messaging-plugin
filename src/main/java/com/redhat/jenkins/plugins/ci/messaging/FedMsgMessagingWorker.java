@@ -92,9 +92,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         socket.setLinger(0);
                         socket.connect(provider.getHubAddr());
                         poller.register(socket, ZMQ.Poller.POLLIN);
-                        log.info("Successfully subscribed job '" + jobname + "' to " + this.topic + " topic with selector: " + selector);
+                        log.info("Successfully subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
                     } else {
-                        log.info("Already subscribed to " + this.topic + " topic with selector: " + selector + " for job '" + jobname);
+                        log.info("Already subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
                     }
                     return true;
                 } catch (Exception ex) {
@@ -164,7 +164,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             log.info("we have been interrupted at start of receive");
             return;
         }
-        while (!subscribe(jobname, selector)) {
+        while (!subscribe(jobname)) {
             if (!Thread.currentThread().isInterrupted()) {
                 try {
                     int WAIT_SECONDS = 2;
@@ -218,7 +218,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 // Something other than an interrupt causes this.
                 // Unsubscribe, but stay in our loop and try to reconnect..
                 log.log(Level.WARNING, "JMS exception raised, going to re-subscribe for job '" + jobname + "'.", e);
-                log.log(Level.SEVERE, org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
                 unsubscribe(jobname); // Try again next time.
             }
         }
@@ -312,12 +311,10 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                                  String selector, String variable,
                                  List<MsgCheck> checks,
                                  Integer timeout) {
-        log.info("Waiting for message with selector: " + selector);
+        log.info("Waiting for message.");
+        listener.getLogger().println("Waiting for message.");
         for (MsgCheck msgCheck: checks) {
             log.info(" with check: " + msgCheck.toString());
-        }
-        listener.getLogger().println("Waiting for message with selector: " + selector);
-        for (MsgCheck msgCheck: checks) {
             listener.getLogger().println(" with check: " + msgCheck.toString());
         }
         log.info(" with timeout: " + timeout);
