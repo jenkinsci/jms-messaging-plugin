@@ -1,4 +1,5 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:rh="/com/redhat/jenkins/plugins/ci/CIMessageSubscriberBuilder/form">
   <!--
      * The MIT License
      *
@@ -23,12 +24,13 @@
      * THE SOFTWARE.
      */
   -->
+  <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
+
   <f:entry title="${%Messaging Provider}" field="providerName">
     <f:select onchange="javascript: onProviderChange(this, 'publisher');"/>
   </f:entry>
   <f:nested>
     <j:choose>
-      <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
       <j:when test="${empty(instance)}">
         <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
         <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic('publisher');}"/>
@@ -46,12 +48,34 @@
       </f:optionalBlock>
     </table>
   </f:nested>
-  <f:entry title="${%Message type}" field="messageType">
-    <f:select name="messageType"/>
-  </f:entry>
-  <f:entry title="${%Message properties}" field="messageProperties">
-    <f:textarea name="messageProperties"/>
-  </f:entry>
+
+  <j:choose>
+    <j:when test="${empty(instance)}">
+      <j:set var="dname" value="${gdescriptor.getFirstProviderDisplayName();}"/>
+    </j:when>
+    <j:otherwise>
+      <j:set var="dname" value="${instance.getProvider().getDescriptor().getDisplayName();}"/>
+    </j:otherwise>
+  </j:choose>
+  <j:choose>
+    <j:when test="${dname == 'FedMsg'}">
+      <rh:ientry title="${%Message type}" field="messageType">
+        <f:select name="messageType"/>
+      </rh:ientry>
+      <rh:ientry title="${%Message properties}" field="messageProperties">
+        <f:textarea name="messageProperties"/>
+      </rh:ientry>
+    </j:when>
+    <j:otherwise>
+      <f:entry title="${%Message type}" field="messageType">
+        <f:select name="messageType"/>
+      </f:entry>
+      <f:entry title="${%Message properties}" field="messageProperties">
+        <f:textarea name="messageProperties"/>
+      </f:entry>
+    </j:otherwise>
+  </j:choose>
+
   <f:entry title="${%Message content}" field="messageContent">
     <f:textarea name="messageContent"/>
   </f:entry>
