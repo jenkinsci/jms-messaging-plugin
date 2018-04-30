@@ -1,4 +1,5 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson"
+         xmlns:f="/lib/form" xmlns:rh="/com/redhat/jenkins/plugins/ci/CIMessageSubscriberBuilder/form">
   <!--
      * The MIT License
      *
@@ -23,12 +24,13 @@
      * THE SOFTWARE.
      */
   -->
+  <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
+
   <f:entry title="${%Messaging Provider}" field="providerName">
     <f:select onchange="javascript: onProviderChange(this, 'subscriber');"/>
   </f:entry>
   <f:nested>
     <j:choose>
-      <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
       <j:when test="${empty(instance)}">
         <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
         <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic('subscriber');}"/>
@@ -46,8 +48,46 @@
       </f:optionalBlock>
     </table>
   </f:nested>
-  <f:entry title="${%JMS selector}" field="selector">
-    <f:textbox name="selector"/>
+
+  <j:choose>
+    <j:when test="${empty(instance)}">
+      <j:set var="dname" value="${gdescriptor.getFirstProviderDisplayName();}"/>
+    </j:when>
+    <j:otherwise>
+      <j:set var="dname" value="${instance.getProvider().getDescriptor().getDisplayName();}"/>
+    </j:otherwise>
+  </j:choose>
+  <j:choose>
+    <j:when test="${dname == 'FedMsg'}">
+      <rh:ientry title="${%JMS selector}" field="selector">
+        <f:expandableTextbox/>
+      </rh:ientry>
+    </j:when>
+    <j:otherwise>
+      <f:entry title="${%JMS selector}" field="selector">
+        <f:expandableTextbox/>
+      </f:entry>
+    </j:otherwise>
+  </j:choose>
+
+  <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
+      <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}">
+        <table width="100%">
+          <f:entry title="${%Field}">
+            <f:textbox name="checks.field" value="${check.field}"
+                       checkUrl="'descriptorByName/com.redhat.jenkins.plugins.ci.CIBuildTrigger/checkField?value='+escape(this.value)" />
+          </f:entry>
+          <f:entry title="${%Expected value}">
+            <f:textbox name="checks.expectedValue" value="${check.expectedValue}" />
+          </f:entry>
+          <f:entry>
+            <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+              <f:repeatableDeleteButton value="${%Delete check}" />
+              <br/>
+            </div>
+          </f:entry>
+      </table>
+    </f:repeatable>
   </f:entry>
   <f:entry title="${%Variable}" field="variable">
     <f:textbox name="variable"/>
@@ -55,4 +95,6 @@
   <f:entry title="${%Timeout}" field="timeout">
     <f:textbox name="timeout" default="${descriptor.getDefaultTimeout()}"/>
   </f:entry>
+
+  <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>

@@ -1,6 +1,14 @@
 package com.redhat.utils;
 
 import hudson.EnvVars;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import jenkins.model.Jenkins;
+
 import org.apache.commons.lang.text.StrSubstitutor;
 
 /*
@@ -28,9 +36,29 @@ import org.apache.commons.lang.text.StrSubstitutor;
  */public class PluginUtils {
 
     public static String getSubstitutedValue(String id, EnvVars env) {
+        if (id == null) {
+            return id;
+        }
         String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); //replace $VAR instances with ${VAR}.
-        StrSubstitutor sub1 = new StrSubstitutor(env);
+        if (env != null) {
+            StrSubstitutor sub1 = new StrSubstitutor(env);
+            text = sub1.replace(text).trim();
+        }
+        StrSubstitutor sub2 = new StrSubstitutor(getNodeGlobalProperties());
+        return sub2.replace(text).trim();
+    }
 
-        return sub1.replace(text).trim();
+
+    public static Map<String, String> getNodeGlobalProperties() {
+        Map<String, String> globalNodeProperties = new HashMap<String, String>();
+        // Get latest global properties by looking for all
+        // instances of EnvironmentVariablesNodeProperty in the global node properties
+        for (NodeProperty<?> nodeProperty : Jenkins.getInstance()
+                .getGlobalNodeProperties()) {
+            if (nodeProperty instanceof EnvironmentVariablesNodeProperty) {
+                globalNodeProperties.putAll(((EnvironmentVariablesNodeProperty) nodeProperty).getEnvVars());
+            }
+        }
+        return globalNodeProperties;
     }
 }

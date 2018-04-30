@@ -8,6 +8,7 @@ import java.io.Serializable;
 
 import jenkins.model.Jenkins;
 
+import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -16,6 +17,7 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
 
     private String topic;
 
+    @Whitelisted
     @DataBoundConstructor
     public MessagingProviderOverrides(String topic) {
         this.setTopic(topic);

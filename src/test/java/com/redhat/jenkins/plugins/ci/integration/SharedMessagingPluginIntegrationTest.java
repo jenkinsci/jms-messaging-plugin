@@ -26,15 +26,19 @@ import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.MsgCheck;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 
 /**
  * Created by shebert on 06/06/17.
  */
 public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
+
+    public static String MESSAGE_CHECK_FIELD = "content";
+    public static String MESSAGE_CHECK_VALUE = "catch me";
+    public static String MESSAGE_CHECK_CONTENT = "{ \"" + MESSAGE_CHECK_FIELD + "\" : \"" + MESSAGE_CHECK_VALUE + "\" }";
 
     public void _testAddDuplicateMessageProvider() throws IOException {
         elasticSleep(5000);
@@ -74,6 +78,32 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
     }
 
+    public void _testSimpleCIEventSubscribeWithCheck() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
+        com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep.MsgCheck check = subscriber.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        subscriber.variable.set("HELLO");
+
+        jobA.addShellStep("echo $HELLO");
+        jobA.save();
+        jobA.scheduleBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("catch me"));
+
+    }
+
     public void _testSimpleCIEventSubscribeWithTopicOverride() {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
@@ -104,6 +134,39 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("This is my content"));
+    }
+
+    public void _testSimpleCIEventSubscribeWithCheckWithTopicOverride() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+
+        CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
+        subscriber.overrides.check();
+        subscriber.topic.set("otopic");
+        com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep.MsgCheck check = subscriber.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        subscriber.variable.set("MESSAGE_CONTENT");
+
+        jobA.addShellStep("echo $MESSAGE_CONTENT");
+        jobA.save();
+        elasticSleep(1000);
+        jobA.scheduleBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("catch me"));
     }
 
     public void _testSimpleCIEventSubscribeWithTopicOverrideAndVariableTopic() throws Exception {
@@ -139,6 +202,39 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(jobA.getLastBuild().getConsole(), containsString("Hello World"));
     }
 
+    public void _testSimpleCIEventSubscribeWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        StringParameter p = jobA.addParameter(StringParameter.class);
+        p.setName("MY_TOPIC");
+        p.setDefault("my-topic");
+
+        CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
+        subscriber.overrides.check();
+        subscriber.topic.set("$MY_TOPIC");
+        com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep.MsgCheck check = subscriber.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        subscriber.variable.set("HELLO");
+
+        jobA.addShellStep("echo $HELLO");
+        jobA.save();
+        jobA.scheduleBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("my-topic");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("catch me"));
+    }
+
     public void _testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
@@ -153,6 +249,27 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}\n");
+        job.save();
+        job.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+    }
+
+    public void _testSimpleCIEventTriggerWithCheckWithPipelineSendMsg() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.save();
+
+        WorkflowJob job = jenkins.jobs.create(WorkflowJob.class);
+        job.script.set("node('master') {\n def message = sendCIMessage " +
+                " providerName: 'test', " +
+                " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n");
         job.save();
         job.startBuild().shouldSucceed();
 
@@ -186,13 +303,11 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
     public void _testSimpleCIEventTriggerWithCheck() {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
-        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
-        jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
+        jobA.addShellStep("echo job ran");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
-        check.expectedValue.set("Catch me");
-        check.field.set(JMSMessagingWorker.MESSAGECONTENTFIELD);
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -200,15 +315,13 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
         CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
-        notifier.messageType.select("CodeQualityChecksDone");
-        notifier.messageProperties.sendKeys("CI_STATUS = failed");
-        notifier.messageContent.set("Catch me");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
         jobB.save();
         jobB.startBuild().shouldSucceed();
 
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
-        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
     public void _testSimpleCIEventTriggerWithWildcardInSelector() {
@@ -239,13 +352,12 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
     public void _testSimpleCIEventTriggerWithRegExpCheck() {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
-        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        jobA.addShellStep("echo job ran");
         jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
-        check.expectedValue.set(".+compose_id.+Fedora-Atomic.+");
-        check.field.set("compose");
+        check.field.set("$.compose.compose_id");
+        check.expectedValue.set("Fedora-Atomic.+");
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -253,16 +365,13 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
         CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
-        notifier.messageType.select("CodeQualityChecksDone");
-        notifier.messageProperties.sendKeys("CI_STATUS = failed\n " +
-                "compose = \"compose_id\": \"Fedora-Atomic-25-20170105.0\"");
-        notifier.messageContent.set("");
+        notifier.messageContent.set("{ \"compose\": { \"compose_id\": \"Fedora-Atomic-25-20170105.0\" } }");
         jobB.save();
         jobB.startBuild().shouldSucceed();
 
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
-        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
     public void _testSimpleCIEventTriggerWithTopicOverride() {
@@ -290,6 +399,34 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    public void _testSimpleCIEventTriggerWithCheckWithTopicOverride() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo job ran");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        ciEvent.overrides.check();
+        ciEvent.topic.set("otopic");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
     public void _testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic() {
@@ -321,6 +458,38 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    public void _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo job ran");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.overrides.check();
+        ciEvent.topic.set("org.fedoraproject.my-topic");
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        StringParameter p = jobB.addParameter(StringParameter.class);
+        p.setName("MY_TOPIC");
+        p.setDefault("org.fedoraproject.my-topic");
+
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("$MY_TOPIC");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
     public void _testSimpleCIEventTriggerWithParamOverride() {
@@ -443,6 +612,134 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.getLastBuild().shouldSucceed();
     }
 
+    public void _testSimpleCIEventTriggerWithCheckOnPipelineJob() {
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.script.set("node('master') {\n sleep 10\n}");
+        jobA.save();
+
+        elasticSleep(1000);
+        jobA.configure();
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.save();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed();
+    }
+
+    public void _testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic() {
+
+        String script = "import hudson.slaves.EnvironmentVariablesNodeProperty\n" +
+                "import jenkins.model.Jenkins\n" +
+                "\n" +
+                "instance = Jenkins.getInstance()\n" +
+                "globalNodeProperties = instance.getGlobalNodeProperties()\n" +
+                "envVarsNodePropertyList = globalNodeProperties.getAll(EnvironmentVariablesNodeProperty.class)\n" +
+                "\n" +
+                "newEnvVarsNodeProperty = null\n" +
+                "envVars = null\n" +
+                "\n" +
+                "if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {\n" +
+                "  newEnvVarsNodeProperty = new EnvironmentVariablesNodeProperty();\n" +
+                "  globalNodeProperties.add(newEnvVarsNodeProperty)\n" +
+                "  envVars = newEnvVarsNodeProperty.getEnvVars()\n" +
+                "} else {\n" +
+                "  envVars = envVarsNodePropertyList.get(0).getEnvVars()\n" +
+                "}\n" +
+                "\n" +
+                "envVars.put(\"MY_TOPIC_ID\", \"MY_UUID\")\n" +
+                "\n" +
+                "instance.save()";
+        jenkins.runScript(script);
+
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.script.set("node('master') {\n sleep 10\n}");
+        jobA.save();
+
+        elasticSleep(1000);
+        jobA.configure();
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.overrides.check();
+        ciEvent.topic.set("$MY_TOPIC_ID");
+        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.save();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("$MY_TOPIC_ID");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set("Hello World");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed();
+    }
+
+    public void _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic() {
+
+        String script = "import hudson.slaves.EnvironmentVariablesNodeProperty\n" +
+                "import jenkins.model.Jenkins\n" +
+                "\n" +
+                "instance = Jenkins.getInstance()\n" +
+                "globalNodeProperties = instance.getGlobalNodeProperties()\n" +
+                "envVarsNodePropertyList = globalNodeProperties.getAll(EnvironmentVariablesNodeProperty.class)\n" +
+                "\n" +
+                "newEnvVarsNodeProperty = null\n" +
+                "envVars = null\n" +
+                "\n" +
+                "if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {\n" +
+                "  newEnvVarsNodeProperty = new EnvironmentVariablesNodeProperty();\n" +
+                "  globalNodeProperties.add(newEnvVarsNodeProperty)\n" +
+                "  envVars = newEnvVarsNodeProperty.getEnvVars()\n" +
+                "} else {\n" +
+                "  envVars = envVarsNodePropertyList.get(0).getEnvVars()\n" +
+                "}\n" +
+                "\n" +
+                "envVars.put(\"MY_TOPIC_ID\", \"MY_UUID\")\n" +
+                "\n" +
+                "instance.save()";
+        jenkins.runScript(script);
+
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.script.set("node('master') {\n sleep 10\n}");
+        jobA.save();
+
+        elasticSleep(1000);
+        jobA.configure();
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.overrides.check();
+        ciEvent.topic.set("$MY_TOPIC_ID");
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.save();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("$MY_TOPIC_ID");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed();
+    }
+
     public void _testSimpleCIEventTriggerWithPipelineWaitForMsg() {
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
         wait.script.set("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
@@ -463,6 +760,26 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         wait.getLastBuild().shouldSucceed();
         assertThat(wait.getLastBuild().getConsole(), containsString("Hello World"));
+    }
+
+    public void _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() {
+        WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
+        wait.script.set("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
+                " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
+                "}");
+        wait.save();
+        wait.startBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        wait.getLastBuild().shouldSucceed();
+        assertThat(wait.getLastBuild().getConsole(), containsString("catch me"));
     }
 
     public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob send, String expected) {
@@ -541,6 +858,22 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat("Trigger not subscribed", isSubscribed("ABC"));
     }
 
+    public void _testJobRenameWithCheck() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.save();
+        elasticSleep(1000);
+
+        jobA.renameTo("ABC");
+        elasticSleep(3000);
+        assertThat("Trigger not subscribed", isSubscribed("ABC"));
+    }
+
     public void _testDisabledJobDoesNotGetTriggered() {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
@@ -569,6 +902,37 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobB.startBuild().shouldSucceed();
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+    }
+
+    public void _testDisabledJobDoesNotGetTriggeredWithCheck() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo job ran");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.disable();
+        jobA.save();
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(5000);
+        jobA.getLastBuild().shouldNotExist();
+
+        jobA.configure();
+        jobA.check((find(by.checkbox("disable"))), false);
+        jobA.save();
+        elasticSleep(5000);
+        jobB.startBuild().shouldSucceed();
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
     public void _testEnsureFailedSendingOfMessageFailsBuild() {

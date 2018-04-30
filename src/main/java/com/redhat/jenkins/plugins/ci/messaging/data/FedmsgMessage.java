@@ -23,24 +23,25 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging.data;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import net.sf.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /*
  * The MIT License
@@ -71,57 +72,30 @@ import java.util.UUID;
 )
 public class FedmsgMessage {
 
-    public FedmsgMessage() {
-        i = 1;
-        this.msgId = Integer.toString(Calendar.getInstance().get(1)) + "-" + UUID.randomUUID().toString();
-    }
+    private static final Logger log = Logger.getLogger(FedmsgMessage.class.getName());
 
-    FedmsgMessage(HashMap<String, Object> var1, String var2, long var3, long var5) {
-        this.msg = var1;
-        this.topic = var2;
-        this.timestamp = var3;
-        this.i = var5;
-        this.msgId = Integer.toString(Calendar.getInstance().get(1)) + "-" + UUID.randomUUID().toString();
-    }
-
-    FedmsgMessage(FedmsgMessage var1) {
-        this.msg = var1.getMsg();
-        this.topic = var1.getTopic();
-        this.timestamp = var1.getTimestamp().getTime();
-        this.i = var1.getI();
-        this.msgId = var1.getMsgId();
-    }
-
-    private long timestamp;
     private String topic;
-    private String msgId;
     @JsonProperty("msg")
-    private Map<String, Object> msg;
-    private long i;
+    private Map<String, Object> msg = null;
 
-    @JsonProperty("msg_id")
-    public final String getMsgId() {
-        return this.msgId;
+    public FedmsgMessage() {}
+
+    public FedmsgMessage(String topic) {
+        this(topic, null);
     }
 
-    public final long getI() {
-        return this.i;
-    }
+    public FedmsgMessage(String topic, String body) {
+        this.topic = topic;
 
-    public Date getTimestamp() {
-        return new Date(this.timestamp);
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public Map<String, Object> getMsg() {
-        return msg;
-    }
-
-    public void setMsg(Map<String, Object> msg) {
-        this.msg = msg;
+        if (!StringUtils.isBlank(body)) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
+                msg = mapper.readValue(body, typeRef);
+            } catch (Exception e) {
+                log.log(Level.SEVERE, "Unable to deserialize message body.", e);
+            }
+        }
     }
 
     public String getTopic() {
@@ -132,57 +106,33 @@ public class FedmsgMessage {
         this.topic = topic;
     }
 
-    public String toJson() {
-        String message = "";
-        try {
-            ByteArrayOutputStream var1 = new ByteArrayOutputStream();
-            ObjectMapper var2 = new ObjectMapper();
-            ObjectWriter var3 = var2.writer();
-            var3.with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValue(var1, this);
-            var1.close();
-            message = new String(var1.toByteArray(), "UTF-8");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return message;
+    public Map<String, Object> getMsg() {
+        return msg;
+    }
+
+    public void setMsg(Map<String, Object> msg) {
+        this.msg = msg;
     }
 
     @JsonIgnore
-    public String getMessageBody() {
-        return JSONObject.fromObject(getMsg()).toString();
-    }
-
-    @JsonIgnore
-    public String getMessageHeaders() {
-        // fedmsg messages don't have headers or properties like JMS messages.
-        // The only real header is the topic.  This is here to maintain
-        // symmetry with MESSAGE_HEADERS provided by the AmqMessagingWorker.
-        // https://github.com/jenkinsci/jms-messaging-plugin/pull/20
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode root = mapper.createObjectNode();
-            root.set("topic", mapper.convertValue(getTopic(), JsonNode.class));
-            return mapper.writer().writeValueAsString(root);
-        } catch (Exception e) {
-            e.printStackTrace();
+    public String getBodyJson() {
+        if (msg != null) {
+            return JSONObject.fromObject(msg).toString();
         }
-
         return "";
     }
 
-    @JsonIgnore
-    public String getMsgJson() {
-        String message = "";
+    public String toJson() {
         try {
-            ByteArrayOutputStream var1 = new ByteArrayOutputStream();
-            ObjectMapper var2 = new ObjectMapper();
-            ObjectWriter var3 = var2.writer();
-            var3.with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValue(var1, msg);
-            var1.close();
-            message = new String(var1.toByteArray(), "UTF-8");
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectWriter writer = mapper.writer();
+            writer.with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValue(os, this);
+            os.close();
+            return new String(os.toByteArray(), "UTF-8");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return message;
+        return "";
     }
 }

@@ -31,8 +31,12 @@
         <j:choose>
           <j:when test="${provider.getTopicProvider() != null}">
             pmap['${provider.getName()}'] = { publisher  : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generatePublisherTopic/',
-                                              subscriber : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generateSubscriberTopic/' };
+                                              subscriber : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generateSubscriberTopic/',
+                                              kind       : '${provider.getDescriptor().getDisplayName()}' };
           </j:when>
+          <j:otherwise>
+            pmap['${provider.getName()}'] = { kind       : '${provider.getDescriptor().getDisplayName()}' };
+          </j:otherwise>
         </j:choose>
       </j:forEach>
       function onProviderChange(prov, type) {
@@ -40,7 +44,7 @@
           
           var cb = t.querySelector("tr input[name='_.overrides']");
           var tb = t.querySelector("tr input[name='_.topic']");
-          if (pmap[prov.value]) {             
+          if (pmap[prov.value][type]) {
               var xhttp = new XMLHttpRequest();
               xhttp.onreadystatechange = function() {
                   if (this.readyState == 4 &amp;&amp; this.status == 200) {
@@ -59,8 +63,33 @@
               }
               tb.value = "";
           }
+
+          displayIfNecessary(prov, t, 'input', '_.selector');
+          displayIfNecessary(prov, t, 'select', 'messageType');
+          displayIfNecessary(prov, t, 'textarea', 'messageProperties');
       }
-      
+
+      function displayIfNecessary(prov, t, tag, name) {
+          var ctrl = t.querySelector("tr " + tag + "[name='" + name + "']");
+          if (ctrl != null) {
+              var row = getTableRow(ctrl, tag);
+              if (pmap[prov.value]['kind'] == 'FedMsg') {
+                  row.style.display = "none";
+              } else {
+                  row.style.display = "";
+              }
+          }
+      }
+
+      function getTableRow(ctrl, tag) {
+          var row = getParentByTag(ctrl, 'TR');
+          if (tag == 'input') {
+              // The input tag is in an embedded table, need to go another level up.
+              row = getParentByTag(row.parentNode, 'TR');
+          }
+           return row;
+      }
+
       function getParentByTag(obj, tag) {
          var pobj = obj;
          while (pobj != null &amp;&amp; pobj.tagName != tag) {
@@ -68,7 +97,6 @@
          }
          return pobj;
       }
-      
     </script>
   </st:once>
 </j:jelly>

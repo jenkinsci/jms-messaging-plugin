@@ -5,11 +5,20 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import jenkins.model.Jenkins;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 /*
  * The MIT License
@@ -54,6 +63,39 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
 
     public abstract JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname);
     public abstract JMSMessageWatcher  createWatcher();
+
+    public boolean verify(String json, List<MsgCheck> checks) {
+        if (checks.size() > 0) {
+            if (StringUtils.isBlank(json)) {
+                // There are checks, but the json is empty. Must be false.
+                return false;
+            }
+
+            DocumentContext context = JsonPath.parse(json);
+            for (MsgCheck check: checks) {
+                if (!verify(context, check)) {
+                    log.fine("msg check: " + check.toString() + " failed against: " + json);
+                    return false;
+                }
+            }
+            log.fine("All msg checks have passed.");
+        }
+        return true;
+    }
+
+    private boolean verify(DocumentContext context, MsgCheck check) {
+        String aVal = "";
+
+        String field = StringUtils.prependIfMissing(check.getField(), "$.");
+        try {
+            aVal = context.read(field).toString();
+        } catch (PathNotFoundException pnfe) {
+            log.fine(pnfe.getMessage());
+            return false;
+        }
+        String eVal = StringUtils.defaultString(check.getExpectedValue());
+        return Pattern.compile(eVal).matcher(aVal).find();
+    }
 
     @Override
     public boolean equals(Object o) {

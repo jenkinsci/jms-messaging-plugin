@@ -1,0 +1,46 @@
+<div>
+    <p>Trigger the job in response to messages on a message bus.</p>
+    <p>
+        NOTE: To actually use any of the parameters discussed here, they must
+        be defined in the job config, or
+        <a href="https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Parametrized-pipelines">in the pipeline</a>
+        .
+    </p>
+    <p><b>ActiveMQ</b></p>
+    <p>The following parameters are passed to the job if the selected Messaging Provider uses ActiveMQ:</p>
+    <dl>
+      <dt>CI_MESSAGE</dt>
+      <dd>
+          The whole message body. The format varies depending on the type. For
+          TextMessage, the body is simply copied. For BytesMessage the body is
+          decoded into a String, as defined by the
+          <a href="https://docs.oracle.com/javase/7/docs/api/java/lang/String.html#String(byte[])">byte[] constructor</a>
+          . For MapMessage the body is converted to a json object String as defined by
+          <a href="http://fasterxml.github.io/jackson-databind/javadoc/2.8/com/fasterxml/jackson/databind/ObjectWriter.html#writeValueAsString(java.lang.Object)">jackson ObjectWriter</a>
+          .
+      </dd>
+      <dt>MESSAGE_HEADERS</dt>
+      <dd>
+          All String-type
+          <a href="https://docs.oracle.com/javaee/7/api/javax/jms/Message.html#getPropertyNames--">JMS Message properties</a>
+          , converted to a json object String as defined by
+          <a href="http://fasterxml.github.io/jackson-databind/javadoc/2.8/com/fasterxml/jackson/databind/ObjectWriter.html#writeValueAsString(java.lang.Object)">jackson ObjectWriter</a>
+          .
+      </dd>
+    </dl>
+    <p>
+        Additionally, all String-type
+        <a href="https://docs.oracle.com/javaee/7/api/javax/jms/Message.html#getPropertyNames--">JMS Message properties</a>
+        are converted to individual job parameters (NAME=VALUE).
+    </p>
+    <p><b>FedMsg</b></p>
+    <p>The following parameters are passed to the job if the selected Messaging Provider uses FedMsg:</p>
+    <dl>
+      <dt>CI_MESSAGE</dt>
+      <dd>
+          The whole message body, converted to a json object String as defined by
+          <a href="http://json-lib.sourceforge.net/apidocs/net/sf/json/JSONObject.html#toString()">json-lib JSONObject.toString()</a>
+          .
+      </dd>
+    </dl>
+</div>

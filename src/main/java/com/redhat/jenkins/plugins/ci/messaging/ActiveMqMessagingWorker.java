@@ -19,7 +19,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -41,7 +40,6 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -78,14 +76,10 @@ import com.redhat.utils.PluginUtils;
 public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
 
-
     private final ActiveMqMessagingProvider provider;
-    private final MessagingProviderOverrides overrides;
 
     private Connection connection;
     private MessageConsumer subscriber;
-    private String topic;
-    private String selector;
     private String uuid = UUID.randomUUID().toString();
 
     public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, MessagingProviderOverrides overrides, String jobname) {
@@ -96,8 +90,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean subscribe(String jobname, String selector) {
-        this.topic = getTopic();
-        this.selector = selector;
+        this.topic = getTopic(provider);
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -256,65 +249,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return "";
     }
 
-    private boolean verify(Message message, MsgCheck check) {
-        String sVal = "";
-
-        if (check.getField().equals(MESSAGECONTENTFIELD)) {
-            try {
-                if (message instanceof TextMessage) {
-                    sVal = ((TextMessage) message).getText();
-                } else if (message instanceof MapMessage) {
-                    MapMessage mm = (MapMessage) message;
-                    ObjectMapper mapper = new ObjectMapper();
-                    ObjectNode root = mapper.createObjectNode();
-
-                    @SuppressWarnings("unchecked")
-                    Enumeration<String> e = mm.getMapNames();
-                    while (e.hasMoreElements()) {
-                        String field = e.nextElement();
-                        root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
-                    }
-                    sVal = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
-                } else if (message instanceof BytesMessage) {
-                    BytesMessage bm = (BytesMessage) message;
-                    bm.reset();
-                    byte[] bytes = new byte[(int) bm.getBodyLength()];
-                    if (bm.readBytes(bytes) == bm.getBodyLength()) {
-                        sVal = new String(bytes);
-                    }
-                }
-            } catch (JMSException e) {
-                return false;
-            } catch (JsonProcessingException e) {
-                return false;
-            }
-        } else {
-            Enumeration<String> propNames = null;
-            try {
-                propNames = message.getPropertyNames();
-                while (propNames.hasMoreElements()) {
-                    String propertyName = propNames.nextElement ();
-                    if (propertyName.equals(check.getField())) {
-                        if (message.getObjectProperty(propertyName) != null) {
-                            sVal = message.getObjectProperty(propertyName).toString();
-                            break;
-                        }
-                    }
-                }
-            } catch (JMSException e) {
-                return false;
-            }
-        }
-
-        String eVal = "";
-        if (check.getExpectedValue() != null) {
-            eVal = check.getExpectedValue();
-        }
-        if (Pattern.compile(eVal).matcher(sVal).find()) {
-            return true;
-        }
-        return false;
-    }
 
     private void process (String jobname, Message message) {
         try {
@@ -358,22 +292,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             Message m = subscriber.receive(timeoutInMs); // In milliseconds!
             if (m != null) {
-                //check checks here
-                boolean allPassed = true;
-                for (MsgCheck check: checks) {
-                    if (!verify(m, check)) {
-                        allPassed = false;
-                        log.fine("msg check: " + check.toString() + " failed against: " + formatMessage(m));
-                        break;
-                    }
-                }
-                if (allPassed) {
-                    if (checks.size() > 0) {
-                        log.fine("All msg checks have passed.");
-                    }
+                if (provider.verify(getMessageContent(m), checks)) {
                     process(jobname, m);
-                } else {
-                    log.fine("Some msg checks did not pass.");
                 }
             } else {
                 log.info("No message received for the past " + timeoutInMs + " ms, re-subscribing job '" + jobname + "'.");
@@ -430,7 +350,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         String mesgContent = "";
 
         try {
-            String ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
+            String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
@@ -447,8 +367,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message.setStringProperty("CI_NAME", build.getParent().getName());
                 envVarParts.put("CI_NAME", build.getParent().getName());
 
-                message.setStringProperty("CI_TYPE", type.getMessage());
-                envVarParts.put("CI_TYPE", type.getMessage());
+                if (type != null) {
+                    message.setStringProperty("CI_TYPE", type.getMessage());
+                    envVarParts.put("CI_TYPE", type.getMessage());
+                }
                 if (!build.isBuilding()) {
                     String ciStatus = (build.getResult()
                             == Result.SUCCESS ? "passed" : "failed");
@@ -550,9 +472,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             log.severe("Unable to get localhost IP address.");
         }
 
-        String ltopic = getTopic();
+        String ltopic = getTopic(provider);
         try {
-            ltopic = PluginUtils.getSubstitutedValue(getTopic(), build.getEnvironment(listener));
+            ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
         } catch (IOException e) {
             log.warning(e.getMessage());
         } catch (InterruptedException e) {
@@ -777,6 +699,17 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             }
 
             sb.append("Message Content:\n");
+            sb.append(getMessageContent(message));
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Unable to format message:", e);
+        }
+
+        return sb.toString();
+    }
+
+    private static String getMessageContent(Message message) {
+        StringBuilder sb = new StringBuilder();
+        try {
             if (message instanceof TextMessage) {
                 sb.append(((TextMessage) message).getText());
             } else if (message instanceof MapMessage) {
@@ -788,7 +721,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 Enumeration<String> e = mm.getMapNames();
                 while (e.hasMoreElements()) {
                     String field = e.nextElement();
-                    root.put(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
+                    root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                 }
                 sb.append(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root));
             } else if (message instanceof BytesMessage) {
@@ -804,18 +737,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unable to format message:", e);
         }
-
         return sb.toString();
-    }
-
-    private String getTopic() {
-        if (overrides != null && overrides.getTopic() != null && !overrides.getTopic().isEmpty()) {
-            return overrides.getTopic();
-        } else if (provider.getTopic() != null && !provider.getTopic().isEmpty()) {
-            return provider.getTopic();
-        } else {
-            return null;
-        }
     }
 
     private boolean setMessageHeader(Message m, String key, String value, Session session) {

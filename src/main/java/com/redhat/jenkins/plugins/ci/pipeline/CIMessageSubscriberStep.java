@@ -1,38 +1,36 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
-import com.google.common.collect.ImmutableSet;
-import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessageWatcher;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.model.Run;
+import hudson.util.ListBoxModel;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-import hudson.util.ListBoxModel;
 import jenkins.util.Timer;
+
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
-import org.jenkinsci.plugins.workflow.steps.EnvironmentExpander;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Future;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 /*
  * The MIT License
@@ -136,7 +134,6 @@ public class CIMessageSubscriberStep extends Step {
         @Inject
         private transient CIMessageSubscriberStep step;
         private transient Future task;
-        private transient JMSMessageWatcher watcher;
 
         @Override
         public boolean start() throws Exception {
@@ -144,36 +141,29 @@ public class CIMessageSubscriberStep extends Step {
                 throw new Exception("providerName not specified!");
             }
 
-            GlobalCIConfiguration config = GlobalCIConfiguration.get();
-            JMSMessagingProvider provider = config.getProvider(step.providerName);
-            if (provider == null) {
-                throw new RuntimeException("Failed to locate JMSMessagingProvider with name "
-                        + step.providerName + ". You must update the job configuration.");
-            }
-
-            watcher = provider.createWatcher();
-            int timeout = CIMessageSubscriberBuilder.DEFAULT_TIMEOUT_IN_MINUTES;
-            if (step.getTimeout() != null && step.getTimeout() > 0) {
-                timeout = step.getTimeout();
-            }
-            watcher.setTimeout(timeout);
-            watcher.setOverrides(step.overrides);
-            watcher.setSelector(step.selector);
-            watcher.setChecks(step.checks);
-            watcher.setProvider(provider);
-            watcher.setEnvironment(getContext().get(Run.class).getEnvironment(getContext().get(TaskListener.class)));
-            watcher.setTaskListener(getContext().get(TaskListener.class));
-
             task = Timer.get().submit(new Runnable() {
                 @Override
                 public void run() {
-                    String msg = watcher.watch();
-                    if (msg == null) {
-                        getContext().onFailure(new AbortException("Timeout waiting for message!"));
-                    } else {
-                        getContext().onSuccess(msg);
+                    try {
+                        CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(
+                                step.getProviderName(),
+                                step.getOverrides(),
+                                step.getSelector(),
+                                step.getChecks(),
+                                step.getTimeout()
+                                );
+                        StepContext c = getContext();
+                        String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
+                        if (result != null) {
+                            getContext().onSuccess(result);
+                        } else {
+                            getContext().onFailure(new AbortException("Timeout waiting for message!"));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        getContext().onFailure(e);
                     }
-                }
+}
             });
             return false;
         }
@@ -182,8 +172,6 @@ public class CIMessageSubscriberStep extends Step {
         public void stop(@Nonnull Throwable cause) throws Exception {
             if (task != null) {
                 getContext().get(TaskListener.class).getLogger().println("in stop of watcher");
-                watcher.interrupt();
-                Thread.currentThread().sleep(1000);
                 task.cancel(true);
                 getContext().onFailure(cause);
             }
