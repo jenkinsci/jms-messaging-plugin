@@ -486,6 +486,11 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		public String getDisplayName() {
 			return Messages.PluginName();
 		}
+
+		@Override
+		public String getHelpFile() {
+			return "/plugin/jms-messaging/help-trigger.html";
+		}
 	}
 
 	static Object getLock(String name) {
