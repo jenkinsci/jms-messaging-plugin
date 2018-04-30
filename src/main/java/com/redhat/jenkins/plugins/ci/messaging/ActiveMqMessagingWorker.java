@@ -80,6 +80,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     private Connection connection;
     private MessageConsumer subscriber;
+    private String uuid = UUID.randomUUID().toString();
 
     public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, MessagingProviderOverrides overrides, String jobname) {
         this.provider = provider;
@@ -150,12 +151,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         connection = null;
         ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
 
-        String ip = null;
-        try {
-            ip = Inet4Address.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            log.severe("Unable to get localhost IP address.");
-        }
         Connection connectiontmp = null;
         try {
             connectiontmp = connectionFactory
@@ -165,7 +160,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 url = Jenkins.getInstance().getRootUrl();
             }
             connectiontmp.setClientID(provider.getName() + "_"
-                    + url + "_" + ip + "_" + jobname);
+                    + url + "_" + uuid + "_" + jobname);
             connectiontmp.start();
         } catch (JMSException e) {
             log.severe("Unable to connect to " + provider.getBroker() + " " + e.getMessage());
