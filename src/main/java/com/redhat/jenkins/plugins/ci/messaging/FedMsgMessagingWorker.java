@@ -260,6 +260,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         }
 
         String body = "";
+        String msgId = "";
         try {
 
             EnvVars env = new EnvVars();
@@ -274,13 +275,14 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                                                  PluginUtils.getSubstitutedValue(content, env));
 
             body = fm.getBodyJson();
+            msgId = fm.getMsgId();
             if (!sock.sendMore(fm.getTopic()) && failOnError) {
                 log.severe("Unhandled exception in perform: Failed to send message (topic)!");
-                return new SendResult(false, body);
+                return new SendResult(false, msgId, body);
             }
             if (!sock.send(body) && failOnError) {
                 log.severe("Unhandled exception in perform: Failed to send message (body)!");
-                return new SendResult(false, body);
+                return new SendResult(false, msgId, body);
             }
             log.fine("JSON message body:\n" + body);
             listener.getLogger().println("JSON message body:\n" + body);
@@ -291,19 +293,19 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
                 listener.fatalError(ExceptionUtils.getStackTrace(e));
-                return new SendResult(false, body);
+                return new SendResult(false, msgId, body);
             } else {
                 log.warning("Unhandled exception in perform: ");
                 log.warning(ExceptionUtils.getStackTrace(e));
                 listener.error("Unhandled exception in perform: ");
                 listener.error(ExceptionUtils.getStackTrace(e));
-                return new SendResult(true, body);
+                return new SendResult(true, msgId, body);
             }
         } finally {
             sock.close();
             context.term();
         }
-        return new SendResult(true, body);
+        return new SendResult(true, msgId, body);
     }
 
     @Override
