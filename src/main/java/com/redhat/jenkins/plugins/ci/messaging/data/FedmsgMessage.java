@@ -25,8 +25,11 @@ package com.redhat.jenkins.plugins.ci.messaging.data;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -74,7 +77,9 @@ public class FedmsgMessage {
 
     private static final Logger log = Logger.getLogger(FedmsgMessage.class.getName());
 
+    private long timestamp;
     private String topic;
+    private String msgId;
     @JsonProperty("msg")
     private Map<String, Object> msg = null;
 
@@ -86,6 +91,7 @@ public class FedmsgMessage {
 
     public FedmsgMessage(String topic, String body) {
         this.topic = topic;
+        this.msgId = Integer.toString(Calendar.getInstance().get(1)) + "-" + UUID.randomUUID().toString();
 
         if (!StringUtils.isBlank(body)) {
             try {
@@ -104,6 +110,19 @@ public class FedmsgMessage {
 
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    public Date getTimestamp() {
+        return new Date(this.timestamp);
+    }
+
+    @JsonProperty("msg_id")
+    public final String getMsgId() {
+        return this.msgId;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     public Map<String, Object> getMsg() {
