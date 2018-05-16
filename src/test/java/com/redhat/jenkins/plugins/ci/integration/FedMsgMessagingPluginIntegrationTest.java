@@ -100,6 +100,11 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithCheckNoSquash() throws Exception {
+        _testSimpleCIEventTriggerWithCheckNoSquash();
+    }
+
+    @Test
     public void testSimpleCIEventTriggerWithRegExpCheck() throws Exception {
         _testSimpleCIEventTriggerWithRegExpCheck();
     }

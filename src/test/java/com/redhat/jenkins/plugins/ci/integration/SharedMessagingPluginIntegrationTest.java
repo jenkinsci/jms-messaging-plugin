@@ -324,6 +324,34 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
+    public void _testSimpleCIEventTriggerWithCheckNoSquash() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("sleep 3;");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ciEvent.noSquash.check();
+        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+        jobB.startBuild().shouldSucceed();
+        jobB.startBuild().shouldSucceed();
+        jobB.startBuild().shouldSucceed();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(20000);
+        assertThat(jobA.getLastBuild().getNumber(), is(equalTo(5)));
+    }
+
     public void _testSimpleCIEventTriggerWithWildcardInSelector() {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
