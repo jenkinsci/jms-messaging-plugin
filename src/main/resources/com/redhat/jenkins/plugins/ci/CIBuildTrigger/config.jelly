@@ -26,6 +26,19 @@
   -->
   <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
 
+  <!--
+    I haven't been able to find a way to get the checkbox lined up correctly so things look good.  Work
+    around that by stealing HTML from <f:entry> and embedding it directly here.
+  -->
+  <j:set target="${attrs}" property="chkhelp" value="${descriptor.getHelpFile('noSquash')}" />
+  <tr>
+    <td class="setting-leftspace"><st:nbsp/></td>
+    <td colspan="2">
+      <f:checkbox field="noSquash" title="${%Schedule a new job for every triggering message.}" default="false"/>
+    </td>
+    <f:helpLink url="${attrs.chkhelp}" featureName="${%Schedule a new job for every triggering message.}"/>
+  </tr>
+  
   <f:entry title="${%Messaging Provider}" field="providerName">
       <f:select onchange="javascript: onProviderChange(this, 'subscriber');"/>
   </f:entry>

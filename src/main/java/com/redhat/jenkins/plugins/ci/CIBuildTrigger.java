@@ -72,15 +72,16 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	private String selector;
 	private String providerName;
-	private List<MsgCheck> checks = new ArrayList<MsgCheck>();
 	private MessagingProviderOverrides overrides;
+    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
+    private Boolean noSquash = false;
 
 	public static final transient ConcurrentMap<String, CITriggerThread> triggerInfo = new ConcurrentHashMap<>();
 	public static final transient ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
-	public CIBuildTrigger(String selector, String providerName, MessagingProviderOverrides overrides, List<MsgCheck> checks) {
+	public CIBuildTrigger(String selector, String providerName, MessagingProviderOverrides overrides, List<MsgCheck> checks, Boolean noSquash) {
 		super();
 		this.selector = StringUtils.stripToNull(selector);
         this.providerName = providerName;
@@ -89,16 +90,22 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			checks = new ArrayList<>();
 		}
 		this.checks = checks;
+		this.noSquash = noSquash;
 	}
+
+    public String getSelector() {
+        return selector;
+    }
+
+    @DataBoundSetter
+    public void setSelector(String selector) {
+        this.selector = selector;
+    }
 
 	@DataBoundSetter
 	public void setProviderName(String providerName) {
 		this.providerName = providerName;
 	}
-
-	public MessagingProviderOverrides getOverrides() {
-        return overrides;
-    }
 
     @DataBoundSetter
     public void setOverrides(MessagingProviderOverrides overrides) {
@@ -112,7 +119,11 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		return Collections.unmodifiableList(checks);
 	}
 
-	public static CIBuildTrigger findTrigger(String fullname) {
+	public Boolean getNoSquash() {
+        return noSquash;
+    }
+
+    public static CIBuildTrigger findTrigger(String fullname) {
 		Jenkins jenkins = Jenkins.getInstance();
 
 		final Job<?, ?> p = jenkins.getItemByFullName(fullname, Job.class);
@@ -267,14 +278,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         return newThread;
     }
 
-	public String getSelector() {
-		return selector;
-	}
-
-	public void setSelector(String selector) {
-		this.selector = selector;
-	}
-
     /**
      * Inspects {@link ParametersAction} to see what kind of capabilities it has in regards to SECURITY-170.
      * Assuming the safeParameters constructor could not be found.
@@ -411,7 +414,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         jobMixIn.scheduleBuild2(0,
                 new CauseAction(new CIBuildCause()),
                 parameters,
-                new CIEnvironmentContributingAction(messageParams, buildParameters)
+                new CIEnvironmentContributingAction(messageParams, buildParameters),
+                new CIShouldScheduleQueueAction(noSquash)
                 );
 	}
 

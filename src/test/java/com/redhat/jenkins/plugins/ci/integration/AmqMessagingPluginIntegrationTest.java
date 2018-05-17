@@ -134,6 +134,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithCheckNoSquash() throws Exception {
+        _testSimpleCIEventTriggerWithCheckNoSquash();
+    }
+
+    @Test
     public void testSimpleCIEventTriggerWithWildcardInSelector() throws Exception {
         _testSimpleCIEventTriggerWithWildcardInSelector();
     }
