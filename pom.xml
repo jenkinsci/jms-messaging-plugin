@@ -203,6 +203,7 @@
                 <artifactId>maven-hpi-plugin</artifactId>
                 <version>1.120</version>
                 <configuration>
+                    <compatibleSinceVersion>1.0.38</compatibleSinceVersion>
                     <systemProperties>
                     <systemProperty>
                         <name>hudson.model.ParametersAction.keepUndefinedParameters</name>
