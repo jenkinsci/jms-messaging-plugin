@@ -235,10 +235,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 return tm.getText();
             } else if (message instanceof BytesMessage) {
                 BytesMessage bm = (BytesMessage) message;
+                bm.reset();
                 byte[] bytes = new byte[(int) bm.getBodyLength()];
-                if (bm.readBytes(bytes) == bm.getBodyLength()) {
-                    return new String(bytes);
-                }
+                bm.readBytes(bytes);
+                return new String(bytes);
             } else {
                 log.log(Level.SEVERE, "Unsupported message type:\n" + formatMessage(message));
             }
@@ -730,9 +730,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 BytesMessage bm = (BytesMessage) message;
                 bm.reset();
                 byte[] bytes = new byte[(int) bm.getBodyLength()];
-                if (bm.readBytes(bytes) == bm.getBodyLength()) {
-                    sb.append(new String(bytes));
-                }
+                bm.readBytes(bytes);
+                sb.append(new String(bytes));
             } else {
                 sb.append("  Unhandled message type: " + message.getJMSType());
             }
