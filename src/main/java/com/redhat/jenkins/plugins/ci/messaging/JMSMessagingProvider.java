@@ -65,7 +65,7 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
     public abstract JMSMessageWatcher  createWatcher();
 
     public boolean verify(String json, List<MsgCheck> checks) {
-        if (checks.size() > 0) {
+        if (checks != null && checks.size() > 0) {
             if (StringUtils.isBlank(json)) {
                 // There are checks, but the json is empty. Must be false.
                 return false;

@@ -7,12 +7,15 @@ import java.util.logging.Logger;
 
 import org.acegisecurity.context.SecurityContext;
 import org.acegisecurity.context.SecurityContextHolder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -50,14 +53,23 @@ public class CITriggerThread extends Thread {
     private final String selector;
     private final List<MsgCheck> checks;
 
-    public CITriggerThread(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
-                           String jobname, String selector, List<MsgCheck> checks) {
+    public CITriggerThread(JMSMessagingProvider messagingProvider, String jobname, ProviderData tp) {
         this.messagingProvider = messagingProvider;
-        this.overrides = overrides;
         this.jobname = jobname;
-        this.selector = selector;
+        if (tp instanceof ActiveMQSubscriberProviderData) {
+            ActiveMQSubscriberProviderData atp = (ActiveMQSubscriberProviderData)tp;
+            this.overrides = atp.getOverrides();
+            this.selector = atp.getSelector();
+            this.checks = atp.getChecks();
+        } else if (tp instanceof FedMsgSubscriberProviderData) {
+            FedMsgSubscriberProviderData ftp = (FedMsgSubscriberProviderData)tp;
+            this.overrides = ftp.getOverrides();
+            this.selector = null;
+            this.checks = ftp.getChecks();
+        } else {
+            throw new RuntimeException("Unknown TriggerProvider.");
+        }
         this.messagingWorker = messagingProvider.createWorker(overrides, this.jobname);
-        this.checks = checks;
     }
 
     public void sendInterrupt() {
