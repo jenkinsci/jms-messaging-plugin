@@ -28,9 +28,14 @@ import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -133,7 +138,7 @@ public class CIMessageSubscriberStep extends Step {
 
         @Inject
         private transient CIMessageSubscriberStep step;
-        private transient Future task;
+        private transient Future<?> task;
 
         @Override
         public boolean start() throws Exception {
@@ -145,13 +150,22 @@ public class CIMessageSubscriberStep extends Step {
                 @Override
                 public void run() {
                     try {
-                        CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(
-                                step.getProviderName(),
-                                step.getOverrides(),
-                                step.getSelector(),
-                                step.getChecks(),
-                                step.getTimeout()
-                                );
+                        ProviderData pd = null;
+                        JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
+                        if (p instanceof ActiveMqMessagingProvider) {
+                            ActiveMQSubscriberProviderData apd = new ActiveMQSubscriberProviderData(step.getProviderName());
+                            apd.setOverrides(step.getOverrides());
+                            apd.setSelector(step.getSelector());
+                            apd.setChecks(step.getChecks());
+                            apd.setTimeout(step.getTimeout());
+                            pd = apd;
+                        } else if (p instanceof FedMsgMessagingProvider) {
+                            FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(step.getProviderName());
+                            fpd.setOverrides(step.getOverrides());
+                            fpd.setChecks(step.getChecks());
+                            fpd.setTimeout(step.getTimeout());
+                        }
+                        CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
                         StepContext c = getContext();
                         String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
                         if (result != null) {

@@ -30,6 +30,9 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -203,6 +206,14 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         return false;
     }
 
+    public String getFirstProviderName() {
+        if (configs != null && configs.size() > 0) {
+            JMSMessagingProvider prov = configs.get(0);
+            return prov.getName();
+        }
+        return "";
+    }
+
     public String getFirstProviderOverrideTopic(String type) {
         if (configs != null && configs.size() > 0) {
             JMSMessagingProvider prov = configs.get(0);
@@ -227,5 +238,19 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             return prov.getDescriptor().getDisplayName();
         }
         return null;
+    }
+
+    public List<ProviderData> getSubscriberProviders() {
+        List<ProviderData> pds = new ArrayList<>();
+        if (configs != null) {
+            for (JMSMessagingProvider p : getConfigs()) {
+                if (p instanceof ActiveMqMessagingProvider) {
+                    pds.add(new ActiveMQSubscriberProviderData(p.getName()));
+                } else {
+                    pds.add(new FedMsgSubscriberProviderData(p.getName()));
+                }
+            }
+        }
+        return pds;
     }
 }
