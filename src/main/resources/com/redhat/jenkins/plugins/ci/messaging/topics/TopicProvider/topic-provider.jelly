@@ -31,12 +31,8 @@
         <j:choose>
           <j:when test="${provider.getTopicProvider() != null}">
             pmap['${provider.getName()}'] = { publisher  : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generatePublisherTopic/',
-                                              subscriber : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generateSubscriberTopic/',
-                                              kind       : '${provider.getDescriptor().getDisplayName()}' };
+                                              subscriber : '${h.getCurrentDescriptorByNameUrl()}/${provider.getTopicProvider().getDescriptor().descriptorUrl}/generateSubscriberTopic/' };
           </j:when>
-          <j:otherwise>
-            pmap['${provider.getName()}'] = { kind       : '${provider.getDescriptor().getDisplayName()}' };
-          </j:otherwise>
         </j:choose>
       </j:forEach>
       function onProviderChange(prov, type) {
@@ -44,7 +40,7 @@
           
           var cb = t.querySelector("tr input[name='_.overrides']");
           var tb = t.querySelector("tr input[name='_.topic']");
-          if (pmap[prov.value][type]) {
+          if (pmap[prov.value]) {
               var xhttp = new XMLHttpRequest();
               xhttp.onreadystatechange = function() {
                   if (this.readyState == 4 &amp;&amp; this.status == 200) {
@@ -62,22 +58,6 @@
                   cb.click();
               }
               tb.value = "";
-          }
-
-          displayIfNecessary(prov, t, 'input', '_.selector');
-          displayIfNecessary(prov, t, 'select', 'messageType');
-          displayIfNecessary(prov, t, 'textarea', 'messageProperties');
-      }
-
-      function displayIfNecessary(prov, t, tag, name) {
-          var ctrl = t.querySelector("tr " + tag + "[name='" + name + "']");
-          if (ctrl != null) {
-              var row = getTableRow(ctrl, tag);
-              if (pmap[prov.value]['kind'] == 'FedMsg') {
-                  row.style.display = "none";
-              } else {
-                  row.style.display = "";
-              }
           }
       }
 
