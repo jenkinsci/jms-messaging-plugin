@@ -2,17 +2,15 @@ package com.redhat.jenkins.plugins.ci;
 
 import hudson.security.ACL;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 import org.acegisecurity.context.SecurityContext;
 import org.acegisecurity.context.SecurityContextHolder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -40,24 +38,19 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 public class CITriggerThread extends Thread {
     private static final Logger log = Logger.getLogger(CITriggerThread.class.getName());
 
-    private static final Integer WAIT_HOURS = 1;
+    private static final Integer WAIT_MINUTES = 60;
     private static final Integer WAIT_SECONDS = 2;
 
     private final JMSMessagingProvider messagingProvider;
-    private final MessagingProviderOverrides overrides;
-    private final JMSMessagingWorker messagingWorker;
     private final String jobname;
-    private final String selector;
-    private final List<MsgCheck> checks;
+    private final ProviderData providerData;
+    private final JMSMessagingWorker messagingWorker;
 
-    public CITriggerThread(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
-                           String jobname, String selector, List<MsgCheck> checks) {
+    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname) {
         this.messagingProvider = messagingProvider;
-        this.overrides = overrides;
+        this.providerData = providerData;
         this.jobname = jobname;
-        this.selector = selector;
-        this.messagingWorker = messagingProvider.createWorker(overrides, this.jobname);
-        this.checks = checks;
+        this.messagingWorker = messagingProvider.createWorker(providerData, this.jobname);
     }
 
     public void sendInterrupt() {
@@ -68,7 +61,7 @@ public class CITriggerThread extends Thread {
         SecurityContext old = ACL.impersonate(ACL.SYSTEM);
         try {
             while (!Thread.currentThread().isInterrupted() && !messagingWorker.isBeingInterrupted()) {
-                messagingWorker.receive(jobname, selector, checks, WAIT_HOURS * 60 * 60 * 1000);
+                messagingWorker.receive(jobname, providerData);
             }
             log.info("Shutting down trigger thread for job '" + jobname + "'.");
             messagingWorker.unsubscribe(jobname);
@@ -92,19 +85,16 @@ public class CITriggerThread extends Thread {
 
         return new EqualsBuilder()
                 .append(messagingProvider, thread.messagingProvider)
-                .append(overrides, thread.overrides)
+                .append(providerData, thread.providerData)
                 .append(jobname, thread.jobname)
-                .append(selector, thread.selector)
-                .append(checks, thread.checks)
                 .isEquals();
     }
 
     @Override
     public int hashCode() {
         int result = messagingWorker != null ? messagingWorker.hashCode() : 0;
+        result = 31 * result + (providerData != null ? providerData.hashCode() : 0);
         result = 31 * result + (jobname != null ? jobname.hashCode() : 0);
-        result = 31 * result + (selector != null ? selector.hashCode() : 0);
-        result = 31 * result + (checks != null ? checks.hashCode() : 0);
         return result;
     }
 
