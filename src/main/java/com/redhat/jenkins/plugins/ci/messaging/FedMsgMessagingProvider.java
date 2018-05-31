@@ -7,6 +7,8 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -63,8 +65,8 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
-        return new FedMsgMessagingWorker(this, overrides, jobname);
+    public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
+        return new FedMsgMessagingWorker(this, ((FedMsgProviderData)pdata).getOverrides(), jobname);
     }
 
     @Override

@@ -7,19 +7,19 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import hudson.util.ListBoxModel;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
@@ -47,42 +47,60 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
  * THE SOFTWARE.
  */
 public class CIMessageBuilder extends Builder {
+    private static final Logger log = Logger.getLogger(CIMessageBuilder.class.getName());
 
-    private String providerName;
-    private MessagingProviderOverrides overrides;
-    private MESSAGE_TYPE messageType;
-    private String messageProperties;
-    private String messageContent;
-    private boolean failOnError = false;
+    private transient String providerName;
+    private transient MessagingProviderOverrides overrides;
+    private transient MESSAGE_TYPE messageType;
+    private transient String messageProperties;
+    private transient String messageContent;
+    private transient boolean failOnError = false;
+    private ProviderData providerData;
 
+    @DataBoundConstructor
+    public CIMessageBuilder() {}
+
+    public CIMessageBuilder(ProviderData providerData) {
+        super();
+        this.providerData = providerData;
+    }
 
     public String getProviderName() {
         return providerName;
     }
+
     public void setProviderName(String providerName) {
         this.providerName = providerName;
     }
+
     public MessagingProviderOverrides getOverrides() {
         return overrides;
     }
+
     public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
+
     public MESSAGE_TYPE getMessageType() {
         return messageType;
     }
+
     public void setMessageType(MESSAGE_TYPE messageType) {
         this.messageType = messageType;
     }
+
     public String getMessageProperties() {
         return messageProperties;
     }
+
     public void setMessageProperties(String messageProperties) {
         this.messageProperties = messageProperties;
     }
+
     public String getMessageContent() {
         return messageContent;
     }
+
     public void setMessageContent(String messageContent) {
         this.messageContent = messageContent;
     }
@@ -91,94 +109,28 @@ public class CIMessageBuilder extends Builder {
         return failOnError;
     }
 
-    @DataBoundSetter
     public void setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
     }
 
-    @DataBoundConstructor
-    public CIMessageBuilder(final String providerName,
-                            final MessagingProviderOverrides overrides,
-                            final MESSAGE_TYPE messageType,
-                            final String messageProperties,
-                            final String messageContent) {
-        super();
-        this.providerName = providerName;
-        this.overrides = overrides;
-        this.messageType = messageType;
-        this.messageProperties = messageProperties;
-        this.messageContent = messageContent;
+    public ProviderData getProviderData() {
+        return providerData;
+    }
+
+    @DataBoundSetter
+    public void setProviderData(ProviderData providerData) {
+        this.providerData = providerData;
     }
 
     @Override
     public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return MessageUtils.sendMessage(build, listener,
-                getProviderName(),
-                getOverrides(),
-                getMessageType(),
-                failOnError, getMessageProperties(),
-                getMessageContent()).isSucceeded();
+        return MessageUtils.sendMessage(build, listener, providerData).isSucceeded();
     }
 
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        private String providerName;
-        private MessagingProviderOverrides overrides;
-        private MESSAGE_TYPE messageType;
-        private String messageProperties;
-        private String messageContent;
-        private boolean failOnError;
-
-        public boolean isFailOnError() {
-            return failOnError;
-        }
-
-        public void setFailOnError(boolean failOnError) {
-            this.failOnError = failOnError;
-        }
-
         public DescriptorImpl() {
             load();
-        }
-
-        public String getProviderName() {
-            return providerName;
-        }
-
-        public void setProviderName(String providerName) {
-            this.providerName = providerName;
-        }
-
-        public MessagingProviderOverrides getOverrides() {
-            return overrides;
-        }
-
-        public void setOverrides(MessagingProviderOverrides overrides) {
-            this.overrides = overrides;
-        }
-
-        public MESSAGE_TYPE getMessageType() {
-            return messageType;
-        }
-
-        public void setMessageType(MESSAGE_TYPE messageType) {
-            this.messageType = messageType;
-        }
-
-        public String getMessageProperties() {
-            return messageProperties;
-        }
-
-        public void setMessageProperties(String messageProperties) {
-            this.messageProperties = messageProperties;
-        }
-
-        public String getMessageContent() {
-            return messageContent;
-        }
-
-        public void setMessageContent(String messageContent) {
-            this.messageContent = messageContent;
         }
 
         @SuppressWarnings("rawtypes")
@@ -189,68 +141,21 @@ public class CIMessageBuilder extends Builder {
 
         @Override
         public CIMessageBuilder newInstance(StaplerRequest sr, JSONObject jo) {
-            MessagingProviderOverrides mpo = null;
-            if (!jo.getJSONObject("overrides").isNullObject()) {
-                mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
-            }
-            boolean failOnError = jo.getBoolean("failOnError");
-            CIMessageBuilder mb = new CIMessageBuilder(jo.getString("providerName"),
-                    mpo,
-                    MESSAGE_TYPE.fromString(jo.getString("messageType")),
-                    jo.getString("messageProperties"),
-                    jo.getString("messageContent"));
-            mb.setFailOnError(failOnError);
-            return mb;
-        }
-
-        @Override
-        public boolean configure(StaplerRequest sr, JSONObject formData) throws FormException {
-            MessagingProviderOverrides mpo = null;
-            if (!formData.getJSONObject("overrides").isNullObject()) {
-                mpo = new MessagingProviderOverrides(formData.getJSONObject("overrides").getString("topic"));
-            }
-            setProviderName(formData.optString("providerName"));
-            setOverrides(mpo);
-            setMessageType(MESSAGE_TYPE.fromString(formData.optString("messageType")));
-            setMessageProperties(formData.optString("messageProperties"));
-            setMessageContent(formData.optString("messageContent"));
-            boolean failOnError = formData.optBoolean("failOnError");
-            setFailOnError(failOnError);
-
             try {
-                CIMessageBuilder mb = new CIMessageBuilder(getProviderName(),
-                    getOverrides(),
-                    getMessageType(),
-                    getMessageProperties(),
-                    getMessageContent());
-                mb.setFailOnError(failOnError);
-            } catch (Exception e) {
-                throw new FormException("Failed to initialize notifier - check your global notifier configuration settings", e, "");
+                // The provider name is at the root of the JSON object with a key of "" (this
+                // is because the select is not named in dropdownList.jelly). Move that into the
+                // provider data structure and then continue on.
+                jo.getJSONObject("providerData").put("name", jo.remove(""));
+                return (CIMessageBuilder)super.newInstance(sr, jo);
+            } catch (hudson.model.Descriptor.FormException e) {
+                log.log(Level.SEVERE, "Unable to create new instance.", e);;
             }
-            save();
-            return super.configure(sr, formData);
+            return null;
         }
 
         @Override
         public String getDisplayName() {
             return "CI Notifier";
-        }
-
-        public ListBoxModel doFillProviderNameItems() {
-            ListBoxModel items = new ListBoxModel();
-            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
-                items.add(provider.getName());
-            }
-            return items;
-        }
-
-        public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
-            MESSAGE_TYPE current = MESSAGE_TYPE.fromString(messageType);
-            ListBoxModel items = new ListBoxModel();
-            for (MESSAGE_TYPE t : MESSAGE_TYPE.values()) {
-                items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
-            }
-            return items;
         }
     }
 }

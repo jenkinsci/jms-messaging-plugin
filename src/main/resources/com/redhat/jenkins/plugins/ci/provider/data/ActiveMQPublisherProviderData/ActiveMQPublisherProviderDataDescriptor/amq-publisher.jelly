@@ -1,5 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
-         xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
+         xmlns:rh="/com/redhat/jenkins/plugins/ci/CIMessageSubscriberBuilder/form">
   <!--
      * The MIT License
      *
@@ -24,12 +24,39 @@
      * THE SOFTWARE.
      */
   -->
-  <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
-
-  <rh:dropdownInstanceSelector title="${%Messaging Providerx}"
-                               field="providerData"
-                               instances="${gdescriptor.getPublisherProviders()}"
-                               desc="${descriptor}" />
+  <f:nested>
+    <j:choose>
+      <j:when test="${empty(instance)}">
+        <j:set var="checked" value="${pdata.hasOverrides();}"/>
+        <j:set var="value" value="${pdata.getPublisherTopic();}"/>
+        <j:set var="name" value="${pdata.getName();}"/>
+      </j:when>
+      <j:otherwise>
+        <j:set var="checked" value="${instance.getOverrides() != null}"/>
+        <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
+        <j:set var="name" value="${instance.getName();}"/>
+      </j:otherwise>
+    </j:choose>
+    <table width="100%">
+      <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
+        <f:entry title="${%Topic name}" field="topic">
+          <f:textbox value="${value}"/>
+        </f:entry>
+      </f:optionalBlock>
+    </table>
+  </f:nested>
+  <f:entry title="${%Message type}" field="messageType">
+    <f:select name="messageType"/>
+  </f:entry>
+  <f:entry title="${%Message properties}" field="messageProperties">
+    <f:textarea name="messageProperties"/>
+  </f:entry>
+  <f:entry title="${%Message content}" field="messageContent">
+    <f:textarea name="messageContent"/>
+  </f:entry>
+  <f:entry title="${%Fail on error}" field="failOnError">
+    <f:checkbox name="failOnError" default="false"/>
+  </f:entry>
 
   <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>

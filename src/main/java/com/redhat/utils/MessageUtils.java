@@ -9,8 +9,8 @@ import java.util.logging.Logger;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -105,23 +105,13 @@ public class MessageUtils {
         }
     }
 
-    public static SendResult sendMessage(Run<?, ?> build, TaskListener listener,
-                                         String providerName,
-                                         MessagingProviderOverrides overrides,
-                                         MESSAGE_TYPE type,
-                                         boolean failOnError, String props,
-                                         String content) throws InterruptedException, IOException {
+    public static SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) throws InterruptedException, IOException {
         log.info("Sending message for job '" + build.getParent().getName() + "'.");
         listener.getLogger().println("Sending message for job '" + build.getParent().getName() + "'.");
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
         JMSMessagingWorker worker =
-                config.getProvider(providerName).createWorker(overrides, build.getParent().getName());
-        return worker.sendMessage(build,
-                listener,
-                type,
-                props,
-                content,
-                failOnError);
+                config.getProvider(pdata.getName()).createWorker(pdata, build.getParent().getName());
+        return worker.sendMessage(build, listener, pdata);
     }
 
     private static void logIfPossible(PrintStream stream, String logMessage) {

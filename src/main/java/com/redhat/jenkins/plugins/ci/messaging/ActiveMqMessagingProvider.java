@@ -20,6 +20,8 @@ import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticat
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -145,8 +147,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
-        return new ActiveMqMessagingWorker(this, overrides, jobname);
+    public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
+        return new ActiveMqMessagingWorker(this, ((ActiveMQProviderData)pdata).getOverrides(), jobname);
     }
 
     @Override

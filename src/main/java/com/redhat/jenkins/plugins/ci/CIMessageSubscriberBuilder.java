@@ -10,11 +10,11 @@ import hudson.model.Run;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
@@ -28,6 +28,7 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -58,45 +59,26 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
-    private String providerName;
-    private MessagingProviderOverrides overrides;
-    private String selector;
-    private String variable;
-    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
-    private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
-
-    public CIMessageSubscriberBuilder(String providerName, MessagingProviderOverrides overrides,
-                                      String selector, List<MsgCheck> checks, Integer timeout) {
-        this(providerName, overrides, selector, null, checks, timeout);
-    }
+    private transient String providerName;
+    private transient MessagingProviderOverrides overrides;
+    private transient String selector;
+    private transient String variable;
+    private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
+    private transient Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
+    private ProviderData providerData;
 
     @DataBoundConstructor
-    public CIMessageSubscriberBuilder(String providerName,
-                                      MessagingProviderOverrides overrides,
-                                      String selector,
-                                      String variable,
-                                      List<MsgCheck> checks,
-                                      Integer timeout
-                                      ) {
-        this.providerName = providerName;
-        this.overrides = overrides;
-        this.selector = selector;
-        this.variable = variable;
-        if (checks == null) {
-            checks = new ArrayList<>();
-        }
-        this.checks = checks;
-        if (timeout == null) {
-            timeout = DEFAULT_TIMEOUT_IN_MINUTES;
-        }
-        this.timeout = timeout;
+    public CIMessageSubscriberBuilder() {}
+
+    public CIMessageSubscriberBuilder(ProviderData providerData) {
+        super();
+        this.providerData = providerData;
     }
 
     public String getProviderName() {
         return providerName;
     }
 
-    @DataBoundSetter
     public void setProviderName(String providerName) {
         this.providerName = providerName;
     }
@@ -105,7 +87,6 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         return overrides;
     }
 
-    @DataBoundSetter
     public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
@@ -114,7 +95,6 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         return selector;
     }
 
-    @DataBoundSetter
     public void setSelector(String selector) {
         this.selector = selector;
     }
@@ -123,7 +103,6 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         return variable;
     }
 
-    @DataBoundSetter
     public void setVariable(String variable) {
         this.variable = variable;
     }
@@ -132,7 +111,6 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         return checks;
     }
 
-    @DataBoundSetter
     public void setChecks(List<MsgCheck> checks) {
         this.checks = checks;
     }
@@ -141,27 +119,33 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
         return timeout;
     }
 
-    @DataBoundSetter
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
     }
 
+    public ProviderData getProviderData() {
+        return providerData;
+    }
+
+    @DataBoundSetter
+    public void setProviderData(ProviderData providerData) {
+        this.providerData = providerData;
+    }
+
     public JMSMessagingProvider getProvider() {
-        return GlobalCIConfiguration.get().getProvider(providerName);
+        return GlobalCIConfiguration.get().getProvider(providerData.getName());
     }
 
     public String waitforCIMessage(Run<?, ?> build, Launcher launcher, TaskListener listener) {
-        GlobalCIConfiguration config = GlobalCIConfiguration.get();
-        JMSMessagingProvider provider = config.getProvider(providerName);
+        JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
         if (provider == null) {
             listener.error("Failed to locate JMSMessagingProvider with name "
-                    + providerName + ". You must update the job configuration.");
+                    + providerData.getName() + ". You must update the job configuration.");
             return null;
         }
 
-        JMSMessagingWorker worker =
-                provider.createWorker(overrides, build.getParent().getName());
-        return worker.waitForMessage(build, listener, selector, variable, checks, timeout);
+        JMSMessagingWorker worker = provider.createWorker(providerData, build.getParent().getName());
+        return worker.waitForMessage(build, listener, providerData);
     }
 
     public boolean doMessageSubscribe(Run<?,?> run, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
@@ -174,7 +158,7 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
     }
 
     @Extension
-    public static class Descriptor extends BuildStepDescriptor<Builder> {
+    public static class CIMessageSubscriberBuilderDescriptor extends BuildStepDescriptor<Builder> {
 
         public String getDisplayName() {
             return BUILDER_NAME;
@@ -186,30 +170,16 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
         @Override
         public CIMessageSubscriberBuilder newInstance(StaplerRequest sr, JSONObject jo) {
-            MessagingProviderOverrides mpo = null;
-            if (!jo.getJSONObject("overrides").isNullObject()) {
-                mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
+            try {
+                // The provider name is at the root of the JSON object with a key of "" (this
+                // is because the select is not named in dropdownList.jelly). Move that into the
+                // provider data structure and then continue on.
+                jo.getJSONObject("providerData").put("name", jo.remove(""));
+                return (CIMessageSubscriberBuilder)super.newInstance(sr, jo);
+            } catch (hudson.model.Descriptor.FormException e) {
+                log.log(Level.SEVERE, "Unable to create new instance.", e);;
             }
-            int timeout = getDefaultTimeout();
-            if (jo.getString("timeout") != null && !jo.getString("timeout").isEmpty()) {
-                timeout = jo.getInt("timeout");
-            }
-            List<MsgCheck> checks = sr.bindJSONToList(MsgCheck.class, jo.get("checks"));
-            return new CIMessageSubscriberBuilder(
-                    jo.getString("providerName"),
-                    mpo,
-                    jo.getString("selector"),
-                    jo.getString("variable"),
-                    checks,
-                    timeout);
-        }
-
-        public ListBoxModel doFillProviderNameItems() {
-            ListBoxModel items = new ListBoxModel();
-            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
-                items.add(provider.getName());
-            }
-            return items;
+            return null;
         }
 
         @Override

@@ -8,7 +8,6 @@ import hudson.model.Run;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,7 +23,9 @@ import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.utils.MessageUtils;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.PluginUtils;
 
 /*
@@ -159,7 +160,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs) {
+    public void receive(String jobname, ProviderData pdata) {
+        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData)pdata;
+        int timeoutInMs = pd.getTimeout() * 60 * 1000;
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
             return;
@@ -195,7 +198,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         //
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        if (provider.verify(data.getBodyJson(), checks)) {
+                        if (provider.verify(data.getBodyJson(), pd.getChecks())) {
                             Map<String, String> params = new HashMap<String, String>();
                             params.put("CI_MESSAGE", data.getBodyJson());
                             trigger(jobname, provider.formatMessage(data), params);
@@ -246,8 +249,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public SendResult sendMessage(Run<?, ?> build, TaskListener listener, MessageUtils.MESSAGE_TYPE type,
-                                  String props, String content, boolean failOnError) {
+    public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+        FedMsgPublisherProviderData pd = (FedMsgPublisherProviderData)pdata;
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket sock = context.socket(ZMQ.PUB);
         sock.setLinger(0);
@@ -272,15 +275,15 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             }
 
             FedmsgMessage fm = new FedmsgMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
-                                                 PluginUtils.getSubstitutedValue(content, env));
+                                                 PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
             body = fm.getBodyJson();
             msgId = fm.getMsgId();
-            if (!sock.sendMore(fm.getTopic()) && failOnError) {
+            if (!sock.sendMore(fm.getTopic()) && pd.isFailOnError()) {
                 log.severe("Unhandled exception in perform: Failed to send message (topic)!");
                 return new SendResult(false, msgId, body);
             }
-            if (!sock.send(body) && failOnError) {
+            if (!sock.send(body) && pd.isFailOnError()) {
                 log.severe("Unhandled exception in perform: Failed to send message (body)!");
                 return new SendResult(false, msgId, body);
             }
@@ -288,7 +291,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             listener.getLogger().println("JSON message body:\n" + body);
 
         } catch (Exception e) {
-            if (failOnError) {
+            if (pd.isFailOnError()) {
                 log.severe("Unhandled exception in perform: ");
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
@@ -309,18 +312,16 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public String waitForMessage(Run<?, ?> build, TaskListener listener,
-                                 String selector, String variable,
-                                 List<MsgCheck> checks,
-                                 Integer timeout) {
+    public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData)pdata;
         log.info("Waiting for message.");
         listener.getLogger().println("Waiting for message.");
-        for (MsgCheck msgCheck: checks) {
+        for (MsgCheck msgCheck: pd.getChecks()) {
             log.info(" with check: " + msgCheck.toString());
             listener.getLogger().println(" with check: " + msgCheck.toString());
         }
-        log.info(" with timeout: " + timeout);
-        listener.getLogger().println(" with timeout: " + timeout);
+        log.info(" with timeout: " + pd.getTimeout());
+        listener.getLogger().println(" with timeout: " + pd.getTimeout());
 
         ZMQ.Context lcontext = ZMQ.context(1);
         ZMQ.Poller lpoller = lcontext.poller(1);
@@ -343,7 +344,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         ObjectMapper mapper = new ObjectMapper();
         long startTime = new Date().getTime();
 
-        int timeoutInMs = timeout * 60 * 1000;
+        int timeoutInMs = pd.getTimeout() * 60 * 1000;
         boolean interrupted = false;
         try {
             while ((new Date().getTime() - startTime) < timeoutInMs) {
@@ -357,14 +358,14 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         String body = data.getBodyJson();
 
-                        if (!provider.verify(body, checks)) {
+                        if (!provider.verify(body, pd.getChecks())) {
                             continue;
                         }
 
                         if (build != null) {
-                            if (StringUtils.isNotEmpty(variable)) {
+                            if (StringUtils.isNotEmpty(pd.getVariable())) {
                                 EnvVars vars = new EnvVars();
-                                vars.put(variable, body);
+                                vars.put(pd.getVariable(), body);
                                 build.addAction(new CIEnvironmentContributingAction(vars));
                             }
                         }
