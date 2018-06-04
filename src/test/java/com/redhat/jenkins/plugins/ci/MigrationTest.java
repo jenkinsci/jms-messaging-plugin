@@ -18,6 +18,7 @@ import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticat
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 
 /**
  * Created by shebert on 07/12/16.
@@ -77,7 +78,10 @@ public class MigrationTest {
 
         Trigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
         assertNotNull(trigger);
-        assertNotNull(((CIBuildTrigger)triggerJob.getTrigger(CIBuildTrigger.class)).getProviderName());
+        CIBuildTrigger cibt = ((CIBuildTrigger)triggerJob.getTrigger(CIBuildTrigger.class));
+        assertTrue(cibt.getProviderData() instanceof ActiveMQSubscriberProviderData);
+        assertNotNull(cibt.getProviderData().getName());
+        assertNotNull(cibt.getSelector());
 
         FreeStyleProject notifierJob = (FreeStyleProject)j.getInstance().getItem("ci-notifier");
 

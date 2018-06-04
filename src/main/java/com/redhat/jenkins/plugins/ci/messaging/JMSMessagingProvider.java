@@ -19,6 +19,7 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -45,6 +46,8 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
  */
 public abstract class JMSMessagingProvider implements Describable<JMSMessagingProvider>, Serializable {
 
+    private static final long serialVersionUID = -4572907003185115933L;
+
     protected String name;
     protected String topic;
     protected static final Logger log = Logger.getLogger(JMSMessagingProvider.class.getName());
@@ -57,15 +60,11 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
         return topic;
     }
 
-    public JMSMessagingWorker createWorker(String jobname) {
-        return createWorker(null, jobname);
-    }
-
-    public abstract JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname);
+    public abstract JMSMessagingWorker createWorker(ProviderData pdata, String jobname);
     public abstract JMSMessageWatcher  createWatcher();
 
     public boolean verify(String json, List<MsgCheck> checks) {
-        if (checks.size() > 0) {
+        if (checks != null && checks.size() > 0) {
             if (StringUtils.isBlank(json)) {
                 // There are checks, but the json is empty. Must be false.
                 return false;

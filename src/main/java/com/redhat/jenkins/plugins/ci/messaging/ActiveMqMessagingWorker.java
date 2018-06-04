@@ -13,7 +13,6 @@ import java.net.UnknownHostException;
 import java.sql.Time;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -44,9 +43,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.utils.MessageUtils;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 
@@ -200,6 +200,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode root = mapper.createObjectNode();
 
+            @SuppressWarnings("unchecked")
             Enumeration<String> e = message.getPropertyNames();
             while (e.hasMoreElements()) {
                 String s = e.nextElement();
@@ -271,8 +272,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public void receive(String jobname, String selector, List<MsgCheck> checks, long timeoutInMs) {
-        while (!subscribe(jobname, selector)) {
+    public void receive(String jobname, ProviderData pdata) {
+        ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData)pdata;
+        int timeoutInMs = pd.getTimeout() * 60 * 1000;
+        while (!subscribe(jobname, pd.getSelector())) {
             if (!Thread.currentThread().isInterrupted()) {
                 try {
                     int WAIT_SECONDS = 2;
@@ -292,7 +295,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             Message m = subscriber.receive(timeoutInMs); // In milliseconds!
             if (m != null) {
-                if (provider.verify(getMessageContent(m), checks)) {
+                if (provider.verify(getMessageContent(m), pd.getChecks())) {
                     process(jobname, m);
                 }
             } else {
@@ -339,8 +342,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public SendResult sendMessage(Run<?, ?> build, TaskListener listener,
-                                  MessageUtils.MESSAGE_TYPE type, String props, String content, boolean failOnError) {
+    public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+        ActiveMQPublisherProviderData pd = (ActiveMQPublisherProviderData)pdata;
         Connection connection = null;
         Session session = null;
         MessageProducer publisher = null;
@@ -367,9 +370,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message.setStringProperty("CI_NAME", build.getParent().getName());
                 envVarParts.put("CI_NAME", build.getParent().getName());
 
-                if (type != null) {
-                    message.setStringProperty("CI_TYPE", type.getMessage());
-                    envVarParts.put("CI_TYPE", type.getMessage());
+                if (pd.getMessageType() != null) {
+                    message.setStringProperty("CI_TYPE", pd.getMessageType().getMessage());
+                    envVarParts.put("CI_TYPE", pd.getMessageType().getMessage());
                 }
                 if (!build.isBuilding()) {
                     String ciStatus = (build.getResult()
@@ -386,9 +389,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 envVars.putAll(baseEnvVars);
                 envVars.putAll(envVarParts);
 
-                if (props != null && !props.trim().equals("")) {
+                if (!StringUtils.isEmpty(pd.getMessageProperties())) {
                     OrderedProperties p = new OrderedProperties();
-                    p.load(new StringReader(props));
+                    p.load(new StringReader(pd.getMessageProperties()));
                     @SuppressWarnings("unchecked")
                     Enumeration<String> e = p.propertyNames();
                     while (e.hasMoreElements()) {
@@ -410,11 +413,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 envVars2.putAll(baseEnvVars);
                 envVars2.putAll(envVarParts);
 
-                message.setText(PluginUtils.getSubstitutedValue(content, envVars2));
+                message.setText(PluginUtils.getSubstitutedValue(pd.getMessageContent(), envVars2));
 
 
                 publisher.send(message);
-                log.info("Sent " + type.toString() + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
+                log.info("Sent " + pd.getMessageType().toString() + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
                         + formatMessage(message));
 
                 mesgId = message.getJMSMessageID();
@@ -426,7 +429,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             }
 
         } catch (Exception e) {
-            if (failOnError) {
+            if (pd.isFailOnError()) {
                 log.severe("Unhandled exception in perform: ");
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
@@ -463,10 +466,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public String waitForMessage(Run<?, ?> build, TaskListener listener,
-                                 String selector, String variable,
-                                 List<MsgCheck> checks,
-                                 Integer timeout) {
+    public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+        ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData)pdata;
         String ip = null;
         try {
             ip = Inet4Address.getLocalHost().getHostAddress();
@@ -484,8 +485,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
 
         if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
-                log.info("Waiting for message with selector: " + selector);
-                listener.getLogger().println("Waiting for message with selector: " + selector);
+                log.info("Waiting for message with selector: " + pd.getSelector());
+                listener.getLogger().println("Waiting for message with selector: " + pd.getSelector());
                 Connection connection = null;
                 MessageConsumer consumer = null;
                 try {
@@ -496,24 +497,24 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     if (provider.getUseQueues()) {
                         Queue destination = session.createQueue(ltopic);
-                        consumer = session.createConsumer(destination, selector, false);
+                        consumer = session.createConsumer(destination, pd.getSelector(), false);
                     } else {
                         Topic destination = session.createTopic(ltopic);
-                        consumer = session.createDurableSubscriber(destination, jobname, selector, false);
+                        consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
                     }
 
-                    Message message = consumer.receive(timeout*60*1000);
+                    Message message = consumer.receive(pd.getTimeout()*60*1000);
                     if (message != null) {
                         String value = getMessageBody(message);
                         if (build != null) {
-                            if (StringUtils.isNotEmpty(variable)) {
+                            if (StringUtils.isNotEmpty(pd.getVariable())) {
                                 EnvVars vars = new EnvVars();
-                                vars.put(variable, value);
+                                vars.put(pd.getVariable(), value);
                                 build.addAction(new CIEnvironmentContributingAction(vars));
                             }
                         }
-                        log.info("Received message with selector: " + selector + "\n" + formatMessage(message));
-                        listener.getLogger().println("Received message with selector: " + selector + "\n" + formatMessage(message));
+                        log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
+                        listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
                         return value;
                     }
                     log.info("Timed out waiting for message!");
