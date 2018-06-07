@@ -4,7 +4,6 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.model.Run;
-import hudson.util.ListBoxModel;
 
 import java.io.IOException;
 import java.util.Set;
@@ -21,15 +20,19 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
 import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
 /*
@@ -146,7 +149,7 @@ public class CIMessageSenderStep extends Step {
 
         @Inject
         private transient CIMessageSenderStep step;
-        private transient Future task;
+        private transient Future<?> task;
 
         @Override
         public boolean start() throws Exception {
@@ -158,14 +161,24 @@ public class CIMessageSenderStep extends Step {
                 @Override
                 public void run() {
                     try {
-                        CIMessageNotifier notifier = new CIMessageNotifier(
-                                step.getProviderName(),
-                                step.getOverrides(),
-                                step.getMessageType(),
-                                step.getMessageProperties(),
-                                step.getMessageContent(),
-                                step.getFailOnError()
-                        );
+                        ProviderData pd = null;
+                        JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
+                        if (p instanceof ActiveMqMessagingProvider) {
+                            ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(step.getProviderName());
+                            apd.setOverrides(step.getOverrides());
+                            apd.setMessageType(step.getMessageType());
+                            apd.setMessageProperties(step.getMessageProperties());
+                            apd.setMessageContent(step.getMessageContent());
+                            apd.setFailOnError(step.getFailOnError());
+                            pd = apd;
+                        } else if (p instanceof FedMsgMessagingProvider) {
+                            FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(step.getProviderName());
+                            fpd.setOverrides(step.getOverrides());
+                            fpd.setMessageContent(step.getMessageContent());
+                            fpd.setFailOnError(step.getFailOnError());
+                            pd = fpd;
+                        }
+                        CIMessageNotifier notifier = new CIMessageNotifier(pd);
                         StepContext c = getContext();
                         SendResult status = notifier.doMessageNotifier(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
                         if (status.isSucceeded()) {
@@ -213,23 +226,5 @@ public class CIMessageSenderStep extends Step {
         public String getDisplayName() {
             return Messages.MessageNotifier();
         }
-
-        public ListBoxModel doFillProviderNameItems() {
-            ListBoxModel items = new ListBoxModel();
-            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
-                items.add(provider.getName());
-            }
-            return items;
-        }
-
-        public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
-            ListBoxModel items = new ListBoxModel();
-            for (MESSAGE_TYPE t : MESSAGE_TYPE.values()) {
-                items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), false));
-            }
-            return items;
-        }
-
     }
-
 }

@@ -1,5 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
-         xmlns:rh="/com/redhat/jenkins/plugins/ci/CIMessageSubscriberBuilder/form">
+         xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
   <!--
      * The MIT License
      *
@@ -26,62 +26,10 @@
   -->
   <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
 
-  <f:entry title="${%Messaging Provider}" field="providerName">
-    <f:select onchange="javascript: onProviderChange(this, 'publisher');"/>
-  </f:entry>
-  <f:nested>
-    <j:choose>
-      <j:when test="${empty(instance)}">
-        <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
-        <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic('publisher');}"/>
-      </j:when>
-      <j:otherwise>
-        <j:set var="checked" value="${instance.getOverrides() != null}"/>
-        <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
-      </j:otherwise>
-    </j:choose>
-    <table width="100%">
-      <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
-        <f:entry title="${%Topic name}" field="topic">
-          <f:textbox value="${value}"/>
-        </f:entry>
-      </f:optionalBlock>
-    </table>
-  </f:nested>
-
-  <j:choose>
-    <j:when test="${empty(instance)}">
-      <j:set var="dname" value="${gdescriptor.getFirstProviderDisplayName();}"/>
-    </j:when>
-    <j:otherwise>
-      <j:set var="dname" value="${instance.getProvider().getDescriptor().getDisplayName();}"/>
-    </j:otherwise>
-  </j:choose>
-  <j:choose>
-    <j:when test="${dname == 'FedMsg'}">
-      <rh:ientry title="${%Message type}" field="messageType">
-        <f:select name="messageType"/>
-      </rh:ientry>
-      <rh:ientry title="${%Message properties}" field="messageProperties">
-        <f:textarea name="messageProperties"/>
-      </rh:ientry>
-    </j:when>
-    <j:otherwise>
-      <f:entry title="${%Message type}" field="messageType">
-        <f:select name="messageType"/>
-      </f:entry>
-      <f:entry title="${%Message properties}" field="messageProperties">
-        <f:textarea name="messageProperties"/>
-      </f:entry>
-    </j:otherwise>
-  </j:choose>
-
-  <f:entry title="${%Message content}" field="messageContent">
-    <f:textarea name="messageContent"/>
-  </f:entry>
-  <f:entry title="${%Fail On Error}" field="failOnError">
-    <f:checkbox name="failOnError" default="false"/>
-  </f:entry>
+  <rh:dropdownInstanceSelector title="${%Messaging Provider}"
+                               field="providerData"
+                               instances="${gdescriptor.getPublisherProviders()}"
+                               desc="${descriptor}" />
 
   <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>

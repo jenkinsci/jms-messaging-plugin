@@ -1,20 +1,27 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
-import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
-import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
-import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.matrix.MatrixProject;
 import hudson.model.BuildableItemWithBuildWrappers;
+import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Project;
-import jenkins.model.Jenkins;
 
 import java.io.IOException;
 import java.util.logging.Logger;
+
+import jenkins.model.Jenkins;
+
+import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
+import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
+import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 
 /*
  * The MIT License
@@ -44,10 +51,33 @@ public class MessageProviderMigrator {
 
     private static final Logger log = Logger.getLogger(MessageProviderMigrator.class.getName());
 
-    private static boolean updateCIMessageBuilder(Project p, CIMessageBuilder builder) {
-        if (builder.getProviderName() == null) {
-            builder.setProviderName(GlobalCIConfiguration.get()
-                    .getConfigs().get(0).getName());
+    private static boolean updateCIMessageBuilder(AbstractProject<?, ?> p, CIMessageBuilder builder) {
+        if (builder.getProviderData() == null) {
+            if (builder.getProviderName() == null) {
+                builder.setProviderName(GlobalCIConfiguration.get().getConfigs().get(0).getName());
+                try {
+                    p.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            JMSMessagingProvider prov = GlobalCIConfiguration.get().getProvider((builder.getProviderName()));
+            if (prov instanceof ActiveMqMessagingProvider) {
+                ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(builder.getProviderName());
+                apd.setOverrides(builder.getOverrides());
+                apd.setMessageType(builder.getMessageType());
+                apd.setMessageProperties(builder.getMessageProperties());
+                apd.setMessageContent(builder.getMessageContent());
+                apd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(apd);
+            } else {
+                FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(builder.getProviderName());
+                fpd.setOverrides(builder.getOverrides());
+                fpd.setMessageContent(builder.getMessageContent());
+                fpd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(fpd);
+            }
             try {
                 p.save();
                 return true;
@@ -58,10 +88,33 @@ public class MessageProviderMigrator {
         return false;
     }
 
-    private static boolean updateCIMessageBuilder(MatrixProject p, CIMessageBuilder builder) {
-        if (builder.getProviderName() == null) {
-            builder.setProviderName(GlobalCIConfiguration.get()
-                    .getConfigs().get(0).getName());
+    private static boolean updateCIMessageNotifier(AbstractProject<?, ?> p, CIMessageNotifier builder) {
+        if (builder.getProviderData() == null) {
+            if (builder.getProviderName() == null) {
+                builder.setProviderName(GlobalCIConfiguration.get().getConfigs().get(0).getName());
+                try {
+                    p.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            JMSMessagingProvider prov = GlobalCIConfiguration.get().getProvider((builder.getProviderName()));
+            if (prov instanceof ActiveMqMessagingProvider) {
+                ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(builder.getProviderName());
+                apd.setOverrides(builder.getOverrides());
+                apd.setMessageType(builder.getMessageType());
+                apd.setMessageProperties(builder.getMessageProperties());
+                apd.setMessageContent(builder.getMessageContent());
+                apd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(apd);
+            } else {
+                FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(builder.getProviderName());
+                fpd.setOverrides(builder.getOverrides());
+                fpd.setMessageContent(builder.getMessageContent());
+                fpd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(fpd);
+            }
             try {
                 p.save();
                 return true;
@@ -71,53 +124,33 @@ public class MessageProviderMigrator {
         }
         return false;
     }
-
-    private static boolean updateCIMessageNotifier(Project p, CIMessageNotifier builder) {
-        if (builder.getProviderName() == null) {
-            builder.setProviderName(GlobalCIConfiguration.get()
-                    .getConfigs().get(0).getName());
-            try {
-                p.save();
-                return true;
-            } catch (IOException e) {
-                e.printStackTrace();
+    private static boolean updateCIMessageSubscriberBuilder(AbstractProject<?, ?> p, CIMessageSubscriberBuilder builder) {
+        if (builder.getProviderData() == null) {
+            if (builder.getProviderName() == null) {
+                builder.setProviderName(GlobalCIConfiguration.get().getConfigs().get(0).getName());
+                try {
+                    p.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        return false;
-    }
 
-    private static boolean updateCIMessageNotifier(MatrixProject p, CIMessageNotifier builder) {
-        if (builder.getProviderName() == null) {
-            builder.setProviderName(GlobalCIConfiguration.get()
-                    .getConfigs().get(0).getName());
-            try {
-                p.save();
-                return true;
-            } catch (IOException e) {
-                e.printStackTrace();
+            JMSMessagingProvider prov = GlobalCIConfiguration.get().getProvider((builder.getProviderName()));
+            if (prov instanceof ActiveMqMessagingProvider) {
+                ActiveMQSubscriberProviderData apd = new ActiveMQSubscriberProviderData(builder.getProviderName());
+                apd.setOverrides(builder.getOverrides());
+                apd.setSelector(builder.getSelector());
+                apd.setChecks(builder.getChecks());
+                apd.setVariable(builder.getVariable());
+                apd.setTimeout(builder.getTimeout());
+                builder.setProviderData(apd);
+            } else {
+                FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(builder.getProviderName());
+                fpd.setOverrides(builder.getOverrides());
+                fpd.setVariable(builder.getVariable());
+                fpd.setTimeout(builder.getTimeout());
+                builder.setProviderData(fpd);
             }
-        }
-        return false;
-    }
-
-    private static boolean updateCIMessageSubscriberBuilder(Project p, CIMessageSubscriberBuilder builder) {
-        if (builder.getProviderName() == null) {
-            builder.setProviderName(GlobalCIConfiguration.get()
-                    .getConfigs().get(0).getName());
-            try {
-                p.save();
-                return true;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return false;
-    }
-
-    private static boolean updateCIMessageSubscriberBuilder(MatrixProject p, CIMessageSubscriberBuilder builder) {
-        if (builder.getProviderName() == null) {
-            builder.setProviderName(GlobalCIConfiguration.get()
-                    .getConfigs().get(0).getName());
             try {
                 p.save();
                 return true;
@@ -139,9 +172,9 @@ public class MessageProviderMigrator {
         int updatedCount = 0;
         log.info("Attempting to migrate all CIMessageBuilders, CIMessageNotifier and CIMessageSubscriberBuilders build/publish steps");
         for (BuildableItemWithBuildWrappers item : instance.getItems(BuildableItemWithBuildWrappers.class)) {
-            Job job = (Job) item;
+            Job<?, ?> job = (Job<?, ?>) item;
             if (job instanceof Project) {
-                Project p = (Project) item.asProject();
+                Project<?, ?> p = (Project<?, ?>) item.asProject();
                 for (Object builderObj : (p.getBuildersList().getAll(CIMessageBuilder.class))) {
                     if (updateCIMessageBuilder(p, (CIMessageBuilder)builderObj)) {
                         updatedCount++;

@@ -1,4 +1,5 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
 
   <!--
      * The MIT License
@@ -39,81 +40,10 @@
     <f:helpLink url="${attrs.chkhelp}" featureName="${%Schedule a new job for every triggering message.}"/>
   </tr>
   
-  <f:entry title="${%Messaging Provider}" field="providerName">
-      <f:select onchange="javascript: onProviderChange(this, 'subscriber');"/>
-  </f:entry>
-  <f:nested>
-    <j:choose>
-      <j:when test="${empty(instance)}">
-        <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
-        <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic('subscriber');}"/>
-      </j:when>
-      <j:otherwise>
-        <j:set var="checked" value="${instance.getOverrides() != null}"/>
-        <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
-      </j:otherwise>
-    </j:choose>
-    <table width="100%">
-      <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
-        <f:entry title="${%Topic name}" field="topic">
-          <f:textbox value="${value}"/>
-        </f:entry>
-      </f:optionalBlock>
-    </table>
-  </f:nested>
-
-  <f:entry title="${%JMS selector}" field="selector">
-    <f:expandableTextbox/>
-    <j:choose>
-      <j:when test="${empty(instance)}">
-        <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
-        <j:set var="dname" value="${gdescriptor.getFirstProviderDisplayName();}"/>
-      </j:when>
-      <j:otherwise>
-        <j:set var="dname" value="${instance.getProvider().getDescriptor().getDisplayName();}"/>
-      </j:otherwise>
-    </j:choose>
-    <j:choose>
-      <j:when test="${dname == 'FedMsg'}">
-        <script type="text/javascript">
-          <!-- Ugly. If the provider is FedMsg, the JMS selector field is hidden. This is a problem when
-               the trigger checkbox is first selected.  When that happens all fields are displayed by removing
-               the style tag. This is done from the onclick function on the checkbox. To counteract that 
-               an additional onclick handler is added that will again hide the JMS selector field.
-          -->
-          var pobj = document.currentScript;
-          while (pobj != null &amp;&amp; pobj.tagName != 'TR') {
-            pobj = pobj.parentNode;
-          }
-          function hideJMSSelector() {
-            pobj.style.display = "none";
-          }
-          var cb = document.getElementsByName('com-redhat-jenkins-plugins-ci-CIBuildTrigger')[0];
-          cb.addEventListener("click", hideJMSSelector, false);
-        </script>
-      </j:when>
-    </j:choose>
-  </f:entry>
-
-  <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
-      <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}">
-        <table width="100%">
-          <f:entry title="${%Field}">
-            <f:textbox name="checks.field" value="${check.field}"
-                       checkUrl="'descriptorByName/com.redhat.jenkins.plugins.ci.CIBuildTrigger/checkField?value='+escape(this.value)" />
-          </f:entry>
-          <f:entry title="${%Expected value}">
-            <f:textbox name="checks.expectedValue" value="${check.expectedValue}" />
-          </f:entry>
-          <f:entry>
-            <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
-              <f:repeatableDeleteButton value="${%Delete check}" />
-              <br/>
-            </div>
-          </f:entry>
-      </table>
-    </f:repeatable>
-  </f:entry>
-
+  <rh:dropdownInstanceSelector title="${%Messaging Provider}"
+                               field="providerData"
+                               instances="${gdescriptor.getSubscriberProviders()}"
+                               desc="${descriptor}" />
+  
   <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>

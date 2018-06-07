@@ -7,6 +7,8 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -32,6 +34,8 @@ import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
  * THE SOFTWARE.
  */
 public class FedMsgMessagingProvider extends JMSMessagingProvider {
+
+    private static final long serialVersionUID = 82154526798596907L;
 
     private String hubAddr;
     private String pubAddr;
@@ -63,8 +67,8 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
-        return new FedMsgMessagingWorker(this, overrides, jobname);
+    public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
+        return new FedMsgMessagingWorker(this, ((FedMsgProviderData)pdata).getOverrides(), jobname);
     }
 
     @Override

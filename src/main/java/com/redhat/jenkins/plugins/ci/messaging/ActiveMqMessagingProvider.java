@@ -20,6 +20,8 @@ import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticat
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -45,6 +47,8 @@ import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProvide
  * THE SOFTWARE.
  */
 public class ActiveMqMessagingProvider extends JMSMessagingProvider {
+
+    private static final long serialVersionUID = -5710867670450057616L;
 
     private static final boolean DEFAULT_USE_QUEUES = false;
 
@@ -145,8 +149,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessagingWorker createWorker(MessagingProviderOverrides overrides, String jobname) {
-        return new ActiveMqMessagingWorker(this, overrides, jobname);
+    public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
+        return new ActiveMqMessagingWorker(this, ((ActiveMQProviderData)pdata).getOverrides(), jobname);
     }
 
     @Override
