@@ -209,6 +209,17 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 }
             }
 
+            root.set("JMSCorrelationID", mapper.convertValue(message.getJMSCorrelationID(), JsonNode.class));
+            root.set("JMSDeliveryMode", mapper.convertValue(new Integer(message.getJMSDeliveryMode()), JsonNode.class));
+            root.set("JMSDestination", mapper.convertValue(message.getJMSDestination().toString(), JsonNode.class));
+            root.set("JMSExpiration", mapper.convertValue(message.getJMSExpiration(), JsonNode.class));
+            root.set("JMSMessageID", mapper.convertValue(message.getJMSMessageID(), JsonNode.class));
+            root.set("JMSPriority", mapper.convertValue(message.getJMSPriority(), JsonNode.class));
+            root.set("JMSRedelivered", mapper.convertValue(message.getJMSRedelivered(), JsonNode.class));
+            root.set("JMSReplyTo", mapper.convertValue(message.getJMSReplyTo(), JsonNode.class));
+            root.set("JMSTimestamp", mapper.convertValue(message.getJMSTimestamp(), JsonNode.class));
+            root.set("JMSType", mapper.convertValue(message.getJMSType(), JsonNode.class));
+
             return mapper.writer().writeValueAsString(root);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception retrieving message headers:\n" + formatMessage(message), e);
@@ -274,7 +285,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public void receive(String jobname, ProviderData pdata) {
         ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData)pdata;
-        int timeoutInMs = pd.getTimeout() * 60 * 1000;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT) * 60 * 1000;
         while (!subscribe(jobname, pd.getSelector())) {
             if (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -503,7 +514,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
                     }
 
-                    Message message = consumer.receive(pd.getTimeout()*60*1000);
+                    Message message = consumer.receive((pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT)*60*1000);
                     if (message != null) {
                         String value = getMessageBody(message);
                         if (build != null) {
