@@ -42,10 +42,12 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
+    public static final Integer DEFAULT_TIMEOUT = 60;
+
     private String selector;
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private String variable;
-    private Integer timeout = 60;
+    private Integer timeout = DEFAULT_TIMEOUT;
 
 
     @DataBoundConstructor

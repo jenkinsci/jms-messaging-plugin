@@ -26,7 +26,7 @@
   -->
   <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
 
-  <rh:dropdownInstanceSelector title="${%Messaging Providerx}"
+  <rh:dropdownInstanceSelector title="${%Messaging Provider}"
                                field="providerData"
                                instances="${gdescriptor.getPublisherProviders()}"
                                desc="${descriptor}" />
