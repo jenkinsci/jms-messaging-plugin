@@ -178,7 +178,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         FreeStyleJob jobB = jenkins.jobs.create();
         String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"";
         expected += jobB.name;
-        expected += "\",\"CI_TYPE\":\"code-quality-checks-done\"}";
+        expected += "\",\"CI_TYPE\":\"code-quality-checks-done\"";
 
         _testSimpleCIEventTriggerHeadersInEnv(jobB, expected);
     }

@@ -162,7 +162,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     @Override
     public void receive(String jobname, ProviderData pdata) {
         FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData)pdata;
-        int timeoutInMs = pd.getTimeout() * 60 * 1000;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT) * 60 * 1000;
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
             return;
@@ -320,8 +320,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             log.info(" with check: " + msgCheck.toString());
             listener.getLogger().println(" with check: " + msgCheck.toString());
         }
-        log.info(" with timeout: " + pd.getTimeout());
-        listener.getLogger().println(" with timeout: " + pd.getTimeout());
+        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT);
+        log.info(" with timeout: " + timeout);
+        listener.getLogger().println(" with timeout: " + timeout);
 
         ZMQ.Context lcontext = ZMQ.context(1);
         ZMQ.Poller lpoller = lcontext.poller(1);
@@ -344,7 +345,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         ObjectMapper mapper = new ObjectMapper();
         long startTime = new Date().getTime();
 
-        int timeoutInMs = pd.getTimeout() * 60 * 1000;
+        int timeoutInMs = timeout * 60 * 1000;
         boolean interrupted = false;
         try {
             while ((new Date().getTime() - startTime) < timeoutInMs) {
