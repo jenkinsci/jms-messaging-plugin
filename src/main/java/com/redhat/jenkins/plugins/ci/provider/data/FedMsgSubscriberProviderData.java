@@ -9,6 +9,7 @@ import java.util.List;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -42,10 +43,12 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
+    public static final Integer DEFAULT_TIMEOUT = 60;
+
     private MessagingProviderOverrides overrides;
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private String variable;
-    private Integer timeout = 60;
+    private Integer timeout = DEFAULT_TIMEOUT;
 
     @DataBoundConstructor
     public FedMsgSubscriberProviderData() {}
@@ -131,7 +134,7 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
                 variable = jo.getString("variable");
             }
             Integer timeout = null;
-            if (jo.has("timeout")) {
+            if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
             return new FedMsgSubscriberProviderData(jo.getString("name"), mpo, checks, variable, timeout);
