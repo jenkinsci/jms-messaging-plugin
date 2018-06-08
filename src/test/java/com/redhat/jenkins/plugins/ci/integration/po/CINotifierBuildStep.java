@@ -5,7 +5,6 @@ import org.jenkinsci.test.acceptance.po.BuildStep;
 import org.jenkinsci.test.acceptance.po.Control;
 import org.jenkinsci.test.acceptance.po.Describable;
 import org.jenkinsci.test.acceptance.po.Job;
-import org.jenkinsci.test.acceptance.po.PostBuildStep;
 
 /*
  * The MIT License
@@ -33,13 +32,13 @@ import org.jenkinsci.test.acceptance.po.PostBuildStep;
 @Describable("CI Notifier")
 public class CINotifierBuildStep extends AbstractStep implements BuildStep {
 
-    public final Control providerName = control("providerName");
-    public final Control overrides = control("overrides");
-    public final Control topic = control("overrides/topic");
-    public final Control messageType = control("messageType");
-    public final Control messageProperties = control("messageProperties");
-    public final Control messageContent = control("messageContent");
-    public final Control failOnError = control("failOnError");
+    public final Control providerData = control("/");
+    public final Control overrides = control("providerData/overrides");
+    public final Control topic = control("providerData/overrides/topic");
+    public final Control messageType = control("providerData/messageType");
+    public final Control messageProperties = control("providerData/messageProperties");
+    public final Control messageContent = control("providerData/messageContent");
+    public final Control failOnError = control("providerData/failOnError");
 
     public CINotifierBuildStep(Job parent, String path) {
         super(parent, path);

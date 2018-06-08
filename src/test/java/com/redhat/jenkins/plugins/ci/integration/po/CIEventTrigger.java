@@ -32,11 +32,11 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 @Describable("CI event")
 public class CIEventTrigger extends PageAreaImpl {
     public final Control noSquash = control("noSquash");
-    public final Control providerName = control("providerName");
-    public final Control overrides = control("overrides");
-    public final Control topic = control("overrides/topic");
-    public final Control selector = control("selector");
-    public final Control checks = control("repeatable-add");
+    public final Control providerData = control("/");
+    public final Control overrides = control("providerData/overrides");
+    public final Control topic = control("providerData/overrides/topic");
+    public final Control selector = control("providerData/selector");
+    public final Control checks = control("providerData/repeatable-add");
 
     public CIEventTrigger(Job parent) {
         super(parent, createPath(parent));
@@ -52,7 +52,7 @@ public class CIEventTrigger extends PageAreaImpl {
 
     public MsgCheck addMsgCheck() {
         checks.click();
-        return new MsgCheck(this, "checks");
+        return new MsgCheck(this, "providerData/checks");
     }
 
     public static class MsgCheck extends PageAreaImpl {
