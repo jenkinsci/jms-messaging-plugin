@@ -33,13 +33,13 @@ import org.jenkinsci.test.acceptance.po.PageAreaImpl;
 @Describable("CI Subscriber")
 public class CISubscriberBuildStep extends AbstractStep implements BuildStep {
 
-    public final Control providerName = control("providerName");
-    public final Control overrides = control("overrides");
-    public final Control topic = control("overrides/topic");
-    public final Control selector = control("selector");
-    public final Control checks = control("repeatable-add");
-    public final Control variable = control("variable");
-    public final Control timeout = control("timeout");
+    public final Control providerData = control("/");
+    public final Control overrides = control("providerData/overrides");
+    public final Control topic = control("providerData/overrides/topic");
+    public final Control selector = control("providerData/selector");
+    public final Control checks = control("providerData/repeatable-add");
+    public final Control variable = control("providerData/variable");
+    public final Control timeout = control("providerData/timeout");
 
     public CISubscriberBuildStep(Job parent, String path) {
         super(parent, path);
@@ -47,7 +47,7 @@ public class CISubscriberBuildStep extends AbstractStep implements BuildStep {
 
     public MsgCheck addMsgCheck() {
         checks.click();
-        return new MsgCheck(this, "checks");
+        return new MsgCheck(this, "providerData/checks");
     }
 
     public static class MsgCheck extends PageAreaImpl {
