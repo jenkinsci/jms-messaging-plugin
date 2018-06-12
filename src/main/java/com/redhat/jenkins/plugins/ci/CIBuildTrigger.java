@@ -307,13 +307,16 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
     }
 
     private CITriggerThread getComparisonThread() {
-        JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
-        // We create a new thread here only to be able to
-        // use .equals() to compare.
-        // The thread is never started.
-        CITriggerThread newThread = new CITriggerThread(provider, providerData, job.getFullName());
-        newThread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
-        return newThread;
+        if (providerData != null) {
+            JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
+            // We create a new thread here only to be able to
+            // use .equals() to compare.
+            // The thread is never started.
+            CITriggerThread newThread = new CITriggerThread(provider, providerData, job.getFullName());
+            newThread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+            return newThread;
+        }
+        return null;
     }
 
     /**

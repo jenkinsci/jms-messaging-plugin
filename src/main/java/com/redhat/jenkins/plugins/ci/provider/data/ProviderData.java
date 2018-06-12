@@ -8,6 +8,8 @@ import java.io.Serializable;
 
 import jenkins.model.Jenkins;
 
+import org.kohsuke.stapler.DataBoundSetter;
+
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 
@@ -53,6 +55,7 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
         return name;
     }
 
+    @DataBoundSetter
     public void setName(String name) {
         this.name = name;
         setProvider();

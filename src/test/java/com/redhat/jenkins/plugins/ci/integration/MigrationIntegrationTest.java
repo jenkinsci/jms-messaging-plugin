@@ -65,9 +65,9 @@ public class MigrationIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         CISubscriberBuildStep subscriber = jobA.addBuildStep(CISubscriberBuildStep.class);
+        subscriber.providerData.select("default");
         subscriber.selector.set("CI_TYPE = 'code-quality-checks-done'");
         subscriber.variable.set("HELLO");
-        subscriber.providerName.select("default");
         jobA.save();
 
     }

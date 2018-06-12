@@ -178,7 +178,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         FreeStyleJob jobB = jenkins.jobs.create();
         String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"";
         expected += jobB.name;
-        expected += "\",\"CI_TYPE\":\"code-quality-checks-done\"}";
+        expected += "\",\"CI_TYPE\":\"code-quality-checks-done\"";
 
         _testSimpleCIEventTriggerHeadersInEnv(jobB, expected);
     }
@@ -338,7 +338,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "properties(\n" +
                 "        [\n" +
                 "                pipelineTriggers(\n" +
-                "  [[$class: 'CIBuildTrigger', checks: [], providerName: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]\n" +
+                "  [[$class: 'CIBuildTrigger', noSquash: false, providerData: [$class: 'ActiveMQSubscriberProviderData', name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]]\n" +
                 "                )\n" +
                 "        ]\n" +
                 ")\nnode('master') {\n sleep 1\n}");
@@ -376,7 +376,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "properties(\n" +
                 "        [\n" +
                 "                pipelineTriggers(\n" +
-                "  [[$class: 'CIBuildTrigger', checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], providerName: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]\n" +
+                "  [[$class: 'CIBuildTrigger', noSquash: false, providerData: [$class: 'ActiveMQSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]]\n" +
                 "                )\n" +
                 "        ]\n" +
                 ")\nnode('master') {\n sleep 1\n}");
