@@ -67,12 +67,12 @@
         </table>
       </f:repeatable>
     </f:entry>
-    <j:if test="${desc.getClass().getSimpleName() == 'CIMessageSubscriberBuilderDescriptor'}">
+    <j:if test="${desc.getClass().getSimpleName() != 'CIBuildTriggerDescriptor'}">
       <f:entry title="${%Variable}" field="variable">
-        <f:textbox name="variable"/>
+        <f:textbox default="${descriptor.getDefaultVariable()}"/>
       </f:entry>
       <f:entry title="${%Timeout}" field="timeout">
-        <f:textbox name="timeout" default="${descriptor.getDefaultTimeout()}"/>
+        <f:textbox default="${descriptor.getDefaultTimeout()}"/>
       </f:entry>
     </j:if>
   </f:nested>
