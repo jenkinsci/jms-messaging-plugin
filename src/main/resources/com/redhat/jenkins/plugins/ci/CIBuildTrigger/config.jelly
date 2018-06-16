@@ -45,5 +45,4 @@
                                instances="${gdescriptor.getSubscriberProviders()}"
                                desc="${descriptor}" />
   
-  <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>
