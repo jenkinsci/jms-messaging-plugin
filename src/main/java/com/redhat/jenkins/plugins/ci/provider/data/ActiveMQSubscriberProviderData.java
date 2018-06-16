@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci.provider.data;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
@@ -43,13 +45,13 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
-    public static final Integer DEFAULT_TIMEOUT = 60;
+    public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
+    public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
     private String selector;
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private String variable;
-    private Integer timeout = DEFAULT_TIMEOUT;
-
+    private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
     public ActiveMQSubscriberProviderData() {}
@@ -150,6 +152,39 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
                 timeout = jo.getInt("timeout");
             }
             return new ActiveMQSubscriberProviderData(jo.getString("name"), mpo, jo.getString("selector"), checks, variable, timeout);
+        }
+
+        public String getDefaultVariable() {
+            return DEFAULT_VARIABLE_NAME;
+        }
+
+        public Integer getDefaultTimeout() {
+            return DEFAULT_TIMEOUT_IN_MINUTES;
+        }
+
+        public FormValidation doCheckSelector(@QueryParameter String selector) {
+            if (selector == null || selector.isEmpty()) {
+                return FormValidation.error("Please enter a JMS selector.");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckVariable(@QueryParameter String variable) {
+            if (variable == null || variable.isEmpty()) {
+                return FormValidation.error("Please enter a variable name to hold the received message result.");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckTimeout(@QueryParameter String timeout) {
+            try {
+                if (timeout == null || timeout.isEmpty() || Integer.parseInt(timeout) <= 0) {
+                    return FormValidation.error("Please enter a positive timeout value.");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error("Please enter a valid timeout value.");
+            }
+            return FormValidation.ok();
         }
 
         public String getConfigPage() {
