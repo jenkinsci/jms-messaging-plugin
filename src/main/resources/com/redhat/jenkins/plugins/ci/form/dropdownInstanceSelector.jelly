@@ -55,7 +55,7 @@ THE SOFTWARE.
     <j:forEach var="pdata" items="${attrs.instances}" varStatus="loop">
       <j:set var="descriptor" value="${pdata.descriptor}" />
       <f:dropdownListBlock value="${pdata.name}" title="${pdata.name}"
-        selected="${instance.providerData.name==pdata.name || (current==null and descriptor==attrs.default)}" staplerClass="${descriptor.clazz.name}"
+        selected="${current.name==pdata.name || (current==null and descriptor==attrs.default)}" staplerClass="${descriptor.clazz.name}"
         lazy="descriptor,it,pdata,${capture},desc">
         <l:ajax>
           <j:set var="instance" value="${current}" />

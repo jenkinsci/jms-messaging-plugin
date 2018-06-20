@@ -69,5 +69,4 @@
     </f:repeatable>
   </f:entry>
 
-  <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>

@@ -285,7 +285,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public void receive(String jobname, ProviderData pdata) {
         ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData)pdata;
-        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT) * 60 * 1000;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
         while (!subscribe(jobname, pd.getSelector())) {
             if (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -514,7 +514,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
                     }
 
-                    Message message = consumer.receive((pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT)*60*1000);
+                    Message message = consumer.receive((pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES)*60*1000);
                     if (message != null) {
                         String value = getMessageBody(message);
                         if (build != null) {

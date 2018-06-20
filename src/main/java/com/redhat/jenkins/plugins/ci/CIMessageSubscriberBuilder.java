@@ -9,7 +9,6 @@ import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import hudson.util.FormValidation;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
@@ -57,14 +55,12 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
     private static final String BUILDER_NAME = Messages.SubscriberBuilder();
 
-    public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
-
     private transient String providerName;
     private transient MessagingProviderOverrides overrides;
     private transient String selector;
     private transient String variable;
     private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
-    private transient Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
+    private transient Integer timeout;;
     private ProviderData providerData;
 
     @DataBoundConstructor
@@ -164,10 +160,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
             return BUILDER_NAME;
         }
 
-        public Integer getDefaultTimeout() {
-            return DEFAULT_TIMEOUT_IN_MINUTES;
-        }
-
         @Override
         public CIMessageSubscriberBuilder newInstance(StaplerRequest sr, JSONObject jo) {
             try {
@@ -182,6 +174,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
             return null;
         }
 
+        @SuppressWarnings("rawtypes")
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
@@ -191,34 +184,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
         public boolean configure(StaplerRequest sr, JSONObject formData) throws FormException {
             save();
             return super.configure(sr, formData);
-        }
-
-        public FormValidation doCheckSelector(
-                @QueryParameter String selector) {
-            if (selector == null || selector.isEmpty()) {
-                return FormValidation.error("Please enter a JMS selector.");
-            }
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckVariable(
-                @QueryParameter String variable) {
-            if (variable == null || variable.isEmpty()) {
-                return FormValidation.error("Please enter a variable name to hold the received message result.");
-            }
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckTimeout(
-                @QueryParameter String timeout) {
-            try {
-                if (timeout == null || timeout.isEmpty() || Integer.parseInt(timeout) <= 0) {
-                    return FormValidation.error("Please enter a positive timeout value.");
-                }
-            } catch (NumberFormatException e) {
-                return FormValidation.error("Please enter a valid timeout value.");
-            }
-            return FormValidation.ok();
         }
     }
 }
