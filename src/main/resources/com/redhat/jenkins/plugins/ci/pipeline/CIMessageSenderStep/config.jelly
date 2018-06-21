@@ -59,5 +59,4 @@
     <f:checkbox name="failOnError" default="false"/>
   </f:entry>
 
-  <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>

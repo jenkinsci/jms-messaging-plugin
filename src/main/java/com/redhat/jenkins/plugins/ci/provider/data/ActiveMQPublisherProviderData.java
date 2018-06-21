@@ -40,6 +40,8 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
+    public static final MESSAGE_TYPE DEFAULT_MESSAGE_TYPE = MESSAGE_TYPE.Custom;
+
     private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
@@ -150,6 +152,10 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
                 items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
             }
             return items;
+        }
+
+        public MESSAGE_TYPE getDefaultMessageType() {
+            return DEFAULT_MESSAGE_TYPE;
         }
 
         public String getConfigPage() {

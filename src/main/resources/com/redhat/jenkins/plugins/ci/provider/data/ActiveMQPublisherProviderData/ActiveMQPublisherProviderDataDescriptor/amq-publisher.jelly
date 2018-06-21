@@ -46,7 +46,7 @@
     </table>
   </f:nested>
   <f:entry title="${%Message type}" field="messageType">
-    <f:select name="messageType"/>
+    <f:select name="messageType" default="${descriptor.getDefaultMessageType()}"/>
   </f:entry>
   <f:entry title="${%Message properties}" field="messageProperties">
     <f:textarea name="messageProperties"/>
@@ -57,6 +57,4 @@
   <f:entry title="${%Fail on error}" field="failOnError">
     <f:checkbox name="failOnError" default="false"/>
   </f:entry>
-
-  <st:include page="topic-provider.jelly" class="com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider"/>
 </j:jelly>
