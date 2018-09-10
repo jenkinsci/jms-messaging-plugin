@@ -70,9 +70,10 @@ public class CIEnvironmentContributingAction implements EnvironmentContributingA
             return;
         }
 
-        // Only include variables in environment that are not defined as job parameters.
+        // Only include variables in environment that are not defined as job parameters. And
+        // do not overwrite any existing environment variables (like PATH).
         for (String key : messageParams.keySet()) {
-            if (!jobParams.contains(key)) {
+            if (!jobParams.contains(key) && !env.containsKey(key)) {
                 env.put(key, messageParams.get(key));
             }
         }
