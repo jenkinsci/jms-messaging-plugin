@@ -32,3 +32,27 @@ To run tests:
 ## CI
 
 This plugin is currently built on [ci.jenkins.io](https://ci.jenkins.io/job/Plugins/job/jms-messaging-plugin/).
+
+## Jenkinsfile Build Trigger Example
+
+This example shows triggering your pipeline from Fedmsg with the org.fedoraproject.prod.buildsys.build.state.change topic
+
+````
+pipelineTriggers(
+        [[$class: 'CIBuildTrigger',
+          noSquash: true,
+          providerData: [
+              $class: 'FedMsgSubscriberProviderData',
+              name: 'fedmsg',
+              overrides: [
+                  topic: 'org.fedoraproject.prod.buildsys.build.state.change'
+              ],
+              checks: [
+                  [field: 'name', expectedValue: '^kernel$'],
+                  [field: 'new', expectedValue: '1'],
+                  [field: 'release', expectedValue: '.*fc28$']
+              ]
+          ]
+        ]]
+)
+````
