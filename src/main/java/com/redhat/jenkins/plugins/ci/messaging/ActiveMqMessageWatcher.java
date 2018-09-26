@@ -46,6 +46,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
     private static final Logger log = Logger.getLogger(ActiveMqMessageWatcher.class.getName());
     private ActiveMqMessagingProvider activeMqMessagingProvider;
     private String topic;
+    private String name;
 
     @Override
     public String watch() {
@@ -61,6 +62,8 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
 
         topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), null), environment);
 
+        name = UUID.randomUUID().toString();
+
         if (ip != null && activeMqMessagingProvider.getAuthenticationMethod() != null && topic != null && activeMqMessagingProvider.getBroker() != null) {
             log.info("Waiting for message with selector: " + selector);
             taskListener.getLogger().println("Waiting for message with selector: " + selector);
@@ -69,15 +72,15 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
             try {
                 ActiveMQConnectionFactory connectionFactory = activeMqMessagingProvider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
-                connection.setClientID(ip + "_" + UUID.randomUUID().toString());
+                connection.setClientID(ip + "_" + name);
                 connection.start();
                 Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 if (activeMqMessagingProvider.getUseQueues()) {
                     Queue destination = session.createQueue(topic);
-                    consumer = session.createConsumer(destination, selector, false);
+                    consumer = session.createDurableConsumer(destination, name, selector, false);
                 } else {
                     Topic destination = session.createTopic(topic);
-                    consumer = session.createDurableSubscriber(destination, UUID.randomUUID().toString(), selector, false);
+                    consumer = session.createDurableSubscriber(destination, name, selector, false);
                 }
 
                 Message message = consumer.receive(timeout*60*1000);
