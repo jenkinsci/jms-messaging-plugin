@@ -104,7 +104,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                         if (provider.getUseQueues()) {
                             Queue destination = session.createQueue(this.topic);
-                            subscriber = session.createConsumer(destination, selector, false);
+                            subscriber = session.createDurableConsumer(destination, jobname, selector, false);
                         } else {
                             Topic destination = session.createTopic(this.topic);
                             subscriber = session.createDurableSubscriber(destination, jobname, selector, false);
@@ -508,7 +508,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     if (provider.getUseQueues()) {
                         Queue destination = session.createQueue(ltopic);
-                        consumer = session.createConsumer(destination, pd.getSelector(), false);
+                        consumer = session.createDurableConsumer(destination, jobname, pd.getSelector(), false);
                     } else {
                         Topic destination = session.createTopic(ltopic);
                         consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
