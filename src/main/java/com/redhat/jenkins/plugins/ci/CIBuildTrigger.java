@@ -78,7 +78,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private transient String selector;
 	private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
 	private transient MessagingProviderOverrides overrides;
-	private Boolean noSquash;
+	private Boolean noSquash = false;
 	private ProviderData providerData;
 
 	public static final transient ConcurrentMap<String, CITriggerThread> triggerInfo = new ConcurrentHashMap<>();
@@ -127,7 +127,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
     }
 
     public Boolean getNoSquash() {
-        return noSquash;
+        return noSquash == null ? false : noSquash;
     }
 
     @DataBoundSetter
