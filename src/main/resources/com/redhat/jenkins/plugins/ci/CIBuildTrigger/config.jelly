@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
          xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
 
@@ -39,10 +40,25 @@
     </td>
     <f:helpLink url="${attrs.chkhelp}" featureName="${%Schedule a new job for every triggering message.}"/>
   </tr>
-  
-  <rh:dropdownInstanceSelector title="${%Messaging Provider}"
-                               field="providerData"
-                               instances="${gdescriptor.getSubscriberProviders()}"
-                               desc="${descriptor}" />
+
+  <tr>
+    <td class="setting-leftspace"><st:nbsp/></td>
+    <td colspan="2">
+      <f:repeatable var="provider" name="providers" items="${instance.providers}" add="${%Add provider}">
+        <table width="100%">
+          <rh:dropdownInstanceSelector title="${%Messaging Provider}"
+                                       field="providerData"
+                                       instances="${gdescriptor.getSubscriberProviders()}"
+                                       desc="${descriptor}" />
+          <f:entry>
+            <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+              <f:repeatableDeleteButton value="${%Delete provider}" />
+              <br/>
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </td>
+  </tr>
   
 </j:jelly>
