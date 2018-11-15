@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 
 import jenkins.model.ParameterizedJobMixIn;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -78,20 +79,21 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private transient String selector;
 	private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
 	private transient MessagingProviderOverrides overrides;
+	private transient ProviderData providerData;
 	private Boolean noSquash;
-	private ProviderData providerData;
+	private List<ProviderData> providers;
 
-	public static final transient ConcurrentMap<String, CITriggerThread> triggerInfo = new ConcurrentHashMap<>();
+	public static final transient ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
 	public static final transient ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
 	public CIBuildTrigger() {}
 
-	public CIBuildTrigger(Boolean noSquash, ProviderData providerData) {
+	public CIBuildTrigger(Boolean noSquash, List<ProviderData> providers) {
 		super();
 		this.noSquash = noSquash;
-		this.providerData = providerData;
+		this.providers = providers;
 	}
 
 	public String getProviderName() {
@@ -126,6 +128,14 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         this.overrides = overrides;
     }
 
+    public ProviderData getProviderData() {
+        return providerData;
+    }
+
+    public void setProviderData(ProviderData providerData) {
+        this.providerData = providerData;
+    }
+
     public Boolean getNoSquash() {
         return noSquash;
     }
@@ -135,13 +145,13 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         this.noSquash = noSquash;
     }
 
-    public ProviderData getProviderData() {
-        return providerData;
+    public List<ProviderData> getProviders() {
+        return providers;
     }
 
     @DataBoundSetter
-    public void setProviderData(ProviderData providerData) {
-        this.providerData = providerData;
+    public void setProviders(List<ProviderData> providers) {
+        this.providers = providers;
     }
 
     public static CIBuildTrigger findTrigger(String fullname) {
@@ -156,70 +166,78 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	@Override
 	protected Object readResolve() throws ObjectStreamException {
-		if (providerData == null) {
-		    if (providerName == null) {
-		        log.info("Provider is null for trigger for job '" + getJobName() + "'.");
-		        JMSMessagingProvider provider = GlobalCIConfiguration.get().getConfigs().get(0);
-		        if (provider != null) {
-		            providerName = provider.getName();
-		            providerUpdated = true;
-		            saveJob();
-		        }
-		    }
+	    if (providers == null) {
+	        log.info("Migrating CIBuildTrigger for job '" + getJobName() + "'.");
+	        providers = new ArrayList<ProviderData>();
+	        if (providerData == null) {
+	            if (providerName == null) {
+	                log.info("Provider is null for trigger for job '" + getJobName() + "'.");
+	                JMSMessagingProvider provider = GlobalCIConfiguration.get().getConfigs().get(0);
+	                if (provider != null) {
+	                    providerName = provider.getName();
+	                    providerUpdated = true;
+	                    saveJob();
+	                }
+	            }
 
-            JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerName);
-            if (provider != null) {
-                if (provider instanceof ActiveMqMessagingProvider) {
-                    log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
-                    ActiveMQSubscriberProviderData a = new ActiveMQSubscriberProviderData(providerName);
-                    a.setSelector(selector);
-                    a.setOverrides(overrides);
-                    a.setChecks(checks);
-                    providerData = a;
-                    providerUpdated = true;
-                    saveJob();
-                } else if (provider instanceof FedMsgMessagingProvider) {
-                    log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
-                    FedMsgSubscriberProviderData f = new FedMsgSubscriberProviderData(providerName);
-                    f.setOverrides(overrides);
-                    f.setChecks(checks);
-                    providerData = f;
-                    providerUpdated = true;
-                    saveJob();
-                }
-            } else {
-                log.warning("Unable to find provider '" + providerName + "', so unable to upgrade job.");
-            }
-		}
+	            JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerName);
+	            if (provider != null) {
+	                if (provider instanceof ActiveMqMessagingProvider) {
+	                    log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+	                    ActiveMQSubscriberProviderData a = new ActiveMQSubscriberProviderData(providerName);
+	                    a.setSelector(selector);
+	                    a.setOverrides(overrides);
+	                    a.setChecks(checks);
+	                    providers.add(a);
+	                    providerUpdated = true;
+	                    saveJob();
+	                } else if (provider instanceof FedMsgMessagingProvider) {
+	                    log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+	                    FedMsgSubscriberProviderData f = new FedMsgSubscriberProviderData(providerName);
+	                    f.setOverrides(overrides);
+	                    f.setChecks(checks);
+	                    providers.add(f);
+	                    providerUpdated = true;
+	                    saveJob();
+	                }
+	            } else {
+	                log.warning("Unable to find provider '" + providerName + "', so unable to upgrade job.");
+	            }
+	        } else {
+	            providers.add(providerData);
+	            providerUpdated = true;
+	            saveJob();
+	        }
+	    }
 		return this;
 	}
 
 	@Override
 	public void start(BuildableItem project, boolean newInstance) {
 		super.start(project, newInstance);
-		startTriggerThread();
+		startTriggerThreads();
 	}
 
     @Override
     public void stop() {
         super.stop();
         if (job != null) {
-            stopTriggerThread(job.getFullName());
+            stopTriggerThreads(job.getFullName());
         } else {
             log.info("job is null! Not stopping trigger thread!");
         }
     }
 
     public static void force(String fullName) {
-        stopTriggerThread(fullName, null);
+        stopTriggerThreads(fullName, null);
     }
 
     public void rename(String oldFullName) {
-        stopTriggerThread(oldFullName);
-        startTriggerThread();
+        stopTriggerThreads(oldFullName);
+        startTriggerThreads();
     }
 
-	private void startTriggerThread() {
+	private void startTriggerThreads() {
 		if (providerUpdated) {
 			log.info("Saving job since messaging provider was migrated...");
 			try {
@@ -237,19 +255,23 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		}
 		try {
 			synchronized(getLock(job.getFullName())) {
-				if (stopTriggerThread(job.getFullName()) == null) {
-					JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
-					if (provider == null) {
-						log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
-								+ providerData.getName() + ". You must update the job configuration. Trigger not started.");
-						return;
-					}
-					CITriggerThread trigger = new CITriggerThread(provider, providerData, job.getFullName());
-					trigger.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
-					trigger.setDaemon(true);
-					trigger.start();
-					log.info("Adding thread: " + trigger.getId());
-					triggerInfo.put(job.getFullName(), trigger);
+				if (stopTriggerThreads(job.getFullName()) == null) {
+				    List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
+				    for (ProviderData pd : providers) {
+				        JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
+				        if (provider == null) {
+				            log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
+				                    + pd.getName() + ". You must update the job configuration. Trigger not started.");
+				            return;
+				        }
+				        CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName());
+				        thread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+				        thread.setDaemon(true);
+				        thread.start();
+				        log.info("Adding thread: " + thread.getId());
+				        threads.add(thread);
+				    }
+					triggerInfo.put(job.getFullName(), threads);
 				}
 			}
 		} catch (Exception e) {
@@ -257,47 +279,62 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		}
 	}
 
-	private CITriggerThread stopTriggerThread(String fullName) {
-	    return stopTriggerThread(fullName, getComparisonThread());
+	private List<CITriggerThread> stopTriggerThreads(String fullName) {
+	    return stopTriggerThreads(fullName, getComparisonThreads());
 	}
 
-    private static CITriggerThread stopTriggerThread(String fullName, CITriggerThread comparisonThread) {
+    private static List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
 		synchronized(getLock(fullName)) {
-			CITriggerThread thread = triggerInfo.get(fullName);
-			if (thread != null) {
+			List<CITriggerThread> threads = triggerInfo.get(fullName);
+			if (threads != null) {
 
 			    // If threads are the same we have start/stop sequence, so don't bother stopping.
-                if (thread.equals(comparisonThread)) {
-                    log.info("Already have thread " + thread.getId() + "...");
-                    return thread;
+			    if (threads.size() == comparisonThreads.size()) {
+			        for (CITriggerThread thread : threads) {
+			            for (int i = 0; i < comparisonThreads.size(); i++) {
+			                if (thread.equals(comparisonThreads.get(i))){
+			                    log.info("Already have thread " + thread.getId() + "...");
+			                    comparisonThreads.remove(i);
+			                    break;
+			                }
+			            }
+			        }
+			        if (comparisonThreads.size() == 0) {
+			            return threads;
+			        }
+			    }
+
+                for (CITriggerThread thread : threads) {
+                    log.info("Stopping thread: " + thread.getId());
+                    try {
+                        int waitCount = 0;
+                        while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
+                            log.info("Thread " + thread.getId() + ": Message Provider is NOT connected AND subscribed. Sleeping 1 sec");
+                            Thread.sleep(1000);
+                            waitCount++;
+                        }
+                        if (waitCount > 60) {
+                            log.warning("Wait time of 60 secs elapsed trying to connect before interrupting...");
+                        }
+                        thread.sendInterrupt();
+                        thread.interrupt();
+                        if (thread.isMessageProviderConnected()) {
+                            log.info("Thread " + thread.getId() + ": Message Provider is connected and subscribed");
+                            log.info("Thread " + thread.getId() + ": trying to join");
+                            thread.join();
+                        } else {
+                            log.warning("Thread " + thread.getId() + " Message Provider is NOT connected AND subscribed;  join!");
+                        }
+                    } catch (Exception e) {
+                        log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
+                    }
                 }
 
-		        log.info("Stopping thread: " + thread.getId());
-		        try {
-		            int waitCount = 0;
-		            while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
-		                log.info("Thread " + thread.getId() + ": Message Provider is NOT connected AND subscribed. Sleeping 1 sec");
-		                Thread.sleep(1000);
-		                waitCount++;
+		        threads = triggerInfo.remove(fullName);
+		        if (threads != null) {
+		            for (CITriggerThread thread : threads) {
+		                log.info("Removed thread: " + thread.getId());
 		            }
-		            if (waitCount > 60) {
-		                log.warning("Wait time of 60 secs elapsed trying to connect before interrupting...");
-		            }
-		            thread.sendInterrupt();
-		            thread.interrupt();
-		            if (thread.isMessageProviderConnected()) {
-		                log.info("Thread " + thread.getId() + ": Message Provider is connected and subscribed");
-		                log.info("Thread " + thread.getId() + ": trying to join");
-		                thread.join();
-		            } else {
-		                log.warning("Thread " + thread.getId() + " Message Provider is NOT connected AND subscribed;  join!");
-		            }
-		        } catch (Exception e) {
-		            log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
-		        }
-		        CITriggerThread thread2 = triggerInfo.remove(fullName);
-		        if (thread2 != null) {
-		            log.info("Removed thread: " + thread2.getId());
 		        }
 		        locks.remove(fullName);
 		        log.info("Removed thread LOCK");
@@ -306,15 +343,19 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		}
     }
 
-    private CITriggerThread getComparisonThread() {
-        if (providerData != null) {
-            JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
-            // We create a new thread here only to be able to
-            // use .equals() to compare.
-            // The thread is never started.
-            CITriggerThread newThread = new CITriggerThread(provider, providerData, job.getFullName());
-            newThread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
-            return newThread;
+    private List<CITriggerThread> getComparisonThreads() {
+        if (providers != null) {
+            List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
+            for (ProviderData pd : providers) {
+                JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
+                // We create a new thread here only to be able to
+                // use .equals() to compare.
+                // The thread is never started.
+                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName());
+                thread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+                threads.add(thread);
+            }
+            return threads;
         }
         return null;
     }
@@ -545,7 +586,18 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 // The provider name is at the root of the JSON object with a key of "" (this
                 // is because the select is not named in dropdownList.jelly). Move that into the
                 // provider data structure and then continue on.
-                jo.getJSONObject("providerData").put("name", jo.remove(""));
+                JSONObject o = jo.getJSONObject("providers");
+                if (o != null) {
+                    if (o.isArray()) {
+                        JSONArray a = jo.getJSONArray("providers");
+                        for (int i = 0; i < a.size(); i++) {
+                            o = a.getJSONObject(i);
+                            o.getJSONObject("providerData").put("name", o.remove(""));
+                        }
+                    } else {
+                        o.getJSONObject("providerData").put("name", o.remove(""));
+                    }
+                }
                 return (CIBuildTrigger)super.newInstance(sr, jo);
             } catch (hudson.model.Descriptor.FormException e) {
                 log.log(Level.SEVERE, "Unable to create new instance.", e);;
