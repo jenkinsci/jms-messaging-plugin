@@ -44,7 +44,16 @@
   <tr>
     <td class="setting-leftspace"><st:nbsp/></td>
     <td colspan="2">
-      <f:repeatable var="provider" name="providers" items="${instance.providers}" add="${%Add provider}">
+      <f:repeatableProperty field="providers" add="${%Add provider}" minimum="1">
+      </f:repeatableProperty>
+    </td>
+  </tr>
+
+<!--
+  <tr>
+    <td class="setting-leftspace"><st:nbsp/></td>
+    <td colspan="2">
+      <f:repeatable field="providers" add="${%Add provider}">
         <table width="100%">
           <rh:dropdownInstanceSelector title="${%Messaging Provider}"
                                        field="providerData"
@@ -60,5 +69,6 @@
       </f:repeatable>
     </td>
   </tr>
+  -->
   
 </j:jelly>
