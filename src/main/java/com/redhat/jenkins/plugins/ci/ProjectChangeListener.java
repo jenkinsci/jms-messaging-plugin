@@ -7,6 +7,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.listeners.ItemListener;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 import jenkins.model.ParameterizedJobMixIn;
@@ -26,7 +27,7 @@ public class ProjectChangeListener extends ItemListener {
     public void onLocationChanged (Item item, String oldFullName, String newFullName) {
         if (item instanceof Job) {
             // Rename has already happened, and trigger is attached to item.
-            CIBuildTrigger cibt = ParameterizedJobMixIn.getTrigger((Job)item, CIBuildTrigger.class);
+            CIBuildTrigger cibt = ParameterizedJobMixIn.getTrigger((Job<?, ?>)item, CIBuildTrigger.class);
             if (cibt != null) {
                 // Unsubscribe with old name and re-subscribe with new name (item has new name already).
                 cibt.rename(oldFullName);
@@ -40,21 +41,21 @@ public class ProjectChangeListener extends ItemListener {
         CIBuildTrigger cibt = CIBuildTrigger.findTrigger(item.getFullName());
         if (cibt != null) {
             if (item instanceof AbstractProject) {
-                AbstractProject project = (AbstractProject) item;
-                CITriggerThread triggerThread = CIBuildTrigger.triggerInfo.get(item.getFullName());
-                if (triggerThread != null) {
-                    log.info("Getting thread: " + triggerThread.getId());
+                AbstractProject<?, ?> project = (AbstractProject<?, ?>) item;
+                List<CITriggerThread> triggerThreads = CIBuildTrigger.triggerInfo.get(item.getFullName());
+                if (triggerThreads != null) {
+                    log.info("Getting trigger threads.");
                 }
-                if (triggerThread != null && project.isDisabled()) {
+                if (triggerThreads != null && project.isDisabled()) {
                     // there is a trigger thread AND it is disabled. we stop it.
                     log.info("Job " + item.getFullName() + " may have been previously been enabled." +
-                            " But now disabled. Attempting to stop Trigger Thread...");
+                            " But now disabled. Attempting to stop trigger thread(s)...");
                     CIBuildTrigger.force(item.getFullName());
                 } else {
-                    if (triggerThread == null && !project.isDisabled()) {
+                    if (triggerThreads == null && !project.isDisabled()) {
                         // Job may have been enabled. Let's start the trigger thread.
                         log.info("Job " + item.getFullName() + " may have been previously been disabled." +
-                                " Attempting to start Trigger Thread...");
+                                " Attempting to start trigger thread(s)...");
                         cibt.start((BuildableItem) item, false);
                     }
                 }
