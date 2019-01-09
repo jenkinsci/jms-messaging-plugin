@@ -198,7 +198,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         //
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        if (provider.verify(data.getBodyJson(), pd.getChecks())) {
+                        if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                             Map<String, String> params = new HashMap<String, String>();
                             params.put("CI_MESSAGE", data.getBodyJson());
                             trigger(jobname, provider.formatMessage(data), params);
@@ -359,7 +359,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         String body = data.getBodyJson();
 
-                        if (!provider.verify(body, pd.getChecks())) {
+                        if (!provider.verify(body, pd.getChecks(), jobname)) {
                             continue;
                         }
 
