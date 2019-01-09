@@ -72,8 +72,8 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessageWatcher createWatcher() {
-        return new FedMsgMessageWatcher();
+    public JMSMessageWatcher createWatcher(String jobname) {
+        return new FedMsgMessageWatcher(jobname);
     }
 
     @Override

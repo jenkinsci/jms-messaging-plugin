@@ -6,16 +6,19 @@ import hudson.model.Descriptor;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import jenkins.model.Jenkins;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
@@ -61,39 +64,53 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
     }
 
     public abstract JMSMessagingWorker createWorker(ProviderData pdata, String jobname);
-    public abstract JMSMessageWatcher  createWatcher();
+    public abstract JMSMessageWatcher  createWatcher(String jobname);
 
-    public boolean verify(String json, List<MsgCheck> checks) {
-        if (checks != null && checks.size() > 0) {
-            if (StringUtils.isBlank(json)) {
-                // There are checks, but the json is empty. Must be false.
-                return false;
-            }
-
-            DocumentContext context = JsonPath.parse(json);
-            for (MsgCheck check: checks) {
-                if (!verify(context, check)) {
-                    log.fine("msg check: " + check.toString() + " failed against: " + json);
-                    return false;
-                }
-            }
-            log.fine("All msg checks have passed.");
-        }
-        return true;
-    }
-
-    private boolean verify(DocumentContext context, MsgCheck check) {
-        String aVal = "";
-
-        String field = StringUtils.prependIfMissing(check.getField(), "$.");
-        try {
-            aVal = context.read(field).toString();
-        } catch (PathNotFoundException pnfe) {
-            log.fine(pnfe.getMessage());
+    public boolean verify(String json, List<MsgCheck> checks, String jobname) {
+        if (checks == null || checks.size() == 0) {
+            return true;
+        } else if (StringUtils.isBlank(json)) {
+            // There are checks, but the json is empty. Must be false.
             return false;
         }
-        String eVal = StringUtils.defaultString(check.getExpectedValue());
-        return Pattern.compile(eVal).matcher(aVal).find();
+
+        try {
+            DocumentContext context = null;
+            try {
+            context = JsonPath.parse(json);
+            } catch (InvalidJsonException ije) {
+                log.severe(jobname + ": Unable to parse JSON.\n" + ExceptionUtils.getStackTrace(ije));
+            }
+            if (context != null) {
+                for (MsgCheck check: checks) {
+                    if (!verify(context, check, jobname)) {
+                        log.fine(jobname + ": msg check: " + check.toString() + " failed against JSON:\n" + json);
+                        return false;
+                    }
+                }
+                log.fine(jobname + ": All msg checks have passed.");
+                return true;
+            } else {
+                log.warning(jobname + ": DocumentContext is null.");
+            }
+        } catch (Exception e) {
+            log.severe(jobname + ": Unexpected exception raised in verify.\n" + ExceptionUtils.getStackTrace(e));
+        }
+        return false;
+    }
+
+    private boolean verify(DocumentContext context, MsgCheck check, String jobname) {
+        try {
+            String field = StringUtils.prependIfMissing(check.getField(), "$.");
+            String aVal = Objects.toString(context.read(field), "");
+            String eVal = StringUtils.defaultString(check.getExpectedValue());
+            return Pattern.compile(eVal).matcher(aVal).find();
+        } catch (PathNotFoundException pnfe) {
+            log.fine(jobname + ": " + pnfe.getMessage());
+        } catch (Exception e) {
+            log.severe(jobname + ": Unexpected exception raised in verify.\n" + ExceptionUtils.getStackTrace(e));
+        }
+        return false;
     }
 
     @Override

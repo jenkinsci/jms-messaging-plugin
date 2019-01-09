@@ -154,8 +154,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     @Override
-    public JMSMessageWatcher createWatcher() {
-        return new ActiveMqMessageWatcher();
+    public JMSMessageWatcher createWatcher(String jobname) {
+        return new ActiveMqMessageWatcher(jobname);
     }
 
     public boolean IsMigrationInProgress() {
