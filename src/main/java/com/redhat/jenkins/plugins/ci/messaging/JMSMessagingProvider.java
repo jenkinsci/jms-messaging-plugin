@@ -6,16 +6,19 @@ import hudson.model.Descriptor;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import jenkins.model.Jenkins;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
@@ -64,36 +67,50 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
     public abstract JMSMessageWatcher  createWatcher();
 
     public boolean verify(String json, List<MsgCheck> checks) {
-        if (checks != null && checks.size() > 0) {
-            if (StringUtils.isBlank(json)) {
-                // There are checks, but the json is empty. Must be false.
-                return false;
-            }
-
-            DocumentContext context = JsonPath.parse(json);
-            for (MsgCheck check: checks) {
-                if (!verify(context, check)) {
-                    log.fine("msg check: " + check.toString() + " failed against: " + json);
-                    return false;
-                }
-            }
-            log.fine("All msg checks have passed.");
+        if (checks == null || checks.size() == 0) {
+            return true;
+        } else if (StringUtils.isBlank(json)) {
+            // There are checks, but the json is empty. Must be false.
+            return false;
         }
-        return true;
+
+        try {
+            DocumentContext context = null;
+            try {
+            context = JsonPath.parse(json);
+            } catch (InvalidJsonException ije) {
+                log.severe("Unable to parse JSON.\n" + ExceptionUtils.getStackTrace(ije));
+            }
+            if (context != null) {
+                for (MsgCheck check: checks) {
+                    if (!verify(context, check)) {
+                        log.fine("msg check: " + check.toString() + " failed against: " + json);
+                        return false;
+                    }
+                }
+                log.fine("All msg checks have passed.");
+                return true;
+            } else {
+                log.warning("DocumentContext is null.");
+            }
+        } catch (Exception e) {
+            log.severe("Unexpected exception raised in verify.\n" + ExceptionUtils.getStackTrace(e));
+        }
+        return false;
     }
 
     private boolean verify(DocumentContext context, MsgCheck check) {
-        String aVal = "";
-
-        String field = StringUtils.prependIfMissing(check.getField(), "$.");
         try {
-            aVal = context.read(field).toString();
+            String field = StringUtils.prependIfMissing(check.getField(), "$.");
+            String aVal = Objects.toString(context.read(field), "");
+            String eVal = StringUtils.defaultString(check.getExpectedValue());
+            return Pattern.compile(eVal).matcher(aVal).find();
         } catch (PathNotFoundException pnfe) {
             log.fine(pnfe.getMessage());
-            return false;
+        } catch (Exception e) {
+            log.severe("Unexpected exception raised in verify.\n" + ExceptionUtils.getStackTrace(e));
         }
-        String eVal = StringUtils.defaultString(check.getExpectedValue());
-        return Pattern.compile(eVal).matcher(aVal).find();
+        return false;
     }
 
     @Override
