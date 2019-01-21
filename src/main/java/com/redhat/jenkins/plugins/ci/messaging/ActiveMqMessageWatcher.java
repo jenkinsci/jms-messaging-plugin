@@ -1,7 +1,13 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.utils.PluginUtils;
-import org.apache.activemq.ActiveMQConnectionFactory;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
+
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.jms.Connection;
 import javax.jms.Message;
@@ -9,14 +15,10 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
+import org.apache.activemq.ActiveMQConnectionFactory;
+
+import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
@@ -46,6 +48,10 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
     private static final Logger log = Logger.getLogger(ActiveMqMessageWatcher.class.getName());
     private ActiveMqMessagingProvider activeMqMessagingProvider;
     private String topic;
+
+    public ActiveMqMessageWatcher(String jobname) {
+        super(jobname);
+    }
 
     @Override
     public String watch() {

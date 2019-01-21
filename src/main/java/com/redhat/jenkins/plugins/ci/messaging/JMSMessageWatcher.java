@@ -1,13 +1,15 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 
 import java.util.List;
 
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+
 public abstract class JMSMessageWatcher {
 
+    protected String jobname;
     protected int timeout;
     protected MessagingProviderOverrides overrides;
     protected String selector;
@@ -15,6 +17,10 @@ public abstract class JMSMessageWatcher {
     protected JMSMessagingProvider provider;
     protected EnvVars environment;
     protected TaskListener taskListener;
+
+    public JMSMessageWatcher(String jobname) {
+        this.jobname = jobname;
+    }
 
     public void setTimeout(int timeout) {
         this.timeout = timeout;

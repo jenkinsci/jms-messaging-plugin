@@ -306,7 +306,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             Message m = subscriber.receive(timeoutInMs); // In milliseconds!
             if (m != null) {
-                if (provider.verify(getMessageContent(m), pd.getChecks())) {
+                if (provider.verify(getMessageContent(m), pd.getChecks(), jobname)) {
                     process(jobname, m);
                 }
             } else {
