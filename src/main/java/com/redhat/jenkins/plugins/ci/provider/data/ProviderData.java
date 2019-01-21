@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;

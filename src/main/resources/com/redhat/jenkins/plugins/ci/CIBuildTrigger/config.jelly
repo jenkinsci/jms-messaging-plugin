@@ -44,8 +44,11 @@
   <tr>
     <td class="setting-leftspace"><st:nbsp/></td>
     <td colspan="2">
-      <f:repeatableProperty field="providers" add="${%Add provider}" minimum="1">
-      </f:repeatableProperty>
+      <!--<f:repeatable field="providers" add="${%Add provider}" minimum="1">-->
+        <!--<f:dropdownList name="providers" title="Fruits">-->
+
+        <!--</f:dropdownList>-->
+      <!--</f:repeatable>-->
     </td>
   </tr>
 

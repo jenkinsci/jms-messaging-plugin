@@ -145,7 +145,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         this.noSquash = noSquash;
     }
 
-    public List<ProviderData> getProviders() {
+    public List<? extends ProviderData> getProviders() {
         return providers;
     }
 
