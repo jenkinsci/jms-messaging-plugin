@@ -90,7 +90,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>3.0</version>
+            <version>3.2</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -104,6 +104,10 @@
                 <exclusion>
                     <groupId>commons-io</groupId>
                     <artifactId>commons-io</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -183,11 +187,11 @@
             <version>9.2.15.v20160210</version>
             <scope>test</scope>
         </dependency>
-    -->
+        -->
         <dependency>
             <groupId>org.jenkins-ci</groupId>
             <artifactId>acceptance-test-harness</artifactId>
-            <version>1.60</version>
+            <version>1.63</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
