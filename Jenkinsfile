@@ -5,19 +5,8 @@ node('docker') {
     /* Grab our source for this build */
     checkout scm
 
-    String containerArgs = '-v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.m2:/var/maven/.m2'
+    String containerArgs = '-v /var/run/docker.sock:/var/run/docker.sock'
     stage('Build') {
-        /* Performing some clever trickery to map our ~/.m2 into the container */
-
-        /* Make sure our directory is there, if Docker creates it, it gets owned by 'root' */
-        sh 'mkdir -p $HOME/.m2'
-
-        //check
-        docker.image('maven:3.5.0').inside(containerArgs) {
-            timestamps {
-                sh 'mvn -B -U -e -Dmaven.test.failure.ignore=true -Duser.home=/var/maven clean install -DskipTests'
-            }
-        }
         def uid = sh(script: 'id -u', returnStdout: true).trim()
         def gid = sh(script: 'id -g', returnStdout: true).trim()
 
@@ -25,14 +14,13 @@ node('docker') {
         retry(3) {
             docker.build('jenkins/ath', buildArgs)
         }
-
     }
 
     stage('Test') {
         docker.image('jenkins/ath').inside(containerArgs) {
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
-                mvn test -Dmaven.test.failure.ignore=true -Duser.home=/var/maven -DElasticTime.factor=2 -Djenkins.version=2.73.3 -DforkCount=1 -B
+                mvn test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.73.3 -DforkCount=1 -B
             '''
         }
     }
@@ -40,6 +28,6 @@ node('docker') {
     stage('Archive') {
         junit 'target/surefire-reports/**/*.xml'
         archiveArtifacts artifacts: 'target/**/jms-messaging.hpi', fingerprint: true
-        archiveArtifacts artifacts: 'target/diagnostics/**'
+        archiveArtifacts artifacts: 'target/diagnostics/**', allowEmptyArchive: true
     }
 }
