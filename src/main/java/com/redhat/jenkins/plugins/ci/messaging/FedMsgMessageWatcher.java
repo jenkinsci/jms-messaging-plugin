@@ -50,6 +50,10 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
     private FedMsgMessagingProvider fedMsgMessagingProvider;
     private boolean interrupted;
 
+    public FedMsgMessageWatcher(String jobname) {
+        super(jobname);
+    }
+
     @Override
     public String watch() {
 
@@ -91,7 +95,7 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
 
-                        if (!provider.verify(data.getBodyJson(), checks)) {
+                        if (!provider.verify(data.getBodyJson(), checks, jobname)) {
                             continue;
                         }
                         return data.getBodyJson();
