@@ -57,7 +57,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private final FedMsgMessagingProvider provider;
 
-    public static final String DEFAULT_PREFIX = "org.fedoraproject";
+    public static final String DEFAULT_TOPIC = "org.fedoraproject";
 
     private ZMQ.Context context;
     private ZMQ.Poller poller;
@@ -434,6 +434,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean isBeingInterrupted() {
         return interrupt;
+    }
+
+    @Override
+    public String getDefaultTopic() {
+        return DEFAULT_TOPIC;
     }
 
 }
