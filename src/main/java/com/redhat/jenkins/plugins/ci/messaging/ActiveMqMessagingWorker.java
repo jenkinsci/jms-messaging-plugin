@@ -78,6 +78,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     private final ActiveMqMessagingProvider provider;
 
+    public static final String DEFAULT_TOPIC = "VirtualTopic.qe.ci.>";
+
     private Connection connection;
     private MessageConsumer subscriber;
     private String uuid = UUID.randomUUID().toString();
@@ -773,5 +775,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             log.log(Level.SEVERE, "Unhandled exception setting message header '" + key + "'.", e);
         }
         return false;
+    }
+
+    @Override
+    public String getDefaultTopic() {
+        return DEFAULT_TOPIC;
     }
 }

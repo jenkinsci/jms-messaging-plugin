@@ -1,6 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_PREFIX;
+import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_TOPIC;
 
 import java.util.Date;
 import java.util.logging.Level;
@@ -74,7 +74,7 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
         lpoller = lcontext.poller(1);
         lsocket = lcontext.socket(ZMQ.SUB);
 
-        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_PREFIX), environment);
+        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
 
         lsocket.subscribe(topic.getBytes());
         lsocket.setLinger(0);

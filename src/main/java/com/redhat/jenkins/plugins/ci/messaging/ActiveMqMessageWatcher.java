@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.DEFAULT_TOPIC;
 import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
 import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
 
@@ -65,7 +66,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
             log.severe("Unable to get localhost IP address.");
         }
 
-        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), null), environment);
+        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
 
         if (ip != null && activeMqMessagingProvider.getAuthenticationMethod() != null && topic != null && activeMqMessagingProvider.getBroker() != null) {
             log.info("Waiting for message with selector: " + selector);

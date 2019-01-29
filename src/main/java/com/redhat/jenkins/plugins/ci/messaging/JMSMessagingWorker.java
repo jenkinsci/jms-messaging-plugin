@@ -76,6 +76,8 @@ public abstract class JMSMessagingWorker {
 
     public abstract boolean isBeingInterrupted();
 
+    public abstract String getDefaultTopic();
+
     protected String getTopic(JMSMessagingProvider provider) {
         String ltopic;
         if (overrides != null && overrides.getTopic() != null && !overrides.getTopic().isEmpty()) {
@@ -83,7 +85,7 @@ public abstract class JMSMessagingWorker {
         } else if (provider.getTopic() != null && !provider.getTopic().isEmpty()) {
             ltopic = provider.getTopic();
         } else {
-            ltopic = FedMsgMessagingWorker.DEFAULT_PREFIX;
+            ltopic = getDefaultTopic();
         }
         return PluginUtils.getSubstitutedValue(ltopic, null);
     }
