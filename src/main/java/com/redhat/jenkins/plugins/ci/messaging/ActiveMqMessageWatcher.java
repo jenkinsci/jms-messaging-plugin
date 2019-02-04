@@ -1,7 +1,14 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.utils.PluginUtils;
-import org.apache.activemq.ActiveMQConnectionFactory;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.DEFAULT_TOPIC;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
+
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.jms.Connection;
 import javax.jms.Message;
@@ -9,14 +16,10 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
+import org.apache.activemq.ActiveMQConnectionFactory;
+
+import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
@@ -47,6 +50,10 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
     private ActiveMqMessagingProvider activeMqMessagingProvider;
     private String topic;
 
+    public ActiveMqMessageWatcher(String jobname) {
+        super(jobname);
+    }
+
     @Override
     public String watch() {
 
@@ -59,7 +66,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
             log.severe("Unable to get localhost IP address.");
         }
 
-        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), null), environment);
+        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
 
         if (ip != null && activeMqMessagingProvider.getAuthenticationMethod() != null && topic != null && activeMqMessagingProvider.getBroker() != null) {
             log.info("Waiting for message with selector: " + selector);

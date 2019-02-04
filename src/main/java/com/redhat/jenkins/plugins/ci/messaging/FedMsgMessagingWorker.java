@@ -57,7 +57,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private final FedMsgMessagingProvider provider;
 
-    public static final String DEFAULT_PREFIX = "org.fedoraproject";
+    public static final String DEFAULT_TOPIC = "org.fedoraproject";
 
     private ZMQ.Context context;
     private ZMQ.Poller poller;
@@ -198,7 +198,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         //
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        if (provider.verify(data.getBodyJson(), pd.getChecks())) {
+                        if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                             Map<String, String> params = new HashMap<String, String>();
                             params.put("CI_MESSAGE", data.getBodyJson());
                             trigger(jobname, provider.formatMessage(data), params);
@@ -359,7 +359,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         String body = data.getBodyJson();
 
-                        if (!provider.verify(body, pd.getChecks())) {
+                        if (!provider.verify(body, pd.getChecks(), jobname)) {
                             continue;
                         }
 
@@ -434,6 +434,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean isBeingInterrupted() {
         return interrupt;
+    }
+
+    @Override
+    public String getDefaultTopic() {
+        return DEFAULT_TOPIC;
     }
 
 }
