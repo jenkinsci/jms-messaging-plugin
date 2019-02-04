@@ -32,13 +32,10 @@ import java.util.logging.Logger;
 
 import jenkins.model.ParameterizedJobMixIn;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
@@ -79,8 +76,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private transient String selector;
 	private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
 	private transient MessagingProviderOverrides overrides;
-	private transient ProviderData providerData;
 	private Boolean noSquash;
+	@Deprecated // Replaced by providers collection
+	private transient ProviderData providerData;
 	private List<ProviderData> providers;
 
 	public static final transient ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
@@ -128,10 +126,12 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         this.overrides = overrides;
     }
 
+    @Deprecated
     public ProviderData getProviderData() {
         return providerData;
     }
 
+    @Deprecated
     public void setProviderData(ProviderData providerData) {
         this.providerData = providerData;
     }
@@ -150,9 +150,27 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
     }
 
     @DataBoundSetter
-    public void setProviders(List<ProviderData> providers) {
+    public void setProviders(List<ProviderDataEnvelope> envelopes) {
+		ArrayList<ProviderData> providers = new ArrayList<>();
+		for (ProviderDataEnvelope envelope : envelopes) {
+			ProviderData providerData = envelope.providerData;
+			if (providerData == null) {
+				log.warning("Empty provider submitted");
+				continue;
+			}
+			providers.add(providerData);
+		}
         this.providers = providers;
     }
+
+    public static final class ProviderDataEnvelope {
+		private final ProviderData providerData;
+
+		@DataBoundConstructor
+		public ProviderDataEnvelope(ProviderData providerData) {
+			this.providerData = providerData;
+		}
+	}
 
     public static CIBuildTrigger findTrigger(String fullname) {
 		Jenkins jenkins = Jenkins.getInstance();
@@ -561,9 +579,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			return FormValidation.ok();
 		}
 
-	    public CIBuildTriggerDescriptor() {
-	        super(CIBuildTrigger.class);
-	    }
+		public CIBuildTriggerDescriptor() {
+			super(CIBuildTrigger.class);
+		}
 
 		@Override
 		public boolean isApplicable(Item item) {
@@ -580,33 +598,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			return "/plugin/jms-messaging/help-trigger.html";
 		}
 
-        @Override
-        public CIBuildTrigger newInstance(StaplerRequest sr, JSONObject jo) {
-            try {
-                // The provider name is at the root of the JSON object with a key of "" (this
-                // is because the select is not named in dropdownList.jelly). Move that into the
-                // provider data structure and then continue on.
-                JSONObject o = jo.getJSONObject("providers");
-                if (o != null) {
-                    if (o.isArray()) {
-                        JSONArray a = jo.getJSONArray("providers");
-                        for (int i = 0; i < a.size(); i++) {
-                            o = a.getJSONObject(i);
-                            o.getJSONObject("providerData").put("name", o.remove(""));
-                        }
-                    } else {
-                        o.getJSONObject("providerData").put("name", o.remove(""));
-                    }
-                }
-                return (CIBuildTrigger)super.newInstance(sr, jo);
-            } catch (hudson.model.Descriptor.FormException e) {
-                log.log(Level.SEVERE, "Unable to create new instance.", e);;
-            }
-            return null;
-        }
 	}
 
-	static Object getLock(String name) {
+	private static Object getLock(String name) {
 		Object lock = locks.get(name);
 		if (lock == null) {
 			Object newLock = new Object();

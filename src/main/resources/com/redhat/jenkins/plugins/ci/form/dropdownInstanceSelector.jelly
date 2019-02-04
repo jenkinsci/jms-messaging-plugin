@@ -58,6 +58,9 @@ THE SOFTWARE.
         selected="${current.name==pdata.name || (current==null and descriptor==attrs.default)}" staplerClass="${descriptor.clazz.name}"
         lazy="descriptor,it,pdata,${capture},desc">
         <l:ajax>
+          <f:invisibleEntry> <!-- Inject provider name so all config fragments do not have to repeat that -->
+            <input type="hidden" name="name" value="${pdata.name}"/>
+          </f:invisibleEntry>
           <j:set var="instance" value="${current}" />
           <st:include from="${descriptor}" page="${descriptor.configPage}" optional="true" />
         </l:ajax>
