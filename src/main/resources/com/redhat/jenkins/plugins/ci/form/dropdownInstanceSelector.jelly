@@ -49,7 +49,7 @@ THE SOFTWARE.
   <f:dropdownList name="${attrs.field}" title="${attrs.title}" help="${descriptor.getHelpFile(attrs.field)}">
     <d:invokeBody />
 
-    <j:set var="current" value="${instance[attrs.field]}"/>
+    <j:set var="current" value="${instance}"/>
     <j:set var="capture" value="${attrs.capture?:''}" />
     <j:set var="obj" value="${instance}" />
     <j:forEach var="pdata" items="${attrs.instances}" varStatus="loop">
