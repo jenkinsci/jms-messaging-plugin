@@ -28,6 +28,9 @@ THE SOFTWARE.
     <st:attribute name="field" use="required">
       Form field name. Used for databinding.
     </st:attribute>
+    <st:attribute name="current" use="required">
+      Current instance.
+    </st:attribute>
     <st:attribute name="title" use="required">
       Human readable title of this control.
     </st:attribute>
@@ -46,18 +49,19 @@ THE SOFTWARE.
   </st:documentation>
   <f:prepareDatabinding />
 
-  <f:dropdownList name="${attrs.field}" title="${attrs.title}" help="${descriptor.getHelpFile(attrs.field)}">
+  <f:dropdownList name="${attrs.field}" title="${attrs.name}" help="${descriptor.getHelpFile(attrs.field)}">
     <d:invokeBody />
 
-    <j:set var="current" value="${instance[attrs.field]}"/>
     <j:set var="capture" value="${attrs.capture?:''}" />
-    <j:set var="obj" value="${instance}" />
     <j:forEach var="pdata" items="${attrs.instances}" varStatus="loop">
       <j:set var="descriptor" value="${pdata.descriptor}" />
       <f:dropdownListBlock value="${pdata.name}" title="${pdata.name}"
         selected="${current.name==pdata.name || (current==null and descriptor==attrs.default)}" staplerClass="${descriptor.clazz.name}"
         lazy="descriptor,it,pdata,${capture},desc">
         <l:ajax>
+          <f:invisibleEntry> <!-- Inject provider name so all config fragments do not have to repeat that -->
+            <input type="hidden" name="name" value="${pdata.name}"/>
+          </f:invisibleEntry>
           <j:set var="instance" value="${current}" />
           <st:include from="${descriptor}" page="${descriptor.configPage}" optional="true" />
         </l:ajax>
