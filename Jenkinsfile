@@ -20,7 +20,8 @@ node('docker') {
         docker.image('jenkins/ath').inside(containerArgs) {
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
-                mvn install test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.73.3 -DforkCount=1 -B
+                mvn clean install -DskipTests
+                mvn test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.73.3 -DforkCount=1 -B
             '''
         }
     }
