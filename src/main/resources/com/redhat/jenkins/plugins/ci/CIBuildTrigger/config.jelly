@@ -44,7 +44,7 @@
   <tr>
     <td class="setting-leftspace"><st:nbsp/></td>
     <td colspan="2">
-      <f:repeatable field="providers" add="${%Add provider}">
+      <f:repeatable var="instance" name="providers" items="${instance.providers}" add="${%Add provider}">
         <table width="100%">
           <rh:dropdownInstanceSelector title="${%Messaging Provider}"
                                        field="providerData"
