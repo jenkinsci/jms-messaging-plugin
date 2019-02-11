@@ -14,6 +14,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -103,9 +104,13 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
             return "username.jelly";
         }
 
+        @RequirePOST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
                                                @QueryParameter("username") String username,
                                                @QueryParameter("password") String password) throws ServletException {
+
+            checkAdmin();
+
             broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
             Session session = null;
             Connection connection = null;

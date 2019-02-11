@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -139,11 +140,15 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             return "sslcert.jelly";
         }
 
+        @RequirePOST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
                                                @QueryParameter("keystore") String keystore,
                                                @QueryParameter("keypwd") String keypwd,
                                                @QueryParameter("truststore") String truststore,
                                                @QueryParameter("trustpwd") String trustpwd) throws ServletException {
+
+            checkAdmin();
+
             broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
             Connection connection = null;
             Session session = null;
