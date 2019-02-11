@@ -154,6 +154,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithMultipleTopics() throws Exception {
+        _testSimpleCIEventTriggerWithMultipleTopics();
+    }
+
+    @Test
     public void testSimpleCIEventTriggerWithCheckWithTopicOverride() throws Exception {
         _testSimpleCIEventTriggerWithCheckWithTopicOverride();
     }
@@ -323,7 +328,18 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @WithPlugins({"workflow-aggregator", "monitoring", "dumpling"})
     @Test
-    public void testPipelineJobProperties() throws Exception {
+    public void testPipelineJobPropertiesSingleProvider() throws Exception {
+        // For backward compatibility, uses "providerData".
+        _testPipelineJobProperties(true);
+    }
+
+    @WithPlugins({"workflow-aggregator", "monitoring", "dumpling"})
+    @Test
+    public void testPipelineJobPropertiesMultipleProviders() throws Exception {
+        _testPipelineJobProperties(false);
+    }
+
+    public void _testPipelineJobProperties(boolean backwardCompatible) throws Exception {
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
         send.configure();
         StringParameter ciStatusParam = send.addParameter(StringParameter.class);
@@ -338,14 +354,20 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         send.save();
 
         //[expectedValue: number + '0.0234', field: 'CI_STATUS2']
+        String pd = "[$class: 'ActiveMQSubscriberProviderData', name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']";
+        if (backwardCompatible) {
+            pd = "providerData: " + pd;
+        } else {
+            pd = "providerList: [" + pd + "]";
+        }
         WorkflowJob workflowJob = jenkins.jobs.create(WorkflowJob.class);
         workflowJob.script.set("def number = currentBuild.getNumber().toString()\n" +
                 "properties(\n" +
-                "        [\n" +
-                "                pipelineTriggers(\n" +
-                "  [[$class: 'CIBuildTrigger', noSquash: false, providerData: [$class: 'ActiveMQSubscriberProviderData', name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]]\n" +
-                "                )\n" +
-                "        ]\n" +
+                "    [\n" +
+                "        pipelineTriggers(\n" +
+                "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
+                "        )\n" +
+                "    ]\n" +
                 ")\nnode('master') {\n sleep 1\n}");
         workflowJob.save();
         workflowJob.startBuild();
@@ -376,14 +398,20 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
         assertTrue("CIBuildTrigger count is not 1", triggers == 1);
 
+        pd = "[$class: 'ActiveMQSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']";
+        if (backwardCompatible) {
+            pd = "providerData: " + pd;
+        } else {
+            pd = "providerList: [" + pd + "]";
+        }
         workflowJob.configure();
         workflowJob.script.set("def number = currentBuild.getNumber().toString()\n" +
                 "properties(\n" +
-                "        [\n" +
-                "                pipelineTriggers(\n" +
-                "  [[$class: 'CIBuildTrigger', noSquash: false, providerData: [$class: 'ActiveMQSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']]]\n" +
-                "                )\n" +
-                "        ]\n" +
+                "    [\n" +
+                "        pipelineTriggers(\n" +
+                "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
+                "        )\n" +
+                "    ]\n" +
                 ")\nnode('master') {\n sleep 1\n}");
         workflowJob.sandbox.check(false);
         workflowJob.save();

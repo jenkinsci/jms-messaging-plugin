@@ -44,10 +44,9 @@
   <tr>
     <td class="setting-leftspace"><st:nbsp/></td>
     <td colspan="2">
-      <f:repeatable var="provider" items="${instance.providers}" add="${%Add provider}">
+      <f:repeatable var="instance" name="providers" items="${instance.providers}" add="${%Add provider}" minimum="1">
         <table width="100%">
           <rh:dropdownInstanceSelector title="${%Messaging Provider}"
-                                       current="{$provider}"
                                        field="providerData"
                                        instances="${gdescriptor.getSubscriberProviders()}"/>
           <f:entry>

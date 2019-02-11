@@ -79,7 +79,7 @@ public class MigrationTest {
         Trigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
         assertNotNull(trigger);
         CIBuildTrigger cibt = ((CIBuildTrigger)triggerJob.getTrigger(CIBuildTrigger.class));
-        assertTrue(cibt.getProviders() instanceof ActiveMQSubscriberProviderData);
+        assertTrue(cibt.getProviders().get(0) instanceof ActiveMQSubscriberProviderData);
         assertNotNull(cibt.getProviders().get(0).getName());
         assertNotNull(cibt.getSelector());
 

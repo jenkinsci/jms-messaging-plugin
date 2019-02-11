@@ -22,6 +22,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,13 +33,10 @@ import java.util.logging.Logger;
 
 import jenkins.model.ParameterizedJobMixIn;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
@@ -79,8 +77,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private transient String selector;
 	private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
 	private transient MessagingProviderOverrides overrides;
-	private transient ProviderData providerData;
 	private Boolean noSquash;
+	@Deprecated // Replaced by providers collection
+	private transient ProviderData providerData;
 	private List<ProviderData> providers;
 
 	public static final transient ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
@@ -128,12 +127,14 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         this.overrides = overrides;
     }
 
+    @Deprecated
     public ProviderData getProviderData() {
         return providerData;
     }
 
+    @DataBoundSetter
     public void setProviderData(ProviderData providerData) {
-        this.providerData = providerData;
+        setProviderList(Arrays.asList(providerData));
     }
 
     public Boolean getNoSquash() {
@@ -145,14 +146,37 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         this.noSquash = noSquash;
     }
 
-    public List<ProviderData> getProviders() {
+    public List<? extends ProviderData> getProviders() {
         return providers;
     }
 
     @DataBoundSetter
-    public void setProviders(List<ProviderData> providers) {
+    public void setProviders(List<ProviderDataEnvelope> envelopes) {
+        ArrayList<ProviderData> providers = new ArrayList<>();
+        for (ProviderDataEnvelope envelope : envelopes) {
+            ProviderData providerData = envelope.providerData;
+            if (providerData == null) {
+                log.warning("Empty provider submitted");
+                continue;
+            }
+            providers.add(providerData);
+        }
         this.providers = providers;
     }
+
+    @DataBoundSetter
+    public void setProviderList(List<ProviderData> providers) {
+        this.providers = providers;
+    }
+
+    public static final class ProviderDataEnvelope {
+		private final ProviderData providerData;
+
+		@DataBoundConstructor
+		public ProviderDataEnvelope(ProviderData providerData) {
+			this.providerData = providerData;
+		}
+	}
 
     public static CIBuildTrigger findTrigger(String fullname) {
 		Jenkins jenkins = Jenkins.getInstance();
@@ -255,8 +279,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		}
 		try {
 			synchronized(getLock(job.getFullName())) {
-				if (stopTriggerThreads(job.getFullName()) == null) {
+				if (stopTriggerThreads(job.getFullName()) == null && providers != null) {
 				    List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
+				    int instance = 1;
 				    for (ProviderData pd : providers) {
 				        JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
 				        if (provider == null) {
@@ -264,12 +289,11 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				                    + pd.getName() + ". You must update the job configuration. Trigger not started.");
 				            return;
 				        }
-				        CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName());
-				        thread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
-				        thread.setDaemon(true);
+				        CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), instance);
 				        thread.start();
 				        log.info("Adding thread: " + thread.getId());
 				        threads.add(thread);
+				        instance++;
 				    }
 					triggerInfo.put(job.getFullName(), threads);
 				}
@@ -289,7 +313,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			if (threads != null) {
 
 			    // If threads are the same we have start/stop sequence, so don't bother stopping.
-			    if (threads.size() == comparisonThreads.size()) {
+			    if (comparisonThreads != null && threads.size() == comparisonThreads.size()) {
 			        for (CITriggerThread thread : threads) {
 			            for (int i = 0; i < comparisonThreads.size(); i++) {
 			                if (thread.equals(comparisonThreads.get(i))){
@@ -346,14 +370,15 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
     private List<CITriggerThread> getComparisonThreads() {
         if (providers != null) {
             List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
+            int instance = 1;
             for (ProviderData pd : providers) {
                 JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
                 // We create a new thread here only to be able to
                 // use .equals() to compare.
                 // The thread is never started.
-                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName());
-                thread.setName("CIBuildTrigger-" + job.getFullName() + "-" + provider.getClass().getSimpleName());
+                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), instance);
                 threads.add(thread);
+                instance++;
             }
             return threads;
         }
@@ -561,9 +586,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			return FormValidation.ok();
 		}
 
-	    public CIBuildTriggerDescriptor() {
-	        super(CIBuildTrigger.class);
-	    }
+		public CIBuildTriggerDescriptor() {
+			super(CIBuildTrigger.class);
+		}
 
 		@Override
 		public boolean isApplicable(Item item) {
@@ -580,33 +605,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			return "/plugin/jms-messaging/help-trigger.html";
 		}
 
-        @Override
-        public CIBuildTrigger newInstance(StaplerRequest sr, JSONObject jo) {
-            try {
-                // The provider name is at the root of the JSON object with a key of "" (this
-                // is because the select is not named in dropdownList.jelly). Move that into the
-                // provider data structure and then continue on.
-                JSONObject o = jo.getJSONObject("providers");
-                if (o != null) {
-                    if (o.isArray()) {
-                        JSONArray a = jo.getJSONArray("providers");
-                        for (int i = 0; i < a.size(); i++) {
-                            o = a.getJSONObject(i);
-                            o.getJSONObject("providerData").put("name", o.remove(""));
-                        }
-                    } else {
-                        o.getJSONObject("providerData").put("name", o.remove(""));
-                    }
-                }
-                return (CIBuildTrigger)super.newInstance(sr, jo);
-            } catch (hudson.model.Descriptor.FormException e) {
-                log.log(Level.SEVERE, "Unable to create new instance.", e);;
-            }
-            return null;
-        }
 	}
 
-	static Object getLock(String name) {
+	private static Object getLock(String name) {
 		Object lock = locks.get(name);
 		if (lock == null) {
 			Object newLock = new Object();

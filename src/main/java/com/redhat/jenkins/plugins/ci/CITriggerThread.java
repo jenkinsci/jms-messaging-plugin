@@ -46,11 +46,14 @@ public class CITriggerThread extends Thread {
     private final ProviderData providerData;
     private final JMSMessagingWorker messagingWorker;
 
-    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname) {
+    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, int instance) {
         this.messagingProvider = messagingProvider;
         this.providerData = providerData;
         this.jobname = jobname;
         this.messagingWorker = messagingProvider.createWorker(providerData, this.jobname);
+
+        setName("CIBuildTrigger-" + jobname + "-" + instance + "-" + messagingProvider.getClass().getSimpleName());
+        setDaemon(true);
     }
 
     public void sendInterrupt() {

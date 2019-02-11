@@ -24,6 +24,7 @@ import org.junit.Test;
 import com.google.inject.Inject;
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.FedmsgRelayContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
 import com.redhat.jenkins.plugins.ci.integration.po.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 
@@ -112,6 +113,11 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
     @Test
     public void testSimpleCIEventTriggerWithCheckWithTopicOverride() throws Exception {
         _testSimpleCIEventTriggerWithCheckWithTopicOverride();
+    }
+
+    @Test
+    public void testSimpleCIEventTriggerWithMultipleTopics() throws Exception {
+        _testSimpleCIEventTriggerWithMultipleTopics();
     }
 
     @Test
@@ -243,9 +249,10 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         jobA.configure();
         jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("org.fedoraproject.dev.logger.log");
-        CIEventTrigger.MsgCheck repoCheck = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("org.fedoraproject.dev.logger.log");
+        CIEventTrigger.MsgCheck repoCheck = pd.addMsgCheck();
         repoCheck.expectedValue.set(packages);
         repoCheck.field.set("$.commit.repo");
         jobA.save();
@@ -347,9 +354,10 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         jobA.configure();
         jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("org.fedoraproject.dev.logger.log");
-        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("org.fedoraproject.dev.logger.log");
+        CIEventTrigger.MsgCheck check = pd.addMsgCheck();
         check.expectedValue.set(".+compose_id.+message.+");
         check.field.set("compose");
         jobA.save();
