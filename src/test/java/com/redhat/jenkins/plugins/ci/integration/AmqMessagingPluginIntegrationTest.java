@@ -154,6 +154,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithMultipleTopics() throws Exception {
+        _testSimpleCIEventTriggerWithMultipleTopics();
+    }
+
+    @Test
     public void testSimpleCIEventTriggerWithCheckWithTopicOverride() throws Exception {
         _testSimpleCIEventTriggerWithCheckWithTopicOverride();
     }

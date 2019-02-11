@@ -117,7 +117,7 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     }
 
     @Extension
-    public static class FedMsgSubscriberProviderDataDescriptor extends ProviderDataDescriptor {
+    public static class FedMsgSubscriberProviderDataDescriptor extends FedMsgProviderDataDescriptor {
 
         @Override
         public String getDisplayName() {

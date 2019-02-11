@@ -32,11 +32,8 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 @Describable("CI event")
 public class CIEventTrigger extends PageAreaImpl {
     public final Control noSquash = control("noSquash");
-    public final Control providerData = control("/");
-    public final Control overrides = control("providerData/overrides");
-    public final Control topic = control("providerData/overrides/topic");
-    public final Control selector = control("providerData/selector");
-    public final Control checks = control("providerData/repeatable-add");
+    public final Control providers = control("repeatable-add");
+    private int numProviders = 0;
 
     public CIEventTrigger(Job parent) {
         super(parent, createPath(parent));
@@ -50,16 +47,38 @@ public class CIEventTrigger extends PageAreaImpl {
         return "/com-redhat-jenkins-plugins-ci-CIBuildTrigger";
     }
 
-    public MsgCheck addMsgCheck() {
-        checks.click();
-        return new MsgCheck(this, "providerData/checks");
+    public ProviderData addProviderData() {
+        try {
+            if (numProviders > 0) {
+                providers.click();
+            }
+            return new ProviderData(this, "providers" + (numProviders > 0 ? "[" + numProviders + "]" : "") + "/providerData");
+        } finally {
+            numProviders++;
+        }
+    }
+
+    public static class ProviderData extends PageAreaImpl {
+        public final Control overrides = control("overrides");
+        public final Control topic = control("overrides/topic");
+        public final Control selector = control("selector");
+        public final Control checks = control("repeatable-add");
+
+        protected ProviderData(CIEventTrigger area, String path) {
+            super(area, path);
+        }
+
+        public MsgCheck addMsgCheck() {
+            checks.click();
+            return new MsgCheck(this, "checks");
+        }
     }
 
     public static class MsgCheck extends PageAreaImpl {
         public final Control expectedValue = control("expectedValue");
         public final Control field = control("field");
 
-        protected MsgCheck(CIEventTrigger area, String path) {
+        protected MsgCheck(ProviderData area, String path) {
             super(area, path);
         }
     }

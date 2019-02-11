@@ -47,4 +47,7 @@ public abstract class ActiveMQProviderData extends ProviderData {
         TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider)provider).getTopicProvider().getDescriptor();
         return tpd.generatePublisherTopic();
     }
+
+    public abstract static class ActiveMQProviderDataDescriptor extends ProviderDataDescriptor {
+    }
 }

@@ -129,7 +129,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     }
 
     @Extension
-    public static class ActiveMQSubscriberProviderDataDescriptor extends ProviderDataDescriptor {
+    public static class ActiveMQSubscriberProviderDataDescriptor extends ActiveMQProviderDataDescriptor {
 
         @Override
         public String getDisplayName() {

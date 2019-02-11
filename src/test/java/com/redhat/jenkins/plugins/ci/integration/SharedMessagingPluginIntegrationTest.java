@@ -27,6 +27,7 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.MsgCheck;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
@@ -240,7 +241,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.save();
 
         WorkflowJob job = jenkins.jobs.create(WorkflowJob.class);
@@ -261,7 +263,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
@@ -282,7 +285,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -305,7 +309,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo job ran");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        CIEventTrigger.MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
@@ -330,7 +335,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.addShellStep("sleep 3;");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
         ciEvent.noSquash.check();
-        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        CIEventTrigger.MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
@@ -357,7 +363,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("compose LIKE '%compose_id\": \"Fedora-Atomic%'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("compose LIKE '%compose_id\": \"Fedora-Atomic%'");
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -383,7 +390,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.addShellStep("echo job ran");
         jobA.addShellStep("echo CI_MESSAGE = $CI_MESSAGE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        CIEventTrigger.MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        CIEventTrigger.MsgCheck check = pd.addMsgCheck();
         check.field.set("$.compose.compose_id");
         check.expectedValue.set("Fedora-Atomic.+");
         jobA.save();
@@ -407,9 +415,10 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
-        ciEvent.overrides.check();
-        ciEvent.topic.set("otopic");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        pd.overrides.check();
+        pd.topic.set("otopic");
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -434,11 +443,12 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo job ran");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("otopic");
+        pd.overrides.check();
+        pd.topic.set("otopic");
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -462,11 +472,12 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo job ran");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("otopic");
+        pd.overrides.check();
+        pd.topic.set("otopic");
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -485,7 +496,58 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
+}
 
+    public void _testSimpleCIEventTriggerWithMultipleTopics() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo $CI_MESSAGE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+
+        ProviderData pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("topic1");
+        MsgCheck check = pd.addMsgCheck();
+        check.field.set("my-topic");
+        check.expectedValue.set("topic1");
+
+        pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("topic2");
+        check = pd.addMsgCheck();
+        check.field.set("my-topic");
+        check.expectedValue.set("topic2");
+
+        jobA.save();
+
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierBuildStep notifier1 = jobB.addBuildStep(CINotifierBuildStep.class);
+        notifier1.overrides.check();
+        notifier1.topic.set("topic1");
+        notifier1.messageContent.set("{ \"my-topic\" : \"topic1\" }");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("topic1"));
+
+        FreeStyleJob jobC = jenkins.jobs.create();
+        jobC.configure();
+        CINotifierBuildStep notifier2 = jobC.addBuildStep(CINotifierBuildStep.class);
+        notifier2.overrides.check();
+        notifier2.topic.set("topic2");
+        notifier1.messageContent.set("{ \"my-topic\" : \"topic2\" }");
+        jobC.save();
+        jobC.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("topic2"));
     }
 
     public void _testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic() {
@@ -493,9 +555,10 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("org.fedoraproject.my-topic");
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("org.fedoraproject.my-topic");
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.save();
         // Allow for connection
         elasticSleep(1000);
@@ -524,9 +587,10 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo job ran");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("org.fedoraproject.my-topic");
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("org.fedoraproject.my-topic");
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
@@ -555,7 +619,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done'");
         StringParameter ciStatusParam = jobA.addParameter(StringParameter.class);
         ciStatusParam.setName("PARAMETER");
         ciStatusParam.setDefault("bad parameter value");
@@ -591,7 +656,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done'");
 
         // We are only checking that this shows up in the console output.
         jobA.addShellStep("echo $MESSAGE_HEADERS");
@@ -655,7 +721,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.save();
 
         FreeStyleJob jobB = jenkins.jobs.create();
@@ -679,7 +746,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
@@ -727,9 +795,10 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("$MY_TOPIC_ID");
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("$MY_TOPIC_ID");
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.save();
 
         FreeStyleJob jobB = jenkins.jobs.create();
@@ -779,9 +848,10 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.configure();
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.overrides.check();
-        ciEvent.topic.set("$MY_TOPIC_ID");
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        pd.overrides.check();
+        pd.topic.set("$MY_TOPIC_ID");
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
@@ -908,7 +978,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.save();
         elasticSleep(1000);
 
@@ -922,7 +993,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.save();
@@ -938,7 +1010,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
         jobA.disable();
         jobA.save();
         elasticSleep(1000);
@@ -968,7 +1041,8 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.configure();
         jobA.addShellStep("echo job ran");
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        MsgCheck check = ciEvent.addMsgCheck();
+        ProviderData pd = ciEvent.addProviderData();
+        MsgCheck check = pd.addMsgCheck();
         check.field.set(MESSAGE_CHECK_FIELD);
         check.expectedValue.set(MESSAGE_CHECK_VALUE);
         jobA.disable();

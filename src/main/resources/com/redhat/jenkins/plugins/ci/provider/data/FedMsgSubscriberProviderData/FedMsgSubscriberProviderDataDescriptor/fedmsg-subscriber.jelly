@@ -46,7 +46,7 @@
       </f:optionalBlock>
     </table>
     <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
-        <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}">
+        <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}" minimum="0">
           <table width="100%">
             <f:entry title="${%Field}">
               <f:textbox name="checks.field" value="${check.field}"
