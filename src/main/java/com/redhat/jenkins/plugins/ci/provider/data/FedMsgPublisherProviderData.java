@@ -7,6 +7,7 @@ import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -98,6 +99,7 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
     }
 
     @Extension
+    @Symbol("fedmsgPublisher")
     public static class FedMsgPublisherProviderDataDescriptor extends FedMsgProviderDataDescriptor {
 
         @Override

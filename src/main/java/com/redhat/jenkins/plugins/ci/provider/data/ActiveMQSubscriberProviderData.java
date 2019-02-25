@@ -11,6 +11,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -129,6 +130,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     }
 
     @Extension
+    @Symbol("activeMQSubscriber")
     public static class ActiveMQSubscriberProviderDataDescriptor extends ActiveMQProviderDataDescriptor {
 
         @Override

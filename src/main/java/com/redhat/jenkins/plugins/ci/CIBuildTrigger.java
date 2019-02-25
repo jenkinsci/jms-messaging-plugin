@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import jenkins.model.ParameterizedJobMixIn;
 import jenkins.model.Jenkins;
 
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -575,7 +576,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	    return (CIBuildTriggerDescriptor) Jenkins.getInstance().getDescriptor(getClass());
 	}
 
-    @Extension
+    @Extension @Symbol("ciBuildTrigger")
 	public static class CIBuildTriggerDescriptor extends TriggerDescriptor {
 
 		public FormValidation doCheckField(@QueryParameter String value) {
