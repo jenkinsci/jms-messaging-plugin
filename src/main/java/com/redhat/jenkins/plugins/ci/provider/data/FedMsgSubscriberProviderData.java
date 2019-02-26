@@ -48,7 +48,6 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
-    private MessagingProviderOverrides overrides;
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private String variable;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
