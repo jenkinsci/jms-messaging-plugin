@@ -284,6 +284,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic();
     }
 
+    @Test
+    public void testSimpleCIEventTriggerWithCheckWithTopicOverrideAndRestart() throws Exception {
+        _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndRestart();
+    }
+
     @Before
     public void setUp() throws Exception {
         amq = docker.get();

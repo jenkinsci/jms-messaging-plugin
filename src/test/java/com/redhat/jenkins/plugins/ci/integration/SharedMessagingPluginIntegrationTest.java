@@ -457,6 +457,37 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
+    public void _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndRestart() throws Exception {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo job ran");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        MsgCheck check = ciEvent.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        ciEvent.overrides.check();
+        ciEvent.topic.set("otopic");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        jenkins.restart();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
+
+    }
+
     public void _testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic() {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();

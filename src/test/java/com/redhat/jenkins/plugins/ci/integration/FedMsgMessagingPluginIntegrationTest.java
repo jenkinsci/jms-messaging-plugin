@@ -119,6 +119,11 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic();
     }
 
+    @Test
+    public void testSimpleCIEventTriggerWithCheckWithTopicOverrideAndRestart() throws Exception {
+        _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndRestart();
+    }
+
     @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithCheckOnPipelineJob() throws Exception {
