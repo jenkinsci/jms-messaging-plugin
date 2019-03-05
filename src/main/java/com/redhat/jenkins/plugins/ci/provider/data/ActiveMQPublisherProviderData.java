@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import com.redhat.utils.MessageUtils;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
@@ -39,8 +40,6 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
  */
 public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
-
-    public static final MESSAGE_TYPE DEFAULT_MESSAGE_TYPE = MESSAGE_TYPE.Custom;
 
     private MESSAGE_TYPE messageType;
     private String messageProperties;
@@ -146,12 +145,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         }
 
         public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
-            MESSAGE_TYPE current = MESSAGE_TYPE.fromString(messageType);
-            ListBoxModel items = new ListBoxModel();
-            for (MESSAGE_TYPE t : MESSAGE_TYPE.values()) {
-                items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
-            }
-            return items;
+            return MessageUtils.doFillMessageTypeItems(messageType);
         }
 
         public MESSAGE_TYPE getDefaultMessageType() {

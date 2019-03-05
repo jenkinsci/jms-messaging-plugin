@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.redhat.utils.MessageUtils;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.TaskListener;
@@ -12,6 +13,7 @@ import java.util.concurrent.Future;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
+import hudson.util.ListBoxModel;
 import jenkins.util.Timer;
 
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
@@ -34,6 +36,9 @@ import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
+import org.kohsuke.stapler.QueryParameter;
+
+import static com.redhat.jenkins.plugins.ci.provider.data.ProviderData.DEFAULT_MESSAGE_TYPE;
 
 /*
  * The MIT License
@@ -226,5 +231,19 @@ public class CIMessageSenderStep extends Step {
         public String getDisplayName() {
             return Messages.MessageNotifier();
         }
+
+        public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
+            return MessageUtils.doFillMessageTypeItems(messageType);
+        }
+
+        public ListBoxModel doFillProviderNameItems() {
+            return MessageUtils.doFillProviderNameItems();
+        }
+
+
+        public MESSAGE_TYPE getDefaultMessageType() {
+            return DEFAULT_MESSAGE_TYPE;
+        }
+
     }
 }

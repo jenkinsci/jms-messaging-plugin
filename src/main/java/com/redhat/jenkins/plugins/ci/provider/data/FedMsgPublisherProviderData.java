@@ -1,12 +1,15 @@
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import com.redhat.utils.MessageUtils;
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
@@ -113,6 +116,14 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
                     mpo,
                     jo.getString("messageContent"),
                     jo.getBoolean("failOnError"));
+        }
+
+        public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
+            return MessageUtils.doFillMessageTypeItems(messageType);
+        }
+
+        public MessageUtils.MESSAGE_TYPE getDefaultMessageType() {
+            return DEFAULT_MESSAGE_TYPE;
         }
 
         public String getConfigPage() {
