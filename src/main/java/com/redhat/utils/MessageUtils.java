@@ -1,5 +1,6 @@
 package com.redhat.utils;
 
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
@@ -11,6 +12,7 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import hudson.util.ListBoxModel;
 
 /*
  * The MIT License
@@ -40,6 +42,23 @@ public class MessageUtils {
     private static final Logger log = Logger.getLogger(MessageUtils.class.getName());
 
     public static final String JSON_TYPE = "application/json";
+
+    public static ListBoxModel doFillMessageTypeItems(String messageType) {
+        MESSAGE_TYPE current = MESSAGE_TYPE.fromString(messageType);
+        ListBoxModel items = new ListBoxModel();
+        for (MESSAGE_TYPE t : MESSAGE_TYPE.values()) {
+            items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
+        }
+        return items;
+    }
+
+    public static ListBoxModel doFillProviderNameItems() {
+        ListBoxModel items = new ListBoxModel();
+        for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+            items.add(provider.getName());
+        }
+        return items;
+    }
 
     public static enum MESSAGE_TYPE {
         CodeQualityChecksDone("code-quality-checks-done"),

@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.redhat.utils.MessageUtils;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
@@ -203,11 +204,7 @@ public class CIMessageSubscriberStep extends Step {
     public static class DescriptorImpl extends StepDescriptor {
 
         public ListBoxModel doFillProviderNameItems() {
-            ListBoxModel items = new ListBoxModel();
-            for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
-                items.add(provider.getName());
-            }
-            return items;
+            return MessageUtils.doFillProviderNameItems();
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
