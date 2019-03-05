@@ -46,19 +46,19 @@ THE SOFTWARE.
   </st:documentation>
   <f:prepareDatabinding />
 
-  <f:dropdownList name="${attrs.field}" title="${attrs.title}" help="${descriptor.getHelpFile(attrs.field)}">
+  <f:dropdownList name="${attrs.field}" title="${attrs.name}" help="${descriptor.getHelpFile(attrs.field)}">
     <d:invokeBody />
 
-    <j:set var="current" value="${instance[attrs.field]}"/>
     <j:set var="capture" value="${attrs.capture?:''}" />
-    <j:set var="obj" value="${instance}" />
     <j:forEach var="pdata" items="${attrs.instances}" varStatus="loop">
       <j:set var="descriptor" value="${pdata.descriptor}" />
       <f:dropdownListBlock value="${pdata.name}" title="${pdata.name}"
-        selected="${current.name==pdata.name || (current==null and descriptor==attrs.default)}" staplerClass="${descriptor.clazz.name}"
+        selected="${instance.name==pdata.name || (instance==null and descriptor==attrs.default)}" staplerClass="${descriptor.clazz.name}"
         lazy="descriptor,it,pdata,${capture},desc">
         <l:ajax>
-          <j:set var="instance" value="${current}" />
+          <f:invisibleEntry> <!-- Inject provider name so all config fragments do not have to repeat that -->
+            <input type="hidden" name="name" value="${pdata.name}"/>
+          </f:invisibleEntry>
           <st:include from="${descriptor}" page="${descriptor.configPage}" optional="true" />
         </l:ajax>
       </f:dropdownListBlock>

@@ -1,11 +1,15 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
-import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import static java.lang.StrictMath.abs;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+
 import org.jenkinsci.test.acceptance.docker.Docker;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
@@ -16,15 +20,13 @@ import org.jenkinsci.test.acceptance.po.Plugin;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-
-import static java.lang.StrictMath.abs;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.google.inject.Inject;
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
+import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 
 /*
  * The MIT License
@@ -108,7 +110,8 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
             jobA.configure();
             jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
             CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-            ciEvent.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+            ProviderData pd = ciEvent.addProviderData();
+            pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
             jobA.save();
             jobs.add(jobA);
         }

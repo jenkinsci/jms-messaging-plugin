@@ -95,7 +95,7 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
     }
 
     @Extension
-    public static class FedMsgPublisherProviderDataDescriptor extends ProviderDataDescriptor {
+    public static class FedMsgPublisherProviderDataDescriptor extends FedMsgProviderDataDescriptor {
 
         @Override
         public String getDisplayName() {

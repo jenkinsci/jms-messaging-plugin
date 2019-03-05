@@ -42,4 +42,7 @@ public abstract class FedMsgProviderData extends ProviderData {
     public String getPublisherTopic() {
         return "";
     }
+
+    public abstract static class FedMsgProviderDataDescriptor extends ProviderDataDescriptor {
+    }
 }
