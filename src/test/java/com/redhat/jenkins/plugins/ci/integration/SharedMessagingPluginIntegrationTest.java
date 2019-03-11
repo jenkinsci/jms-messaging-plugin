@@ -4,6 +4,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
 import java.io.IOException;
@@ -839,6 +840,42 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         wait.getLastBuild().shouldSucceed();
         assertThat(wait.getLastBuild().getConsole(), containsString("catch me"));
+    }
+
+    public void _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() {
+        WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
+        wait.script.set("node('master') {\n def scott = waitForCIMessage  providerName: 'test'," +
+                " selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"," +
+                " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
+                "}");
+        wait.save();
+        wait.startBuild();
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set(MESSAGE_CHECK_CONTENT);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        wait.getLastBuild().shouldSucceed();
+        assertThat(wait.getLastBuild().getConsole(), containsString("catch me"));
+
+        FreeStyleJob jobC = jenkins.jobs.create();
+        jobC.configure();
+        notifier = jobC.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        notifier.messageContent.set("{\"content\": \"uncaught\"}");
+        jobC.save();
+        jobC.startBuild().shouldSucceed();
+
+        elasticSleep(3000);
+        assertThat(wait.getLastBuild().getNumber(), is(equalTo(1)));
+        assertTrue(false);
     }
 
     public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob send, String expected) {
