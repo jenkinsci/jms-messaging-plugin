@@ -875,7 +875,6 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         elasticSleep(3000);
         assertThat(wait.getLastBuild().getNumber(), is(equalTo(1)));
-        assertTrue(false);
     }
 
     public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob send, String expected) {
