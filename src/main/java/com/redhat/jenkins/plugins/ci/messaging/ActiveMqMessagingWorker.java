@@ -722,7 +722,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 sb.append("\n");
             }
 
-            sb.append("Message Content:\n");
+            sb.append("Message Body:\n");
             sb.append(getMessageBody(message));
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unable to format message:", e);
