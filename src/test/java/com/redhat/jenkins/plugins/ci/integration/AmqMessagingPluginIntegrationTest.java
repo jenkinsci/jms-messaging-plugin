@@ -219,6 +219,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @WithPlugins("workflow-aggregator")
     @Test
+    public void testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
+        _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg();
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
         String expected = "scott = abcdefg";

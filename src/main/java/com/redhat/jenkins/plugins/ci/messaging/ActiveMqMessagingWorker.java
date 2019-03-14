@@ -11,6 +11,7 @@ import java.io.StringReader;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.sql.Time;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -243,7 +244,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     String field = e.nextElement();
                     root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                 }
-                return mapper.writer().writeValueAsString(root);
+                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
             } else if (message instanceof TextMessage) {
                 TextMessage tm = (TextMessage) message;
                 return tm.getText();
@@ -308,7 +309,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             Message m = subscriber.receive(timeoutInMs); // In milliseconds!
             if (m != null) {
-                if (provider.verify(getMessageContent(m), pd.getChecks(), jobname)) {
+                if (provider.verify(getMessageBody(m), pd.getChecks(), jobname)) {
                     process(jobname, m);
                 }
             } else {
@@ -516,20 +517,27 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
                     }
 
-                    Message message = consumer.receive((pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES)*60*1000);
-                    if (message != null) {
-                        String value = getMessageBody(message);
-                        if (build != null) {
-                            if (StringUtils.isNotEmpty(pd.getVariable())) {
-                                EnvVars vars = new EnvVars();
-                                vars.put(pd.getVariable(), value);
-                                build.addAction(new CIEnvironmentContributingAction(vars));
+                    long startTime = new Date().getTime();
+                    Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES)*60*1000;
+                    Message message = null;
+                    do {
+                        message = consumer.receive(timeout);
+                        if (message != null) {
+                            String value = getMessageBody(message);
+                            if (provider.verify(value, pd.getChecks(), jobname)) {
+                                if (build != null) {
+                                    if (StringUtils.isNotEmpty(pd.getVariable())) {
+                                        EnvVars vars = new EnvVars();
+                                        vars.put(pd.getVariable(), value);
+                                        build.addAction(new CIEnvironmentContributingAction(vars));
+                                    }
+                                }
+                                log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
+                                listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
+                                return value;
                             }
                         }
-                        log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
-                        listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
-                        return value;
-                    }
+                    } while ((new Date().getTime() - startTime) < timeout && message != null);
                     log.info("Timed out waiting for message!");
                     listener.getLogger().println("Timed out waiting for message!");
                 } catch (Exception e) {
@@ -714,44 +722,12 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 sb.append("\n");
             }
 
-            sb.append("Message Content:\n");
-            sb.append(getMessageContent(message));
+            sb.append("Message Body:\n");
+            sb.append(getMessageBody(message));
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unable to format message:", e);
         }
 
-        return sb.toString();
-    }
-
-    private static String getMessageContent(Message message) {
-        StringBuilder sb = new StringBuilder();
-        try {
-            if (message instanceof TextMessage) {
-                sb.append(((TextMessage) message).getText());
-            } else if (message instanceof MapMessage) {
-                MapMessage mm = (MapMessage) message;
-                ObjectMapper mapper = new ObjectMapper();
-                ObjectNode root = mapper.createObjectNode();
-
-                @SuppressWarnings("unchecked")
-                Enumeration<String> e = mm.getMapNames();
-                while (e.hasMoreElements()) {
-                    String field = e.nextElement();
-                    root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
-                }
-                sb.append(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root));
-            } else if (message instanceof BytesMessage) {
-                BytesMessage bm = (BytesMessage) message;
-                bm.reset();
-                byte[] bytes = new byte[(int) bm.getBodyLength()];
-                bm.readBytes(bytes);
-                sb.append(new String(bytes));
-            } else {
-                sb.append("  Unhandled message type: " + message.getJMSType());
-            }
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Unable to format message:", e);
-        }
         return sb.toString();
     }
 
