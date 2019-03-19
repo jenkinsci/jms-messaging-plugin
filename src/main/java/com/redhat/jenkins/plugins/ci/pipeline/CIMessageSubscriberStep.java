@@ -144,7 +144,9 @@ public class CIMessageSubscriberStep extends Step {
         @Override
         public boolean start() throws Exception {
             if (step.getProviderName() == null) {
-                throw new Exception("providerName not specified!");
+                throw new Exception("Provider name not specified!");
+            } else if (GlobalCIConfiguration.get().getProvider(step.getProviderName()) == null) {
+                throw new Exception("Unrecognized provider name.");
             }
 
             task = Timer.get().submit(new Runnable() {

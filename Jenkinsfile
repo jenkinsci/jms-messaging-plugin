@@ -21,7 +21,7 @@ node('docker') {
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
                 mvn clean install -DskipTests
-                mvn test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.73.3 -DforkCount=1 -B
+                mvn test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.107.3 -DforkCount=1 -B
             '''
         }
     }

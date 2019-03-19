@@ -411,6 +411,12 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         job.startBuild().shouldSucceed();
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testPipelineInvalidProvider() throws Exception {
+        _testPipelineInvalidProvider();
+    }
+
     @SuppressWarnings("unused")
     private void sendFedMsgMessageUsingLogger(String message) throws Exception {
         File privateKey = File.createTempFile("ssh", "key");
