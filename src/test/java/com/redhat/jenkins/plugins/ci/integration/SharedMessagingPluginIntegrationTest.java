@@ -4,7 +4,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
 import java.io.IOException;
@@ -1150,6 +1149,26 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         }
 
         waitingBuild.shouldAbort();
+    }
+
+    public void _testPipelineInvalidProvider() throws Exception {
+        WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
+        send.script.set("node('master') {\n def message = sendCIMessage " +
+                " providerName: 'bogus', " +
+                " messageContent: '', " +
+                " messageProperties: 'CI_STATUS = failed'," +
+                " messageType: 'CodeQualityChecksDone'}\n");
+        send.save();
+        send.startBuild().shouldFail();
+        assertThat(send.getLastBuild().getConsole(), containsString("java.lang.Exception: Unrecognized provider name."));
+
+        WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
+        wait.script.set("node('master') {\n def scott = waitForCIMessage  providerName: 'bogus', " +
+                " selector: " +
+                " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}");
+        wait.save();
+        wait.startBuild().shouldFail();
+        assertThat(wait.getLastBuild().getConsole(), containsString("java.lang.Exception: Unrecognized provider name."));
     }
 
     protected String stringFrom(Process proc) throws InterruptedException, IOException {

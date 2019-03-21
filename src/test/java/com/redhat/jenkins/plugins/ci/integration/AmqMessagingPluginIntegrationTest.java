@@ -444,4 +444,9 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         assertTrue("CIBuildTrigger count is not 1", triggers == 1);
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testPipelineInvalidProvider() throws Exception {
+        _testPipelineInvalidProvider();
+    }
 }
