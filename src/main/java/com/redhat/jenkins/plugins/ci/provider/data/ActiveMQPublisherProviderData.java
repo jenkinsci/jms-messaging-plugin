@@ -7,6 +7,7 @@ import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -122,6 +123,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     }
 
     @Extension
+    @Symbol("activeMQPublisher")
     public static class ActiveMQPublisherProviderDataDescriptor extends ActiveMQProviderDataDescriptor {
 
         @Override
