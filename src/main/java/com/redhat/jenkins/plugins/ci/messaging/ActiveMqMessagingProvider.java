@@ -117,7 +117,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public Descriptor<JMSMessagingProvider> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(ActiveMqMessagingProviderDescriptor.class);
+        return Jenkins.get().getDescriptorByType(ActiveMqMessagingProviderDescriptor.class);
     }
 
     public String getBroker() {
@@ -168,7 +168,6 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     @Extension
     public static class ActiveMqMessagingProviderDescriptor extends MessagingProviderDescriptor {
-        private final Logger log = Logger.getLogger(ActiveMqMessagingProviderDescriptor.class.getName());
 
         @Override
         public String getDisplayName() {

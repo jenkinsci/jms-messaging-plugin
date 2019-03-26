@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.jenkinsci.test.acceptance.docker.Docker;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
@@ -20,6 +21,7 @@ import org.jenkinsci.test.acceptance.po.Plugin;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
@@ -174,6 +176,76 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         waitForNoAMQTaskThreads();
     }
 
+    @Test
+    public void testInvalidJMSSelector() throws Exception {
+        // Test setting a valid JMS selector, then fixing it, and make sure threads are handled correctly.
+
+        FreeStyleJob jobA = jenkins.jobs.create(FreeStyleJob.class, "receiver");
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE 'code-quality-checks-done' and CI_STATUS = 'failed'");  // Missing '='; invalid syntax.
+        jobA.apply();
+        elasticSleep(5000);
+
+        List<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
+        assertTrue("Trigger threads invalid syntax size", ids1.size() == 1);
+
+        //Now fix the selector.
+        jobA.configure();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.save();
+        elasticSleep(5000);
+
+        List<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
+        assertTrue("Trigger threads valid selector size", ids2.size() == 1);
+        assertTrue("Trigger threads new thread created", ids1.get(0) != ids2.get(0));
+    }
+
+    @Test
+    public void testChangingJMSSelector() throws Exception {
+        // Test changing a selector and make sure threads are handled correctly.
+
+        FreeStyleJob jobA = jenkins.jobs.create(FreeStyleJob.class, "receiver");
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.apply();
+        elasticSleep(5000);
+
+        List<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
+        assertTrue("Trigger threads valud selector size", ids1.size() == 1);
+
+        //Now change the selector.
+        jobA.configure();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'passed'");
+        jobA.save();
+        elasticSleep(5000);
+
+        List<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
+        assertTrue("Trigger threads changed selector size", ids2.size() == 1);
+        assertTrue("Trigger threads new thread created", ids1.get(0) != ids2.get(0));
+    }
+
+    @SuppressWarnings("unchecked")
+    private ArrayList<Integer> getCurrentTriggerThreadIds(String name) {
+        String script = "Set<Integer> ids = new TreeSet<Integer>();\n" +
+                "for (thread in D.runtime.threads.grep { it.name =~ /^CIBuildTrigger-receiver/ }) {\n" +
+                "  ids.add(thread.getId());\n" +
+                "}\n" +
+                "return ids;";
+
+        ObjectMapper m = new ObjectMapper();
+        try {
+            return m.readValue(jenkins.runScript(script), ArrayList.class);
+        } catch (Exception e) {
+        }
+        return new ArrayList<Integer>();
+    }
+
     private int getCurrentAMQThreadCount() {
         String threadCount =
                 jenkins.runScript("println D.runtime.threads.grep { it.name =~ /^ActiveMQ Transport/ }.size()");
@@ -205,8 +277,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         int currentThreadCount = Integer.parseInt(threadCount.trim());
         int counter = 0;
         int MAXWAITTIME = 60;
-        while (currentThreadCount != 0 &&
-                counter < MAXWAITTIME ) {
+        while (currentThreadCount != 0 && counter < MAXWAITTIME ) {
             System.out.println("currentThreadCount != 0");
             System.out.println(currentThreadCount + " != " + 0);
             elasticSleep(1000);

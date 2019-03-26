@@ -81,10 +81,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    if (!isConnected()) {
-                        if (!connect()) {
-                            return false;
-                        }
+                    if (!hasPoller() && !connect()) {
+                        return false;
                     }
                     if (socket == null) {
                         socket = context.socket(ZMQ.SUB);
@@ -234,14 +232,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         return true;
     }
 
-    @Override
-    public boolean isConnected() {
+    public boolean hasPoller() {
         return poller != null;
-    }
-
-    @Override
-    public boolean isConnectedAndSubscribed() {
-        return isConnected();
     }
 
     @Override
@@ -396,7 +388,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         return null;
     }
 
-    @Override
     public void prepareForInterrupt() {
         interrupt = true;
         try {
@@ -431,7 +422,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         interrupt = false;
     }
 
-    @Override
     public boolean isBeingInterrupted() {
         return interrupt;
     }

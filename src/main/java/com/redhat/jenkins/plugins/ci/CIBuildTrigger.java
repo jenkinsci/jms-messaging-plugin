@@ -31,8 +31,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jenkins.model.ParameterizedJobMixIn;
 import jenkins.model.Jenkins;
+import jenkins.model.ParameterizedJobMixIn;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -46,6 +46,8 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.threads.CITriggerThread;
+import com.redhat.threads.CITriggerThreadFactory;
 
 /*
  * The MIT License
@@ -289,7 +291,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				                    + pd.getName() + ". You must update the job configuration. Trigger not started.");
 				            return;
 				        }
-				        CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), instance);
+				        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), instance);
 				        thread.start();
 				        log.info("Adding thread: " + thread.getId());
 				        threads.add(thread);
@@ -331,24 +333,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 for (CITriggerThread thread : threads) {
                     log.info("Stopping thread: " + thread.getId());
                     try {
-                        int waitCount = 0;
-                        while (waitCount <= 60 && !thread.isMessageProviderConnected()) {
-                            log.info("Thread " + thread.getId() + ": Message Provider is NOT connected AND subscribed. Sleeping 1 sec");
-                            Thread.sleep(1000);
-                            waitCount++;
-                        }
-                        if (waitCount > 60) {
-                            log.warning("Wait time of 60 secs elapsed trying to connect before interrupting...");
-                        }
-                        thread.sendInterrupt();
-                        thread.interrupt();
-                        if (thread.isMessageProviderConnected()) {
-                            log.info("Thread " + thread.getId() + ": Message Provider is connected and subscribed");
-                            log.info("Thread " + thread.getId() + ": trying to join");
-                            thread.join();
-                        } else {
-                            log.warning("Thread " + thread.getId() + " Message Provider is NOT connected AND subscribed;  join!");
-                        }
+                        thread.shutdown();
                     } catch (Exception e) {
                         log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
                     }
