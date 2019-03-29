@@ -162,20 +162,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             connectiontmp.setClientID(provider.getName() + "_" + url + "_" + uuid + "_" + jobname);
             connectiontmp.start();
         } catch (JMSException e) {
-            // Make sure the close doesn't clear the interrupt.
-            boolean resetInterrupt = Thread.currentThread().isInterrupted();
-
-            try {
-                if (connectiontmp != null) {
-                    connectiontmp.close();
-                }
-            } catch (JMSException e1) {
-                //swallow the exception
-            }
-
-            if (resetInterrupt && !Thread.currentThread().isInterrupted()) {
-                Thread.currentThread().interrupt();
-            }
+            disconnect(connectiontmp);
             return false;
         }
         log.info("Connection started");
@@ -336,23 +323,27 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
     }
 
-    @Override
-    public void disconnect() {
-        if (connection != null) {
+    private void disconnect(Connection c) {
+        if (c != null) {
             // Make sure the close doesn't clear the interrupt.
             boolean resetInterrupt = Thread.currentThread().isInterrupted();
 
             try {
-                connection.close();
+                c.close();
             } catch (JMSException e) {
             } finally {
-                connection = null;
+                c = null;
             }
 
             if (resetInterrupt && !Thread.currentThread().isInterrupted()) {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    @Override
+    public void disconnect() {
+        disconnect(connection);
     }
 
     @Override

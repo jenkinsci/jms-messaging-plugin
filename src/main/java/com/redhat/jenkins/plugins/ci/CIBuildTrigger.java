@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -86,7 +85,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private List<ProviderData> providers;
 
 	public static final transient ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
-	private transient ReentrantLock lock;
+    public static final transient ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
@@ -281,8 +280,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		try {
-		    getLock();
-			try {
+	        synchronized(getLock(job.getFullName())) {
 				if (stopTriggerThreads(job.getFullName()) == null && providers != null) {
 				    List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
 				    int instance = 1;
@@ -301,8 +299,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				    }
 					triggerInfo.put(job.getFullName(), threads);
 				}
-			} finally {
-			    lock.unlock();
 			}
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Unhandled exception in trigger start.", e);
@@ -314,8 +310,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	}
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
-        getLock();
-		try {
+        synchronized(getLock(fullName)) {
 			List<CITriggerThread> threads = triggerInfo.get(fullName);
 			if (threads != null) {
 
@@ -352,8 +347,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		        }
 			}
 			return null;
-		} finally {
-		    lock.unlock();
 		}
     }
 
@@ -375,11 +368,16 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         return null;
     }
 
-    private void getLock() {
+    private static Object getLock(String name) {
+        Object lock = locks.get(name);
         if (lock == null) {
-            lock = new ReentrantLock();
+            Object newLock = new Object();
+            lock = locks.putIfAbsent(name, newLock);
+            if (lock == null) {
+                lock = newLock;
+            }
         }
-        lock.lock();
+        return lock;
     }
 
     /**
