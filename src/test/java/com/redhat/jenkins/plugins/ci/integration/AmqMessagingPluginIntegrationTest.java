@@ -375,12 +375,9 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "        )\n" +
                 "    ]\n" +
                 ")\nnode('master') {\n sleep 1\n}");
-        System.out.println("GREG DEBUG: about to save");
         workflowJob.save();
-        System.out.println("GREG DEBUG: done save, about to build");
 
         workflowJob.startBuild().shouldSucceed();
-        System.out.println("GREG DEBUG: done build");
         // Allow some time for trigger thread stop/start.
         elasticSleep(2000);
         int ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
@@ -388,11 +385,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         int triggers = getCurrentThreadCountForName("CIBuildTrigger");
         assertTrue("CIBuildTrigger count is 1", triggers == 1);
         workflowJob.configure();
-        System.out.println("GREG DEBUG: about to save");
         workflowJob.save();
-        System.out.println("GREG DEBUG: done save, about to build");
         workflowJob.startBuild().shouldSucceed();
-        System.out.println("GREG DEBUG: done build");
         elasticSleep(2000);
         printThreadsWithName("ActiveMQ.*Task-");
         printThreadsWithName("CIBuildTrigger");

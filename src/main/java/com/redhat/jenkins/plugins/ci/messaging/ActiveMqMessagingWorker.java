@@ -344,6 +344,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public void disconnect() {
         disconnect(connection);
+        connection = null;
     }
 
     @Override

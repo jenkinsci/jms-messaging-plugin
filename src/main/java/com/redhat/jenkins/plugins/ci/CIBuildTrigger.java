@@ -292,8 +292,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				            return;
 				        }
 				        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), instance);
+                        log.info("Starting thread (" + thread.getId() + ") for '" + job.getFullName() + "'.");
 				        thread.start();
-				        log.info("Adding thread: " + thread.getId());
 				        threads.add(thread);
 				        instance++;
 				    }
@@ -331,8 +331,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			    }
 
                 for (CITriggerThread thread : threads) {
-                    log.info("Stopping thread: " + thread.getId());
                     try {
+                        log.info("Stopping thread ("  + thread.getId() + ") for '" + fullName + "'.");
                         thread.shutdown();
                     } catch (Exception e) {
                         log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
@@ -340,11 +340,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 }
 
 		        threads = triggerInfo.remove(fullName);
-		        if (threads != null) {
-		            for (CITriggerThread thread : threads) {
-		                log.info("Removed thread: " + thread.getId());
-		            }
-		        }
+                locks.remove(fullName);
+                log.info("Removed thread lock for '" + fullName + "'.");
 			}
 			return null;
 		}
