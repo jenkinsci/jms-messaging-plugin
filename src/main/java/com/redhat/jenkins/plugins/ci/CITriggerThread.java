@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci;
 
 import hudson.security.ACL;
 
+import java.util.Objects;
 import java.util.logging.Logger;
 
 import org.acegisecurity.context.SecurityContext;
@@ -50,6 +51,7 @@ public class CITriggerThread extends Thread {
         this.messagingProvider = messagingProvider;
         this.providerData = providerData;
         this.jobname = jobname;
+        Objects.requireNonNull(messagingProvider);
         this.messagingWorker = messagingProvider.createWorker(providerData, this.jobname);
 
         setName("CIBuildTrigger-" + jobname + "-" + instance + "-" + messagingProvider.getClass().getSimpleName());

@@ -14,6 +14,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
  * The MIT License
  *
  * Copyright (c) Red Hat, Inc.
+ * Copyright (c) Valentin Titov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +55,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
         return hubAddr;
     }
 
-    public String petHubAddr() {
+    public String petHubAddr() { // FIXME remove method w/ typo
         return pubAddr;
     }
 

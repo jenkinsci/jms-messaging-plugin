@@ -1,5 +1,7 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.redhat.jenkins.plugins.ci.messaging.*;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
 import com.redhat.utils.MessageUtils;
 import hudson.Extension;
 import hudson.Launcher;
@@ -27,10 +29,6 @@ import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
@@ -44,6 +42,7 @@ import static com.redhat.jenkins.plugins.ci.provider.data.ProviderData.DEFAULT_M
  * The MIT License
  *
  * Copyright (c) Red Hat, Inc.
+ * Copyright (c) Valentin Titov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -184,6 +183,12 @@ public class CIMessageSenderStep extends Step {
                             fpd.setMessageContent(step.getMessageContent());
                             fpd.setFailOnError(step.getFailOnError());
                             pd = fpd;
+                        } else if (p instanceof KafkaMessagingProvider) {
+                            KafkaPublisherProviderData _pd = new KafkaPublisherProviderData(step.getProviderName());
+                            _pd.setOverrides(step.getOverrides());
+                            _pd.setMessageContent(step.getMessageContent());
+                            _pd.setFailOnError(step.getFailOnError());
+                            pd = _pd;
                         }
                         CIMessageNotifier notifier = new CIMessageNotifier(pd);
                         StepContext c = getContext();

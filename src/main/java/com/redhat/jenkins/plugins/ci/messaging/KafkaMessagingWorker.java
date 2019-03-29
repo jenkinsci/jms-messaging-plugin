@@ -1,38 +1,38 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.jenkins.plugins.ci.messaging.data.KafkaMessage;
+import com.redhat.jenkins.plugins.ci.provider.data.*;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import lombok.val;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.PluginUtils;
 
 /*
  * The MIT License
- * Copyright (c) Valentin Titov
  *
  * Copyright (c) Red Hat, Inc.
+ * Copyright (c) Valentin Titov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,23 +52,20 @@ import com.redhat.utils.PluginUtils;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class FedMsgMessagingWorker extends JMSMessagingWorker {
+public class KafkaMessagingWorker extends JMSMessagingWorker {
 
-    private static final Logger log = Logger.getLogger(FedMsgMessagingWorker.class.getName());
+    private static final Logger log = Logger.getLogger(KafkaMessagingWorker.class.getName());
 
-    private final FedMsgMessagingProvider provider;
+    private final KafkaMessagingProvider provider;
 
-    public static final String DEFAULT_TOPIC = "org.fedoraproject";
+    static final String DEFAULT_TOPIC = "io.jenkins"; // FIXME
 
-    private ZMQ.Context context;
-    private ZMQ.Poller poller;
-    private ZMQ.Socket socket;
-    private boolean interrupt = false;
+    private boolean interrupt = false; // TODO do we need interrupt for kafka?
 
-    private boolean pollerClosed = false;
+    KafkaConsumer<String, String> consumer;
 
-    public FedMsgMessagingWorker(FedMsgMessagingProvider fedMsgMessagingProvider, MessagingProviderOverrides overrides, String jobname) {
-        this.provider = fedMsgMessagingProvider;
+    public KafkaMessagingWorker(KafkaMessagingProvider kafkaMessagingProvider, MessagingProviderOverrides overrides, String jobname) {
+        this.provider = kafkaMessagingProvider;
         this.overrides = overrides;
         this.jobname = jobname;
     }
@@ -79,25 +76,24 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             return true;
         }
         this.topic = getTopic(provider);
+        log.fine(String.format("subscribe job %s to topic [%s]", jobname, this.topic));
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     if (!isConnected()) {
                         if (!connect()) {
+                            log.fine("Connect failed");
                             return false;
+                        } else {
+                            log.fine("Connect succeded");
                         }
-                    }
-                    if (socket == null) {
-                        socket = context.socket(ZMQ.SUB);
-                        log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
-                        socket.subscribe(this.topic.getBytes());
-                        socket.setLinger(0);
-                        socket.connect(provider.getHubAddr());
-                        poller.register(socket, ZMQ.Poller.POLLIN);
-                        log.info("Successfully subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
                     } else {
-                        log.info("Already subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
+                        log.fine("Already connected");
                     }
+                    log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
+                    consumer.subscribe(Collections.singletonList(this.topic));
+                    log.info("Subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
+
                     return true;
                 } catch (Exception ex) {
 
@@ -138,32 +134,20 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             return;
         }
         try {
-            if (poller != null) {
-                for (Integer i = 0; i < poller.getSize(); i++) {
-                    ZMQ.Socket s = poller.getSocket(i);
-                    poller.unregister(s);
-                    s.disconnect(provider.getHubAddr());
-                    log.info("Un-subscribing job '" + jobname + "' from " + this.topic + " topic.");
-                    socket.unsubscribe(this.topic.getBytes());
-                }
-                socket.close();
-            }
-            if (context != null) {
-                context.term();
+            if (consumer != null) {
+                log.info("Un-subscribing job '" + jobname + "' from " + this.topic + " topic.");
+                consumer.close(); // TODO set timeout
             }
         } catch (Exception e) {
             log.warning(e.getMessage());
         }
-        poller = null;
-        context = null;
-        socket = null;
-        pollerClosed = true;
+        consumer = null;
     }
 
     @Override
     public void receive(String jobname, ProviderData pdata) {
-        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData)pdata;
-        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData)pdata;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
             return;
@@ -190,26 +174,35 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         long lastSeenMessage = new Date().getTime();
         try {
             while ((new Date().getTime() - lastSeenMessage) < timeoutInMs) {
-                if (poller.poll(1000) > 0) {
-                    pollerClosed = false;
-                    if (poller.pollin(0)) {
-                        ZMsg z = ZMsg.recvMsg(poller.getSocket(0));
-                        // Reset timer
-                        lastSeenMessage = new Date().getTime();
-                        //
-                        String json = z.getLast().toString();
-                        FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
+                ConsumerRecords<String, String> records = consumer.poll(1000);
+                val it = records.iterator();
+                if(it.hasNext()) {
+                    val rec = it.next();
+                    log.fine(String.format("kafka message received [%s]", rec.toString()));
+                    log.fine(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(), rec.value()));
+                    lastSeenMessage = new Date().getTime();
+                    String value = rec.value();
+                    if(pd.getChecks().size()>0) { // TODO refactor
+                        KafkaMessage data = mapper.readValue(value, KafkaMessage.class);
+                        if (provider.verify(data.getBody(), pd.getChecks(), jobname)) {
                             Map<String, String> params = new HashMap<String, String>();
-                            params.put("CI_MESSAGE", data.getBodyJson());
+                            params.put(pd.getVariable(), data.getBody());
+                            params.put(pd.DEFAULT_HEADERS_NAME, rec.toString()); // TODO use parametrized name
                             trigger(jobname, provider.formatMessage(data), params);
                         }
+                    } else {
+                        Map<String, String> params = new HashMap<String, String>();
+                        params.put(pd.getVariable(), value);
+                        params.put(pd.DEFAULT_HEADERS_NAME, rec.toString()); // TODO use parametrized name
+                        trigger(jobname, value, params);
                     }
                 } else {
                     if (interrupt) {
                         log.info("We have been interrupted...");
-                        pollerClosed = true;
+                        //pollerClosed = true;
                         break;
+                    } else {
+                        log.fine(String.format("empty topic ", topic));
                     }
                 }
             }
@@ -230,14 +223,17 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean connect() {
-        context = ZMQ.context(1);
-        poller = context.poller(1);
+        // fix for org.apache.kafka.common.config.ConfigException:
+        // Invalid value org.apache.kafka.common.serialization.StringDeserializer for configuration
+        // value.deserializer: Class org.apache.kafka.common.serialization.StringDeserializer could not be found.
+        Thread.currentThread().setContextClassLoader(null);
+        consumer = new KafkaConsumer<>(provider.getConnectionPropertiesProperties());
         return true;
     }
 
     @Override
     public boolean isConnected() {
-        return poller != null;
+        return consumer != null;
     }
 
     @Override
@@ -251,21 +247,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        FedMsgPublisherProviderData pd = (FedMsgPublisherProviderData)pdata;
-        ZMQ.Context context = ZMQ.context(1);
-        ZMQ.Socket sock = context.socket(ZMQ.PUB);
-        sock.setLinger(0);
-        log.fine("pub address: " + provider.getPubAddr());
-        sock.connect(provider.getPubAddr());
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
+        KafkaPublisherProviderData pd = (KafkaPublisherProviderData)pdata;
         String body = "";
         String msgId = "";
-        try {
+        Thread.currentThread().setContextClassLoader(null);
+        try(KafkaProducer<String, String> producer = new KafkaProducer<>(provider.getConnectionPropertiesProperties())) {
 
             EnvVars env = new EnvVars();
             env.putAll(build.getEnvironment(listener));
@@ -275,21 +261,20 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 env.put("BUILD_STATUS", build.getResult().toString());
             }
 
-            FedmsgMessage fm = new FedmsgMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
-                                                 PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
+            String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
+            ProducerRecord<String, String> producerRecord = new ProducerRecord<>(
+                    ltopic,
+                    null,
+                    Instant.now().toEpochMilli(),
+                    UUID.randomUUID().toString(),
+                    PluginUtils.getSubstitutedValue(pd.getMessageContent(), env)
+            );
+            body = producerRecord.value();
+            msgId = producerRecord.key();
 
-            body = fm.toJson(); // Use toString() instead of getBodyJson so that message ID is included and sent.
-            msgId = fm.getMsgId();
-            if (!sock.sendMore(fm.getTopic()) && pd.isFailOnError()) {
-                log.severe("Unhandled exception in perform: Failed to send message (topic)!");
-                return new SendResult(false, msgId, body);
-            }
-            if (!sock.send(body) && pd.isFailOnError()) {
-                log.severe("Unhandled exception in perform: Failed to send message (body)!");
-                return new SendResult(false, msgId, body);
-            }
-            log.fine("JSON message body:\n" + body);
-            listener.getLogger().println("JSON message body:\n" + body);
+            producer.send(producerRecord);
+            log.fine(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
+            listener.getLogger().println(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
 
         } catch (Exception e) {
             if (pd.isFailOnError()) {
@@ -305,43 +290,32 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 listener.error(ExceptionUtils.getStackTrace(e));
                 return new SendResult(true, msgId, body);
             }
-        } finally {
-            sock.close();
-            context.term();
         }
         return new SendResult(true, msgId, body);
     }
 
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData)pdata;
+        KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData)pdata;
         log.info("Waiting for message.");
         listener.getLogger().println("Waiting for message.");
         for (MsgCheck msgCheck: pd.getChecks()) {
             log.info(" with check: " + msgCheck.toString());
             listener.getLogger().println(" with check: " + msgCheck.toString());
         }
-        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
+        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
         log.info(" with timeout: " + timeout);
         listener.getLogger().println(" with timeout: " + timeout);
-
-        ZMQ.Context lcontext = ZMQ.context(1);
-        ZMQ.Poller lpoller = lcontext.poller(1);
-        ZMQ.Socket lsocket = lcontext.socket(ZMQ.SUB);
 
         String ltopic = getTopic(provider);
         try {
             ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
-        } catch (IOException e) {
-            log.warning(e.getMessage());
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             log.warning(e.getMessage());
         }
 
-        lsocket.subscribe(ltopic.getBytes());
-        lsocket.setLinger(0);
-        lsocket.connect(provider.getHubAddr());
-        lpoller.register(lsocket, ZMQ.Poller.POLLIN);
+        KafkaConsumer<String, String> lconsumer = new KafkaConsumer<>(provider.getConnectionPropertiesProperties());
+        lconsumer.subscribe(Collections.singletonList(ltopic));
 
         ObjectMapper mapper = new ObjectMapper();
         long startTime = new Date().getTime();
@@ -350,29 +324,33 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         boolean interrupted = false;
         try {
             while ((new Date().getTime() - startTime) < timeoutInMs) {
-                if (lpoller.poll(1000) > 0) {
-                    if (lpoller.pollin(0)) {
-                        ZMsg z = ZMsg.recvMsg(lpoller.getSocket(0));
 
-                        listener.getLogger().println("Received a message");
-
-                        String json = z.getLast().toString();
-                        FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
-                        String body = data.getBodyJson();
-
+                ConsumerRecords<String, String> records = consumer.poll(1000);
+                val it = records.iterator();
+                if(it.hasNext()) {
+                    val rec = it.next();
+                    listener.getLogger().println(String.format("Received a message: %s", rec.toString()));
+                    //log.fine(String.format("kafka message received [%s]", rec.toString()));
+                    //log.fine(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(), rec.value()));
+                    String body = null;
+                    if(pd.getChecks().size()>0) {
+                        String json = rec.value();
+                        KafkaMessage data = mapper.readValue(json, KafkaMessage.class);
+                        body = data.getBody();
                         if (!provider.verify(body, pd.getChecks(), jobname)) {
                             continue;
                         }
-
-                        if (build != null) {
-                            if (StringUtils.isNotEmpty(pd.getVariable())) {
-                                EnvVars vars = new EnvVars();
-                                vars.put(pd.getVariable(), body);
-                                build.addAction(new CIEnvironmentContributingAction(vars));
-                            }
-                        }
-                        return body;
+                    } else {
+                        body = rec.value();
                     }
+                    if (build != null) {
+                        if (StringUtils.isNotEmpty(pd.getVariable())) {
+                            EnvVars vars = new EnvVars();
+                            vars.put(pd.getVariable(), body);
+                            build.addAction(new CIEnvironmentContributingAction(vars));
+                        }
+                    }
+                    return body;
                 }
             }
             if (interrupted) {
@@ -384,12 +362,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
         } finally {
             try {
-                ZMQ.Socket s = lpoller.getSocket(0);
-                lpoller.unregister(s);
-                s.disconnect(provider.getHubAddr());
-                lsocket.unsubscribe(ltopic.getBytes());
-                lsocket.close();
-                lcontext.term();
+                lconsumer.close(); // TODO set timeout
             } catch (Exception e) {
                 listener.getLogger().println("exception in finally");
             }
@@ -399,42 +372,11 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void prepareForInterrupt() {
-        interrupt = true;
-        try {
-            while (!pollerClosed) {
-                if (!Thread.currentThread().isAlive()) {
-                    log.info("poller not closed yet BUT trigger thread is dead. continuing interrupt");
-                    break;
-                }
-                try {
-                    log.info("poller not closed yet. Sleeping for 1 sec...");
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    // swallow
-                }
-            }
-            if (poller != null) {
-                ZMQ.Socket s = poller.getSocket(0);
-                poller.unregister(s);
-                s.disconnect(provider.getHubAddr());
-                log.info("Un-subscribing job '" + jobname + "' from " + this.topic + " topic.");
-                socket.unsubscribe(this.topic.getBytes());
-                socket.close();
-            }
-            if (context != null) {
-                context.term();
-            }
-        } catch (Exception e) {
-            log.fine(e.getMessage());
-        }
-        poller = null;
-        socket = null;
-        interrupt = false;
     }
 
     @Override
     public boolean isBeingInterrupted() {
-        return interrupt;
+        return false;
     }
 
     @Override

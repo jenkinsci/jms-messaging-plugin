@@ -1,5 +1,7 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.messaging.*;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.BuildableItem;
@@ -38,10 +40,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
@@ -51,6 +49,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
  * The MIT License
  *
  * Copyright (c) Red Hat, Inc.
+ * Copyright (c) Valentin Titov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -218,6 +217,14 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	                } else if (provider instanceof FedMsgMessagingProvider) {
 	                    log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
 	                    FedMsgSubscriberProviderData f = new FedMsgSubscriberProviderData(providerName);
+	                    f.setOverrides(overrides);
+	                    f.setChecks(checks);
+	                    providers.add(f);
+	                    providerUpdated = true;
+	                    saveJob();
+	                } else if (provider instanceof KafkaMessagingProvider) {
+	                    log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+	                    KafkaSubscriberProviderData f = new KafkaSubscriberProviderData(providerName);
 	                    f.setOverrides(overrides);
 	                    f.setChecks(checks);
 	                    providers.add(f);

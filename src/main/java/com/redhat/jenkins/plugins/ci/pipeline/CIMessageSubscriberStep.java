@@ -1,5 +1,7 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.redhat.jenkins.plugins.ci.messaging.*;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
 import hudson.AbortException;
 import hudson.Extension;
@@ -29,10 +31,6 @@ import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
@@ -42,6 +40,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
  * The MIT License
  *
  * Copyright (c) Red Hat, Inc.
+ * Copyright (c) Valentin Titov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -168,6 +167,12 @@ public class CIMessageSubscriberStep extends Step {
                             fpd.setChecks(step.getChecks());
                             fpd.setTimeout(step.getTimeout());
                             pd = fpd;
+                        } else if (p instanceof KafkaMessagingProvider) {
+                            KafkaSubscriberProviderData _pd = new KafkaSubscriberProviderData(step.getProviderName());
+                            _pd.setOverrides(step.getOverrides());
+                            _pd.setChecks(step.getChecks());
+                            _pd.setTimeout(step.getTimeout());
+                            pd = _pd;
                         }
                         CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
                         StepContext c = getContext();
