@@ -1,4 +1,4 @@
-package com.redhat.threads;
+package com.redhat.jenkins.plugins.ci.threads;
 
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,8 +47,8 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.threads.CITriggerThread;
-import com.redhat.threads.CITriggerThreadFactory;
+import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
+import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
 
 /*
  * The MIT License
@@ -85,7 +86,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private List<ProviderData> providers;
 
 	public static final transient ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
-	public static final transient ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
+	private transient ReentrantLock lock;
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
@@ -181,7 +182,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	}
 
     public static CIBuildTrigger findTrigger(String fullname) {
-		Jenkins jenkins = Jenkins.getInstance();
+		Jenkins jenkins = Jenkins.get();
 
 		final Job<?, ?> p = jenkins.getItemByFullName(fullname, Job.class);
 		if (p != null) {
@@ -254,7 +255,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         }
     }
 
-    public static void force(String fullName) {
+    public void force(String fullName) {
         stopTriggerThreads(fullName, null);
     }
 
@@ -280,7 +281,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		try {
-			synchronized(getLock(job.getFullName())) {
+		    getLock();
+			try {
 				if (stopTriggerThreads(job.getFullName()) == null && providers != null) {
 				    List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
 				    int instance = 1;
@@ -299,6 +301,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				    }
 					triggerInfo.put(job.getFullName(), threads);
 				}
+			} finally {
+			    lock.unlock();
 			}
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Unhandled exception in trigger start.", e);
@@ -309,8 +313,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	    return stopTriggerThreads(fullName, getComparisonThreads());
 	}
 
-    private static List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
-		synchronized(getLock(fullName)) {
+    private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
+        getLock();
+		try {
 			List<CITriggerThread> threads = triggerInfo.get(fullName);
 			if (threads != null) {
 
@@ -345,10 +350,10 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 		                log.info("Removed thread: " + thread.getId());
 		            }
 		        }
-		        locks.remove(fullName);
-		        log.info("Removed thread LOCK");
 			}
 			return null;
+		} finally {
+		    lock.unlock();
 		}
     }
 
@@ -368,6 +373,13 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
             return threads;
         }
         return null;
+    }
+
+    private void getLock() {
+        if (lock == null) {
+            lock = new ReentrantLock();
+        }
+        lock.lock();
     }
 
     /**
@@ -557,7 +569,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	@Override
 	public CIBuildTriggerDescriptor getDescriptor() {
-	    return (CIBuildTriggerDescriptor) Jenkins.getInstance().getDescriptor(getClass());
+	    return (CIBuildTriggerDescriptor) Jenkins.get().getDescriptor(getClass());
 	}
 
     @Extension
@@ -590,17 +602,5 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			return "/plugin/jms-messaging/help-trigger.html";
 		}
 
-	}
-
-	private static Object getLock(String name) {
-		Object lock = locks.get(name);
-		if (lock == null) {
-			Object newLock = new Object();
-			lock = locks.putIfAbsent(name, newLock);
-			if (lock == null) {
-				lock = newLock;
-			}
-		}
-		return lock;
 	}
 }

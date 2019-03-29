@@ -24,6 +24,7 @@ import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
+import javax.jms.InvalidSelectorException;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
@@ -115,6 +116,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         log.fine("Already subscribed to '" + this.topic + "' topic with selector: " + selector + " for job '" + jobname);
                     }
                     return true;
+                } catch (InvalidSelectorException ise) {
+                    throw new RuntimeException(ise);
                 } catch (JMSException ex) {
 
                     // Either we were interrupted, or something else went
@@ -322,6 +325,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     log.info("No message received for the past " + timeoutInMs + " ms, unsubscribing job '" + jobname + "'.");
                     unsubscribe(jobname);
                 }
+            } catch (InvalidSelectorException ise) {
+                throw new RuntimeException(ise);
             } catch (JMSException e) {
                 if (!Thread.currentThread().isInterrupted()) {
                     // Something other than an interrupt causes this.

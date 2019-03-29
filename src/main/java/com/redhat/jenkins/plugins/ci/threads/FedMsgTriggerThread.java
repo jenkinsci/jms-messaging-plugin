@@ -1,4 +1,4 @@
-package com.redhat.threads;
+package com.redhat.jenkins.plugins.ci.threads;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +20,7 @@ public class FedMsgTriggerThread extends CITriggerThread {
     @Override
     public void shutdown() {
         try {
-             int waitCount = 0;
+            int waitCount = 0;
             while (waitCount <= 60 && !fworker.hasPoller()) {
                 log.info("Thread " + getId() + ": FedMsg Provider is NOT connected AND subscribed. Sleeping 1 sec");
                 Thread.sleep(1000);

@@ -1,4 +1,4 @@
-package com.redhat.threads;
+package com.redhat.jenkins.plugins.ci.threads;
 
 import hudson.security.ACL;
 import hudson.security.ACLContext;
@@ -54,8 +54,8 @@ public class CITriggerThread extends Thread {
     }
 
     public void shutdown() {
-        interrupt();
         try {
+            interrupt();
             join();
         } catch (InterruptedException e) {
             log.log(Level.WARNING, "Unhandled exception joining thread.", e);
@@ -67,7 +67,6 @@ public class CITriggerThread extends Thread {
             while (!hasBeenInterrupted()) {
                 messagingWorker.receive(jobname, providerData);
             }
-            log.info("Shutting down trigger thread for job '" + jobname + "'.");
             messagingWorker.unsubscribe(jobname);
         }
     }
