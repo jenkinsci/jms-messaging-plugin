@@ -84,8 +84,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private transient ProviderData providerData;
 	private List<ProviderData> providers;
 
-	public static final transient ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
-    public static final transient ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
+	public static final ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
+    public static final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
@@ -280,7 +280,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		try {
-	        synchronized(getLock(job.getFullName())) {
+	        synchronized(locks.computeIfAbsent(job.getFullName(), o -> new Object())) {
 				if (stopTriggerThreads(job.getFullName()) == null && providers != null) {
 				    List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
 				    int instance = 1;
@@ -310,7 +310,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	}
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
-        synchronized(getLock(fullName)) {
+        synchronized(locks.computeIfAbsent(fullName, o -> new Object())) {
 			List<CITriggerThread> threads = triggerInfo.get(fullName);
 			if (threads != null) {
 
@@ -363,18 +363,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
             return threads;
         }
         return null;
-    }
-
-    private static Object getLock(String name) {
-        Object lock = locks.get(name);
-        if (lock == null) {
-            Object newLock = new Object();
-            lock = locks.putIfAbsent(name, newLock);
-            if (lock == null) {
-                lock = newLock;
-            }
-        }
-        return lock;
     }
 
     /**
