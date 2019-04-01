@@ -84,8 +84,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	private transient ProviderData providerData;
 	private List<ProviderData> providers;
 
-	public static final ConcurrentMap<String, List<CITriggerThread>> triggerInfo = new ConcurrentHashMap<>();
-    public static final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
+    public static final ConcurrentMap<String, List<CITriggerThread>> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
 
 	@DataBoundConstructor
@@ -280,9 +279,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		try {
-	        synchronized(locks.computeIfAbsent(job.getFullName(), o -> new Object())) {
+	        synchronized(locks.computeIfAbsent(job.getFullName(), o -> new ArrayList<CITriggerThread>())) {
 				if (stopTriggerThreads(job.getFullName()) == null && providers != null) {
-				    List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
+				    List<CITriggerThread> threads = locks.get(job.getFullName());
 				    int instance = 1;
 				    for (ProviderData pd : providers) {
 				        JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
@@ -297,7 +296,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				        threads.add(thread);
 				        instance++;
 				    }
-					triggerInfo.put(job.getFullName(), threads);
 				}
 			}
 		} catch (Exception e) {
@@ -310,41 +308,39 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	}
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
-        synchronized(locks.computeIfAbsent(fullName, o -> new Object())) {
-			List<CITriggerThread> threads = triggerInfo.get(fullName);
-			if (threads != null) {
-
-			    // If threads are the same we have start/stop sequence, so don't bother stopping.
-			    if (comparisonThreads != null && threads.size() == comparisonThreads.size()) {
-			        for (CITriggerThread thread : threads) {
-			            for (int i = 0; i < comparisonThreads.size(); i++) {
-			                if (thread.equals(comparisonThreads.get(i))){
-			                    log.info("Already have thread " + thread.getId() + "...");
-			                    comparisonThreads.remove(i);
-			                    break;
-			                }
-			            }
-			        }
-			        if (comparisonThreads.size() == 0) {
-			            return threads;
-			        }
-			    }
-
+        synchronized(locks.computeIfAbsent(fullName, o -> new ArrayList<CITriggerThread>())) {
+            List<CITriggerThread> threads = locks.get(fullName);
+            // If threads are the same we have start/stop sequence, so don't bother stopping.
+            if (comparisonThreads != null && threads.size() == comparisonThreads.size()) {
                 for (CITriggerThread thread : threads) {
-                    try {
-                        log.info("Stopping thread ("  + thread.getId() + ") for '" + fullName + "'.");
-                        thread.shutdown();
-                    } catch (Exception e) {
-                        log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
+                    for (int i = 0; i < comparisonThreads.size(); i++) {
+                        if (thread.equals(comparisonThreads.get(i))){
+                            log.info("Already have thread " + thread.getId() + "...");
+                            comparisonThreads.remove(i);
+                            break;
+                        }
                     }
                 }
+                if (comparisonThreads.size() == 0) {
+                    return threads;
+                }
+            }
 
-		        threads = triggerInfo.remove(fullName);
-                locks.remove(fullName);
-                log.info("Removed thread lock for '" + fullName + "'.");
-			}
-			return null;
-		}
+            for (CITriggerThread thread : threads) {
+                try {
+                    log.info("Stopping thread ("  + thread.getId() + ") for '" + fullName + "'.");
+                    thread.shutdown();
+                    threads.remove(thread);
+                } catch (Exception e) {
+                    log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
+                }
+            }
+
+            // Just in case.
+            threads.clear();
+            log.info("Removed thread lock for '" + fullName + "'.");
+        }
+        return null;
     }
 
     private List<CITriggerThread> getComparisonThreads() {
