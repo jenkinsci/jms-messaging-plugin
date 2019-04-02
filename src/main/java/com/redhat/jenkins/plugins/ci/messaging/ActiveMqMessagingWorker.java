@@ -162,6 +162,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             connectiontmp.setClientID(provider.getName() + "_" + url + "_" + uuid + "_" + jobname);
             connectiontmp.start();
         } catch (JMSException e) {
+            log.severe("Unable to connect to " + provider.getBroker() + " " + e.getMessage());
             disconnect(connectiontmp);
             return false;
         }
