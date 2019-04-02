@@ -1,21 +1,27 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
+import com.redhat.jenkins.plugins.ci.provider.data.*;
+//import com.salesforce.kafka.test.KafkaTestCluster;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.PluginManager;
 import hudson.PluginWrapper;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Failure;
 import hudson.util.Secret;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
 
+import info.batey.kafka.unit.KafkaUnit;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
@@ -30,16 +36,13 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import scala.Option;
 
 /*
  * The MIT License
  *
  * Copyright (c) Red Hat, Inc.
+ * Copyright (c) Valentin Titov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -70,6 +73,9 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     private transient Secret password;
     private transient boolean migrationInProgress = false;
 
+//    private static transient KafkaTestCluster kafkaTestCluster;
+    private static transient Optional<KafkaUnit> kafkaUnit = Optional.empty();
+
 
     private List<JMSMessagingProvider> configs = new ArrayList<JMSMessagingProvider>();
 
@@ -90,11 +96,49 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     public GlobalCIConfiguration(List<JMSMessagingProvider> configs) {
         this.configs = configs;
+        start();
+
     }
 
     @DataBoundConstructor
     public GlobalCIConfiguration() {
         load();
+        start();
+    }
+
+    //    @Initializer(after= InitMilestone.JOB_LOADED  , before = InitMilestone.COMPLETED)
+    //    public static void afterJobLoaded() throws Exception, TimeoutException {
+    //        log.info("JOB_LOADED");
+    //
+    //        //String kafkaBrokerPortString = System.getProperty("kafka.broker.port", "9005"); // FIXME
+    //        String kafkaBrokerPortString = System.getProperty("kafka.broker.port");
+    //        if(kafkaBrokerPortString != null) {
+    //            int kafkaPort = Integer.parseInt(kafkaBrokerPortString);
+    //            kafkaUnit = new KafkaUnit(kafkaPort-1, kafkaPort);
+    //            log.info(String.format("started kafka: %s", kafkaUnit.getKafkaConnect()));
+    //            //            String kafkaBrokerPortProperty = String.format("port=%s", kafkaBrokerPortString);
+    //                        Properties properties = new Properties();
+    //            //            properties.put("port", kafkaBrokerPortString);
+    //            //            kafkaTestCluster = new KafkaTestCluster(1, properties);
+    //            //            kafkaTestCluster.start();
+    //            //            log.info("kafkaTestCluster started");
+    //            //
+    //            //        } {
+    //            //            log.info("no kafkaTestCluster");
+    //        } else {
+    //            kafkaUnit = new KafkaUnit();
+    //            log.info(String.format("started kafka: %s", kafkaUnit.getKafkaConnect()));
+    //        }
+    //
+    //    }
+    protected Optional<Integer> readKafkaBrokerPort() {
+        try {
+            return Optional.ofNullable(System.getProperty("kafka.broker.port"))
+                .map(Integer::parseInt);
+        } catch (Exception e) {
+            log.log(Level.FINE, "no kafka.broker.port specified");
+        }
+        return Optional.empty();
     }
 
     protected Object readResolve() {
@@ -155,8 +199,32 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         return null;
     }
 
+    protected void stop() {
+        kafkaUnit.map(ku-> { ku.shutdown(); return true; });
+        kafkaUnit = Optional.empty();
+    }
+
+    protected void start() {
+        try {
+            Thread.currentThread().setContextClassLoader(null);
+            stop();
+            kafkaUnit = readKafkaBrokerPort()
+                    .map(kafkaPort -> {
+                        KafkaUnit ku = new KafkaUnit(kafkaPort - 1, kafkaPort);
+                        ku.setKafkaBrokerConfig("auto.create.topics.enable", "true");
+                        ku.startup();
+                        log.info(String.format("started kafka: %s", ku.getKafkaConnect()));
+                        return ku;
+                    });
+        } catch (Exception e) {
+            log.log(Level.FINE, "kafka not started");
+        }
+    }
+
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
+        stop();
+
         HashMap<String, String> names = new HashMap<>();
         Object obj = json.get("configs");
         if (obj instanceof JSONArray) {
@@ -174,6 +242,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         }
         req.bindJSON(this, json);
         save();
+        start();
         return true;
     }
 
@@ -248,8 +317,12 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             for (JMSMessagingProvider p : getConfigs()) {
                 if (p instanceof ActiveMqMessagingProvider) {
                     pds.add(new ActiveMQSubscriberProviderData(p.getName()));
-                } else {
+                } else if (p instanceof FedMsgMessagingProvider) {
                     pds.add(new FedMsgSubscriberProviderData(p.getName()));
+                } else if (p instanceof KafkaMessagingProvider) {
+                    pds.add(new KafkaSubscriberProviderData(p.getName()));
+                } else {
+                    // TODO
                 }
             }
         }
@@ -262,8 +335,12 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             for (JMSMessagingProvider p : getConfigs()) {
                 if (p instanceof ActiveMqMessagingProvider) {
                     pds.add(new ActiveMQPublisherProviderData(p.getName()));
-                } else {
+                } else if (p instanceof FedMsgMessagingProvider) {
                     pds.add(new FedMsgPublisherProviderData(p.getName()));
+                } else if (p instanceof KafkaMessagingProvider) {
+                    pds.add(new KafkaPublisherProviderData(p.getName()));
+                } else {
+                    // TODO
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.jenkins.plugins.ci.provider.data.*;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -18,15 +19,12 @@ import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 
 /*
  * The MIT License
  *
  * Copyright (c) Red Hat, Inc.
+ * Copyright (c) Valentin Titov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,12 +69,20 @@ public class MessageProviderMigrator {
                 apd.setMessageContent(builder.getMessageContent());
                 apd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(apd);
-            } else {
+            } else if (prov instanceof FedMsgMessagingProvider) {
                 FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(builder.getProviderName());
                 fpd.setOverrides(builder.getOverrides());
                 fpd.setMessageContent(builder.getMessageContent());
                 fpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(fpd);
+            } else if (prov instanceof KafkaMessagingProvider) {
+                KafkaPublisherProviderData pd = new KafkaPublisherProviderData(builder.getProviderName());
+                pd.setOverrides(builder.getOverrides());
+                pd.setMessageContent(builder.getMessageContent());
+                pd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(pd);
+            } else {
+                // TODO
             }
             try {
                 p.save();
@@ -108,12 +114,20 @@ public class MessageProviderMigrator {
                 apd.setMessageContent(builder.getMessageContent());
                 apd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(apd);
-            } else {
+            } else if (prov instanceof FedMsgMessagingProvider) {
                 FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(builder.getProviderName());
                 fpd.setOverrides(builder.getOverrides());
                 fpd.setMessageContent(builder.getMessageContent());
                 fpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(fpd);
+            } else if (prov instanceof KafkaMessagingProvider) {
+                KafkaPublisherProviderData pd = new KafkaPublisherProviderData(builder.getProviderName());
+                pd.setOverrides(builder.getOverrides());
+                pd.setMessageContent(builder.getMessageContent());
+                pd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(pd);
+            } else {
+                // TODO
             }
             try {
                 p.save();
@@ -144,12 +158,20 @@ public class MessageProviderMigrator {
                 apd.setVariable(builder.getVariable());
                 apd.setTimeout(builder.getTimeout());
                 builder.setProviderData(apd);
-            } else {
+            } else if (prov instanceof FedMsgMessagingProvider) {
                 FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(builder.getProviderName());
                 fpd.setOverrides(builder.getOverrides());
                 fpd.setVariable(builder.getVariable());
                 fpd.setTimeout(builder.getTimeout());
                 builder.setProviderData(fpd);
+            } else if (prov instanceof KafkaMessagingProvider) {
+                KafkaSubscriberProviderData pd = new KafkaSubscriberProviderData(builder.getProviderName());
+                pd.setOverrides(builder.getOverrides());
+                pd.setVariable(builder.getVariable());
+                pd.setTimeout(builder.getTimeout());
+                builder.setProviderData(pd);
+            } else {
+                // TODO
             }
             try {
                 p.save();
