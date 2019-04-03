@@ -52,9 +52,6 @@ public abstract class JMSMessagingWorker {
     public abstract void unsubscribe(String jobname);
     public abstract void receive(String jobname, ProviderData pdata);
     public abstract boolean connect() throws Exception;
-    public abstract boolean isConnected();
-
-    public abstract boolean isConnectedAndSubscribed();
 
     public abstract void disconnect();
 
@@ -71,10 +68,6 @@ public abstract class JMSMessagingWorker {
             log.log(Level.WARNING, "Unable to find CIBuildTrigger for '" + jobname + "'.");
         }
     }
-
-    public abstract void prepareForInterrupt();
-
-    public abstract boolean isBeingInterrupted();
 
     public abstract String getDefaultTopic();
 

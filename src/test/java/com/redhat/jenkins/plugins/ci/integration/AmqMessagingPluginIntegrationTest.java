@@ -376,16 +376,23 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "    ]\n" +
                 ")\nnode('master') {\n sleep 1\n}");
         workflowJob.save();
-        workflowJob.startBuild();
-        workflowJob.configure();
-        workflowJob.save();
-        workflowJob.startBuild();
+
+        workflowJob.startBuild().shouldSucceed();
+        // Allow some time for trigger thread stop/start.
         elasticSleep(2000);
-        printThreadsWithName("ActiveMQ.*Task-");
-        printThreadsWithName("CIBuildTrigger");
         int ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
         assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
         int triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        assertTrue("CIBuildTrigger count is 1", triggers == 1);
+        workflowJob.configure();
+        workflowJob.save();
+        workflowJob.startBuild().shouldSucceed();
+        elasticSleep(2000);
+        printThreadsWithName("ActiveMQ.*Task-");
+        printThreadsWithName("CIBuildTrigger");
+        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        triggers = getCurrentThreadCountForName("CIBuildTrigger");
         assertTrue("CIBuildTrigger count is 1", triggers == 1);
 
         //checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]

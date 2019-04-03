@@ -97,10 +97,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         if (this.topic != null) {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    if (!isConnected()) {
-                        if (!connect()) {
-                            return false;
-                        }
+                    if (connection == null && !connect()) {
+                        return false;
                     }
                     if (subscriber == null) {
                         log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' topic.");
@@ -156,26 +154,16 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
         Connection connectiontmp = null;
         try {
-            connectiontmp = connectionFactory
-                    .createConnection();
+            connectiontmp = connectionFactory.createConnection();
             String url = "";
-            if (Jenkins.getInstance() != null) {
-                url = Jenkins.getInstance().getRootUrl();
+            if (Jenkins.getInstanceOrNull() != null) {
+                url = Jenkins.get().getRootUrl();
             }
-            connectiontmp.setClientID(provider.getName() + "_"
-                    + url + "_" + uuid + "_" + jobname);
+            connectiontmp.setClientID(provider.getName() + "_" + url + "_" + uuid + "_" + jobname);
             connectiontmp.start();
         } catch (JMSException e) {
             log.severe("Unable to connect to " + provider.getBroker() + " " + e.getMessage());
-            // We need to close the connection that we attempted
-            // to start.
-            try {
-                if (connectiontmp != null) {
-                    connectiontmp.close();
-                }
-            } catch (JMSException e1) {
-                //swallow the exception
-            }
+            disconnect(connectiontmp);
             return false;
         }
         log.info("Connection started");
@@ -185,15 +173,22 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
-        log.info("Unsubcribing job '" + jobname + "' from the '" + this.topic + "' topic.");
+        log.info("Unsubscribing job '" + jobname + "' from the '" + this.topic + "' topic.");
         disconnect();
         if (subscriber != null) {
+            // Make sure the close doesn't clear the interrupt.
+            boolean resetInterrupt = Thread.currentThread().isInterrupted();
+
             try {
                 subscriber.close();
             } catch (Exception se) {
             }
             finally {
                 subscriber = null;
+            }
+
+            if (resetInterrupt && !Thread.currentThread().isInterrupted()) {
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -264,7 +259,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return "";
     }
 
-
     private void process (String jobname, Message message) {
         try {
             Map<String, String> params = new HashMap<String, String>();
@@ -289,70 +283,69 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     public void receive(String jobname, ProviderData pdata) {
         ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData)pdata;
         int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
-        while (!subscribe(jobname, pd.getSelector())) {
-            if (!Thread.currentThread().isInterrupted()) {
-                try {
-                    int WAIT_SECONDS = 2;
-                    Thread.sleep(WAIT_SECONDS * 1000);
-                } catch (InterruptedException e) {
-                    // We were interrupted while waiting to retry. We will
-                    // jump ship on the next iteration.
-
-                    // NB: The interrupt flag was cleared when
-                    // InterruptedException was thrown. We have to
-                    // re-install it to make sure we eventually leave this
-                    // thread.
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
-        try {
-            Message m = subscriber.receive(timeoutInMs); // In milliseconds!
-            if (m != null) {
-                if (provider.verify(getMessageBody(m), pd.getChecks(), jobname)) {
-                    process(jobname, m);
-                }
-            } else {
-                log.info("No message received for the past " + timeoutInMs + " ms, re-subscribing job '" + jobname + "'.");
-                unsubscribe(jobname);
-            }
-        } catch (JMSException e) {
-            if (!Thread.currentThread().isInterrupted()) {
-                // Something other than an interrupt causes this.
-                // Unsubscribe, but stay in our loop and try to reconnect..
-                log.log(Level.WARNING, "JMS exception raised while receiving, going to re-subscribe job '" + jobname + "'.", e);
-                unsubscribe(jobname); // Try again next time.
-            }
-        }
-    }
-
-    @Override
-    public boolean isConnected() {
-        if (connection == null) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    @Override
-    public boolean isConnectedAndSubscribed() {
-        if (connection != null && subscriber != null) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    @Override
-    public void disconnect() {
-        if (connection != null) {
+        while (!subscribe(jobname, pd.getSelector()) && !Thread.currentThread().isInterrupted()) {
             try {
-                connection.close();
+                int WAIT_SECONDS = 2;
+                Thread.sleep(WAIT_SECONDS * 1000);
+            } catch (InterruptedException e) {
+                // We were interrupted while waiting to retry. We will
+                // jump ship on the next iteration.
+
+                // NB: The interrupt flag was cleared when
+                // InterruptedException was thrown. We have to
+                // re-install it to make sure we eventually leave this
+                // thread.
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        if (!Thread.currentThread().isInterrupted()) {
+            try {
+                Message m = subscriber.receive(timeoutInMs); // In milliseconds!
+                if (m != null) {
+                    if (provider.verify(getMessageBody(m), pd.getChecks(), jobname)) {
+                        process(jobname, m);
+                    }
+                } else {
+                    log.info("No message received for the past " + timeoutInMs + " ms, unsubscribing job '" + jobname + "'.");
+                    unsubscribe(jobname);
+                }
+            } catch (JMSException e) {
+                if (!Thread.currentThread().isInterrupted()) {
+                    // Something other than an interrupt causes this.
+                    // Unsubscribe, but stay in our loop and try to reconnect..
+                    log.log(Level.WARNING, "JMS exception raised while receiving, unsubscribing job '" + jobname + "'.", e);
+                    unsubscribe(jobname); // Try again next time.
+                }
+            }
+        } else {
+            // We are about to leave the loop, so unsubscribe.
+            unsubscribe(jobname);
+        }
+    }
+
+    private void disconnect(Connection c) {
+        if (c != null) {
+            // Make sure the close doesn't clear the interrupt.
+            boolean resetInterrupt = Thread.currentThread().isInterrupted();
+
+            try {
+                c.close();
             } catch (JMSException e) {
             } finally {
-                connection = null;
+                c = null;
+            }
+
+            if (resetInterrupt && !Thread.currentThread().isInterrupted()) {
+                Thread.currentThread().interrupt();
             }
         }
+    }
+
+    @Override
+    public void disconnect() {
+        disconnect(connection);
+        connection = null;
     }
 
     @Override
@@ -560,15 +553,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 log.severe("One or more of the following is invalid (null): ip, user, password, topic, broker.");
             }
         return null;
-    }
-
-    @Override
-    public void prepareForInterrupt() {
-    }
-
-    @Override
-    public boolean isBeingInterrupted() {
-        return false;
     }
 
     private static String formatHeaders (Message message) {

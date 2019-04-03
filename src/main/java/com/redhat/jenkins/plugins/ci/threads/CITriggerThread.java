@@ -1,11 +1,11 @@
-package com.redhat.jenkins.plugins.ci;
+package com.redhat.jenkins.plugins.ci.threads;
 
 import hudson.security.ACL;
+import hudson.security.ACLContext;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.acegisecurity.context.SecurityContext;
-import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
@@ -38,13 +38,10 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 public class CITriggerThread extends Thread {
     private static final Logger log = Logger.getLogger(CITriggerThread.class.getName());
 
-    private static final Integer WAIT_MINUTES = 60;
-    private static final Integer WAIT_SECONDS = 2;
-
     private final JMSMessagingProvider messagingProvider;
     private final String jobname;
     private final ProviderData providerData;
-    private final JMSMessagingWorker messagingWorker;
+    protected final JMSMessagingWorker messagingWorker;
 
     public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, int instance) {
         this.messagingProvider = messagingProvider;
@@ -56,26 +53,26 @@ public class CITriggerThread extends Thread {
         setDaemon(true);
     }
 
-    public void sendInterrupt() {
-        messagingWorker.prepareForInterrupt();
-    }
-
-    public void run() {
-        SecurityContext old = ACL.impersonate(ACL.SYSTEM);
+    public void shutdown() {
         try {
-            while (!Thread.currentThread().isInterrupted() && !messagingWorker.isBeingInterrupted()) {
-                messagingWorker.receive(jobname, providerData);
-            }
-            log.info("Shutting down trigger thread for job '" + jobname + "'.");
-            messagingWorker.unsubscribe(jobname);
-        } finally {
-            SecurityContextHolder.setContext(old);
+            interrupt();
+            join();
+        } catch (InterruptedException e) {
+            log.log(Level.WARNING, "Unhandled exception joining thread.", e);
         }
     }
 
-    public boolean isMessageProviderConnected() {
-        if (messagingWorker == null) return false;
-        return messagingWorker.isConnectedAndSubscribed();
+    public void run() {
+        try (ACLContext ctx = ACL.as(ACL.SYSTEM)){
+            while (!hasBeenInterrupted()) {
+                messagingWorker.receive(jobname, providerData);
+            }
+            messagingWorker.unsubscribe(jobname);
+        }
+    }
+
+    public boolean hasBeenInterrupted() {
+        return Thread.currentThread().isInterrupted();
     }
 
     @Override
