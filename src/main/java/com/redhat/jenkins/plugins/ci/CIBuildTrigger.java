@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -326,11 +327,13 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 }
             }
 
-            for (CITriggerThread thread : threads) {
+            Iterator<CITriggerThread> i = threads.iterator();
+            while (i.hasNext()) {
                 try {
+                    CITriggerThread thread = i.next();
                     log.info("Stopping thread ("  + thread.getId() + ") for '" + fullName + "'.");
                     thread.shutdown();
-                    threads.remove(thread);
+                    i.remove();
                 } catch (Exception e) {
                     log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
                 }
