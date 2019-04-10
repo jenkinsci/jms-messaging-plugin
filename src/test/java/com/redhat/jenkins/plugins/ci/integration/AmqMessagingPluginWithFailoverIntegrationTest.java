@@ -190,7 +190,10 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         elasticSleep(5000);
 
         List<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
-        assertTrue("Trigger threads invalid syntax size", ids1.size() == 1);
+        assertTrue("Trigger threads invalid syntax size", ids1.size() == 0);
+        jobA.open();
+        assertTrue(driver.getPageSource().contains("CI Build Trigger Issue"));
+        assertTrue(driver.getPageSource().contains("javax.jms.InvalidSelectorException"));
 
         //Now fix the selector.
         jobA.configure();
@@ -200,7 +203,6 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
 
         List<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
         assertTrue("Trigger threads valid selector size", ids2.size() == 1);
-        assertTrue("Trigger threads new thread created", ids1.get(0) != ids2.get(0));
     }
 
     @Test

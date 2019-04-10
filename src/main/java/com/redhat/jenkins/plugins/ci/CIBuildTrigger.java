@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci;
 
 import hudson.Extension;
 import hudson.Util;
+import hudson.model.Action;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.ParameterValue;
@@ -50,6 +51,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
+import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
 
 /*
  * The MIT License
@@ -88,6 +90,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
     public static final ConcurrentMap<String, List<CITriggerThread>> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
+
+	private transient Action action;
 
 	@DataBoundConstructor
 	public CIBuildTrigger() {}
@@ -292,7 +296,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				                    + pd.getName() + ". You must update the job configuration. Trigger not started.");
 				            return;
 				        }
-				        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), instance);
+				        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), this, instance);
                         log.info("Starting thread (" + thread.getId() + ") for '" + job.getFullName() + "'.");
 				        thread.start();
 				        threads.add(thread);
@@ -356,13 +360,25 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 // We create a new thread here only to be able to
                 // use .equals() to compare.
                 // The thread is never started.
-                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), instance);
+                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), null, instance);
                 threads.add(thread);
                 instance++;
             }
             return threads;
         }
         return null;
+    }
+
+    public void setJobAction(Exception e) {
+        action = new TriggerThreadProblemAction(e);
+    }
+
+    public Action getJobAction() {
+        return action;
+    }
+
+    public void clearJobAction() {
+        action = null;
     }
 
     /**
