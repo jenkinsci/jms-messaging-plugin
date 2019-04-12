@@ -6,18 +6,8 @@ node('docker') {
     checkout scm
 
     String containerArgs = '-v /var/run/docker.sock:/var/run/docker.sock --shm-size 2g'
-    stage('Build') {
-        def uid = sh(script: 'id -u', returnStdout: true).trim()
-        def gid = sh(script: 'id -g', returnStdout: true).trim()
-
-        def buildArgs = "--build-arg=uid=${uid} --build-arg=gid=${gid} src/test/resources/ath-container"
-        retry(3) {
-            docker.build('jenkins/ath', buildArgs)
-        }
-    }
-
     stage('Test') {
-        docker.image('jenkins/ath').inside(containerArgs) {
+        docker.image('jenkins/ath:acceptance-test-harness-1.65').inside(containerArgs) {
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
                 mvn clean install -DskipTests
