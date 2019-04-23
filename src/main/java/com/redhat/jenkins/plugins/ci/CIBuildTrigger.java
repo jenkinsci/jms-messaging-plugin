@@ -2,7 +2,6 @@ package com.redhat.jenkins.plugins.ci;
 
 import hudson.Extension;
 import hudson.Util;
-import hudson.model.Action;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.ParameterValue;
@@ -91,7 +90,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
     public static final ConcurrentMap<String, List<CITriggerThread>> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
 
-	private transient Action action;
+	private transient List<TriggerThreadProblemAction> actions = new ArrayList<>();
 
 	@DataBoundConstructor
 	public CIBuildTrigger() {}
@@ -369,16 +368,17 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         return null;
     }
 
-    public void setJobAction(Exception e) {
-        action = new TriggerThreadProblemAction(e);
+    public void addJobAction(Exception e) {
+
+        actions.add(new TriggerThreadProblemAction(e));
     }
 
-    public Action getJobAction() {
-        return action;
+    public List<TriggerThreadProblemAction> getJobActions() {
+        return actions;
     }
 
-    public void clearJobAction() {
-        action = null;
+    public void clearJobActions() {
+        actions.clear();
     }
 
     /**

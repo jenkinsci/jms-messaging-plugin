@@ -11,18 +11,20 @@ import jenkins.model.ParameterizedJobMixIn;
 
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 
-@SuppressWarnings("rawtypes")
 @Extension
 public class TriggerThreadTransientActionFactory extends TransientActionFactory {
 
     @Override
-    public Class type() {
+    public Class<Job> type() {
         return Job.class;
     }
 
     @Override
-    public Collection createFor(Object target) {
+    public Collection<TriggerThreadProblemAction> createFor(Object target) {
         CIBuildTrigger cibt = ParameterizedJobMixIn.getTrigger((Job<?,?>) target, CIBuildTrigger.class);
-        return cibt == null || cibt.getJobAction() == null ? Collections.emptyList() : Collections.singletonList(cibt.getJobAction());
+        if (cibt != null) {
+            return cibt.getJobActions();
+        }
+        return Collections.emptyList();
     }
 }

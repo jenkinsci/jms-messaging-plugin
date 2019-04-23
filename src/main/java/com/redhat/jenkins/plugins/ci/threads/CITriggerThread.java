@@ -67,13 +67,13 @@ public class CITriggerThread extends Thread {
 
     public void run() {
         try (ACLContext ctx = ACL.as(ACL.SYSTEM)){
-            cibt.clearJobAction();
+            cibt.clearJobActions();
             try {
                 while (!hasBeenInterrupted()) {
                     messagingWorker.receive(jobname, providerData);
                 }
             } catch (Exception e) {
-                cibt.setJobAction(e);
+                cibt.addJobAction(e);
             } finally {
                 messagingWorker.unsubscribe(jobname);
             }

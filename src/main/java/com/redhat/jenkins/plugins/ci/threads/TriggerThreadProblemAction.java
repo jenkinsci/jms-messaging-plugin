@@ -1,9 +1,7 @@
 package com.redhat.jenkins.plugins.ci.threads;
 
+import hudson.Functions;
 import hudson.model.InvisibleAction;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 public class TriggerThreadProblemAction extends InvisibleAction {
     private Exception exception;
@@ -21,9 +19,6 @@ public class TriggerThreadProblemAction extends InvisibleAction {
     }
 
     public String getStackTrace() {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        exception.printStackTrace(pw);
-        return sw.toString();
+        return Functions.printThrowable(exception);
     }
 }
