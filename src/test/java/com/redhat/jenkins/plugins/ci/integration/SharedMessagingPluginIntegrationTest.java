@@ -493,7 +493,7 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobB.save();
         jobB.startBuild().shouldSucceed();
 
-        elasticSleep(1000);
+        elasticSleep(3000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
 }
