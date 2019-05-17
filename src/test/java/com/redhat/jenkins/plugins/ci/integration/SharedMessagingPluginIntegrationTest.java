@@ -485,11 +485,11 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         pd.topic.set("otopic");
         jobA.save();
 
-        await().atMost(60, TimeUnit.SECONDS).until(triggerRunning(jobA.name));
+        await().atMost(15, TimeUnit.SECONDS).until(triggerRunning(jobA.name));
 
         jenkins.restart();
 
-        await().atMost(60, TimeUnit.SECONDS).until(triggerRunning(jobA.name));
+        await().atMost(15, TimeUnit.SECONDS).until(triggerRunning(jobA.name));
 
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
