@@ -279,6 +279,24 @@
             <artifactId>script-security</artifactId>
             <version>1.36</version>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>3.1.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility-proxy</artifactId>
+            <version>3.1.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.8.15</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
