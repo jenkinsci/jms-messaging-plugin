@@ -51,7 +51,7 @@ import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@WithPlugins("jms-messaging")
+@WithPlugins({"jms-messaging", "dumpling"})
 @WithDocker
 public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
     @Inject private DockerContainerHolder<FedmsgRelayContainer> docker;
