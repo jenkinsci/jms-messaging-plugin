@@ -3,6 +3,7 @@ package com.redhat.jenkins.plugins.ci.threads;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
@@ -12,8 +13,8 @@ public class FedMsgTriggerThread extends CITriggerThread {
 
     FedMsgMessagingWorker fworker;
 
-    protected FedMsgTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, int instance) {
-        super(messagingProvider, providerData, jobname, instance);
+    protected FedMsgTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
+        super(messagingProvider, providerData, jobname, cibt, instance);
         fworker = (FedMsgMessagingWorker)messagingWorker;
     }
 

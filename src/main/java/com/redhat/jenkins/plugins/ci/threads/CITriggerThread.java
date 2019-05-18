@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
@@ -40,13 +41,15 @@ public class CITriggerThread extends Thread {
 
     private final JMSMessagingProvider messagingProvider;
     private final String jobname;
+    private final CIBuildTrigger cibt;
     private final ProviderData providerData;
     protected final JMSMessagingWorker messagingWorker;
 
-    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, int instance) {
+    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData,String jobname, CIBuildTrigger cibt, int instance) {
         this.messagingProvider = messagingProvider;
         this.providerData = providerData;
         this.jobname = jobname;
+        this.cibt = cibt;
         this.messagingWorker = messagingProvider.createWorker(providerData, this.jobname);
 
         setName("CIBuildTrigger-" + jobname + "-" + instance + "-" + messagingProvider.getClass().getSimpleName());
@@ -64,10 +67,16 @@ public class CITriggerThread extends Thread {
 
     public void run() {
         try (ACLContext ctx = ACL.as(ACL.SYSTEM)){
-            while (!hasBeenInterrupted()) {
-                messagingWorker.receive(jobname, providerData);
+            cibt.clearJobActions();
+            try {
+                while (!hasBeenInterrupted()) {
+                    messagingWorker.receive(jobname, providerData);
+                }
+            } catch (Exception e) {
+                cibt.addJobAction(e);
+            } finally {
+                messagingWorker.unsubscribe(jobname);
             }
-            messagingWorker.unsubscribe(jobname);
         }
     }
 

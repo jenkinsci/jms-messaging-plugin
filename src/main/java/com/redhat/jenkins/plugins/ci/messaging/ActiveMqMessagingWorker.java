@@ -24,7 +24,9 @@ import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
+import javax.jms.InvalidSelectorException;
 import javax.jms.JMSException;
+import javax.jms.JMSSecurityException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -115,6 +117,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         log.fine("Already subscribed to '" + this.topic + "' topic with selector: " + selector + " for job '" + jobname);
                     }
                     return true;
+                } catch (JMSSecurityException | InvalidSelectorException exc) {
+                    log.log(Level.SEVERE, "JMS exception raised while subscribing job '" + jobname + "'.", exc);
+                    throw new RuntimeException(exc);
                 } catch (JMSException ex) {
 
                     // Either we were interrupted, or something else went

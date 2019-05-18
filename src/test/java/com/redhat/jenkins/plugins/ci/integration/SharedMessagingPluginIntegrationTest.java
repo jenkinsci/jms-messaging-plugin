@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -8,6 +9,9 @@ import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
@@ -25,6 +29,7 @@ import org.jenkinsci.test.acceptance.po.Job;
 import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.MsgCheck;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
@@ -479,10 +484,12 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         pd.overrides.check();
         pd.topic.set("otopic");
         jobA.save();
-        // Allow for connection
-        elasticSleep(1000);
+
+        await().atMost(15, TimeUnit.SECONDS).until(triggerRunning(jobA.name));
 
         jenkins.restart();
+
+        await().atMost(15, TimeUnit.SECONDS).until(triggerRunning(jobA.name));
 
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
@@ -493,10 +500,34 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobB.save();
         jobB.startBuild().shouldSucceed();
 
-        elasticSleep(1000);
+        //elasticSleep(3000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
-}
+    }
+
+
+    private Callable<Boolean> triggerRunning(String name) {
+        return new Callable<Boolean>() {
+            public Boolean call() throws Exception {
+                return isTriggerThreadRunning(name);
+            }
+        };
+    }
+    public boolean isTriggerThreadRunning(String name) {
+        String script = "Set<Integer> ids = new TreeSet<Integer>();\n" +
+                "for (thread in D.runtime.threads.grep { it.name =~ /^CIBuildTrigger-" + name + "/ }) {\n" +
+                "  ids.add(thread.getId());\n" +
+                "}\n" +
+                "return ids;";
+
+        ObjectMapper m = new ObjectMapper();
+        try {
+            return m.readValue(jenkins.runScript(script), ArrayList.class).size() > 0;
+        } catch (Exception e) {
+        }
+        return false;
+    }
+
 
     public void _testSimpleCIEventTriggerWithMultipleTopics() {
         FreeStyleJob jobA = jenkins.jobs.create();

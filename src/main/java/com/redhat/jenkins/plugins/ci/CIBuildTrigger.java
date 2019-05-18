@@ -1,21 +1,5 @@
 package com.redhat.jenkins.plugins.ci;
 
-import hudson.Extension;
-import hudson.Util;
-import hudson.model.BuildableItem;
-import hudson.model.Item;
-import hudson.model.ParameterValue;
-import hudson.model.AbstractProject;
-import hudson.model.CauseAction;
-import hudson.model.Job;
-import hudson.model.ParameterDefinition;
-import hudson.model.ParametersAction;
-import hudson.model.ParametersDefinitionProperty;
-import hudson.model.StringParameterValue;
-import hudson.triggers.Trigger;
-import hudson.triggers.TriggerDescriptor;
-import hudson.util.FormValidation;
-
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.lang.reflect.Constructor;
@@ -32,9 +16,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jenkins.model.Jenkins;
-import jenkins.model.ParameterizedJobMixIn;
-
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -50,6 +31,25 @@ import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
+import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
+
+import hudson.Extension;
+import hudson.Util;
+import hudson.model.AbstractProject;
+import hudson.model.BuildableItem;
+import hudson.model.CauseAction;
+import hudson.model.Item;
+import hudson.model.Job;
+import hudson.model.ParameterDefinition;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
+import hudson.model.ParametersDefinitionProperty;
+import hudson.model.StringParameterValue;
+import hudson.triggers.Trigger;
+import hudson.triggers.TriggerDescriptor;
+import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import jenkins.model.ParameterizedJobMixIn;
 
 /*
  * The MIT License
@@ -79,7 +79,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	private transient String providerName;
 	private transient String selector;
-	private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
+	private transient List<MsgCheck> checks = new ArrayList<>();
 	private transient MessagingProviderOverrides overrides;
 	private Boolean noSquash;
 	@Deprecated // Replaced by providers collection
@@ -88,6 +88,8 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
     public static final ConcurrentMap<String, List<CITriggerThread>> locks = new ConcurrentHashMap<>();
 	private transient boolean providerUpdated;
+
+	private transient List<TriggerThreadProblemAction> actions = new ArrayList<>();
 
 	@DataBoundConstructor
 	public CIBuildTrigger() {}
@@ -195,7 +197,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	protected Object readResolve() throws ObjectStreamException {
 	    if (providers == null) {
 	        log.info("Migrating CIBuildTrigger for job '" + getJobName() + "'.");
-	        providers = new ArrayList<ProviderData>();
+	        providers = new ArrayList<>();
 	        if (providerData == null) {
 	            if (providerName == null) {
 	                log.info("Provider is null for trigger for job '" + getJobName() + "'.");
@@ -281,7 +283,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 			}
 		}
 		try {
-	        synchronized(locks.computeIfAbsent(job.getFullName(), o -> new ArrayList<CITriggerThread>())) {
+	        synchronized(locks.computeIfAbsent(job.getFullName(), o -> new ArrayList<>())) {
 				if (stopTriggerThreads(job.getFullName()) == null && providers != null) {
 				    List<CITriggerThread> threads = locks.get(job.getFullName());
 				    int instance = 1;
@@ -292,7 +294,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 				                    + pd.getName() + ". You must update the job configuration. Trigger not started.");
 				            return;
 				        }
-				        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), instance);
+				        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), this, instance);
                         log.info("Starting thread (" + thread.getId() + ") for '" + job.getFullName() + "'.");
 				        thread.start();
 				        threads.add(thread);
@@ -310,7 +312,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	}
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
-        synchronized(locks.computeIfAbsent(fullName, o -> new ArrayList<CITriggerThread>())) {
+        synchronized(locks.computeIfAbsent(fullName, o -> new ArrayList<>())) {
             List<CITriggerThread> threads = locks.get(fullName);
             // If threads are the same we have start/stop sequence, so don't bother stopping.
             if (comparisonThreads != null && threads.size() == comparisonThreads.size()) {
@@ -349,20 +351,36 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
     private List<CITriggerThread> getComparisonThreads() {
         if (providers != null) {
-            List<CITriggerThread> threads = new ArrayList<CITriggerThread>();
+            List<CITriggerThread> threads = new ArrayList<>();
             int instance = 1;
             for (ProviderData pd : providers) {
                 JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
                 // We create a new thread here only to be able to
                 // use .equals() to compare.
                 // The thread is never started.
-                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), instance);
+                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), null, instance);
                 threads.add(thread);
                 instance++;
             }
             return threads;
         }
         return null;
+    }
+
+    public void addJobAction(Exception e) {
+
+        getJobActions().add(new TriggerThreadProblemAction(e));
+    }
+
+    public List<TriggerThreadProblemAction> getJobActions() {
+        if (actions == null) {
+            actions = new ArrayList<>();
+        }
+        return actions;
+    }
+
+    public void clearJobActions() {
+        getJobActions().clear();
     }
 
     /**
@@ -508,7 +526,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	private List<ParameterValue> getUpdatedParameters(Map<String, String> messageParams, List<ParameterValue> definedParams) {
 	    // Update any build parameters that may have values from the triggering message.
-	    HashMap<String, ParameterValue> newParams = new HashMap<String, ParameterValue>();
+	    HashMap<String, ParameterValue> newParams = new HashMap<>();
 	    for (ParameterValue def : definedParams) {
 	        newParams.put(def.getName(), def);
 	    }
@@ -518,11 +536,11 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	            newParams.put(key, spv);
 	        }
 	    }
-	    return new ArrayList<ParameterValue>(newParams.values());
+	    return new ArrayList<>(newParams.values());
 	}
 
 	private List<ParameterValue> getDefinedParameters(BuildableItem project) {
-	    List<ParameterValue> parameters = new ArrayList<ParameterValue>();
+	    List<ParameterValue> parameters = new ArrayList<>();
 	    ParametersDefinitionProperty properties = ((Job<?, ?>)project).getProperty(ParametersDefinitionProperty.class);
 
 	    if (properties != null  && properties.getParameterDefinitions() != null) {

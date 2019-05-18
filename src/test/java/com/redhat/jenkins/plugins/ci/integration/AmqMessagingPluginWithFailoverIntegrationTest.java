@@ -18,6 +18,7 @@ import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.Plugin;
+import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -190,7 +191,10 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         elasticSleep(5000);
 
         List<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
-        assertTrue("Trigger threads invalid syntax size", ids1.size() == 1);
+        assertTrue("Trigger threads invalid syntax size", ids1.size() == 0);
+        jobA.open();
+        assertTrue(driver.getPageSource().contains("CI Build Trigger Issue"));
+        assertTrue(driver.getPageSource().contains("javax.jms.InvalidSelectorException"));
 
         //Now fix the selector.
         jobA.configure();
@@ -200,7 +204,85 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
 
         List<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
         assertTrue("Trigger threads valid selector size", ids2.size() == 1);
-        assertTrue("Trigger threads new thread created", ids1.get(0) != ids2.get(0));
+    }
+
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testInvalidJMSSelectorInPipeline() throws Exception {
+        // Test setting a valid JMS selector in a pipeline, then fixing it, and make sure threads are handled correctly.
+
+        WorkflowJob pipe = jenkins.jobs.create(WorkflowJob.class, "pipeline");
+        pipe.script.set(
+                "pipeline {\n" +
+                "    agent { label 'master' }\n" +
+                "    triggers {\n" +
+                "        ciBuildTrigger(noSquash: true,\n" +
+                "                       providerData: activeMQSubscriber(name: 'test',\n" +
+                "                                                        overrides: [topic: \"CI\"],\n" +
+                "                                                        selector: \"CI_TYPE 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n" +
+                "                                                       )\n" +
+                "                      )\n" +
+                "    }\n" +
+                "    stages {\n" +
+                "        stage('foo') {\n" +
+                "            steps {\n" +
+                "                echo 'Hello world!'\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n"
+        );
+        pipe.save();
+        elasticSleep(5000);
+
+        // No trigger threads created on save. Must run once.
+        List<Integer> ids = getCurrentTriggerThreadIds("pipeline");
+        assertTrue("Trigger threads initial pipeline save", ids.size() == 0);
+
+        pipe.startBuild().shouldSucceed();
+        elasticSleep(5000);
+        // No trigger threads created because of bad syntax.
+        ids = getCurrentTriggerThreadIds("pipeline");
+        assertTrue("Trigger threads invalid syntax size", ids.size() == 0);
+
+        pipe.open();
+        assertTrue(driver.getPageSource().contains("CI Build Trigger Issue"));
+        assertTrue(driver.getPageSource().contains("javax.jms.InvalidSelectorException"));
+
+        //Now fix the selector.
+        pipe.configure();
+        pipe.script.set(
+                "pipeline {\n" +
+                "    agent { label 'master' }\n" +
+                "    triggers {\n" +
+                "        ciBuildTrigger(noSquash: true,\n" +
+                "                       providerData: activeMQSubscriber(name: 'test',\n" +
+                "                                                        overrides: [topic: \"CI\"],\n" +
+                "                                                        selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n" +
+                "                                                       )\n" +
+                "                       )\n" +
+                "    }\n" +
+                "    stages {\n" +
+                "        stage('foo') {\n" +
+                "            steps {\n" +
+                "                echo 'Hello world!'\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n"
+        );
+        pipe.save();
+        elasticSleep(5000);
+
+
+        // No trigger threads created on save. Must run once.
+        ids = getCurrentTriggerThreadIds("pipeline");
+        assertTrue("Trigger threads updated pipeline save", ids.size() == 0);
+
+        pipe.startBuild().shouldSucceed();
+        elasticSleep(5000);
+        ids = getCurrentTriggerThreadIds("pipeline");
+        assertTrue("Trigger threads valid selector size", ids.size() == 1);
     }
 
     @Test
@@ -233,7 +315,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     @SuppressWarnings("unchecked")
     private ArrayList<Integer> getCurrentTriggerThreadIds(String name) {
         String script = "Set<Integer> ids = new TreeSet<Integer>();\n" +
-                "for (thread in D.runtime.threads.grep { it.name =~ /^CIBuildTrigger-receiver/ }) {\n" +
+                "for (thread in D.runtime.threads.grep { it.name =~ /^CIBuildTrigger-" + name + "/ }) {\n" +
                 "  ids.add(thread.getId());\n" +
                 "}\n" +
                 "return ids;";
