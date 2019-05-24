@@ -6,12 +6,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
+import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
 import org.jenkinsci.test.acceptance.po.Build;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
-import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,6 +54,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @Test
     public void testGlobalConfigTestConnection() throws Exception {
+    }
+
+    @Test
+    public void testSimpleCIEventTriggerWithTextArea() {
+        _testSimpleCIEventTriggerWithTextArea("scott=123\ntom=456",
+                "scott=123\ntom=456");
     }
 
     @Test
@@ -348,9 +354,6 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public void _testPipelineJobProperties(boolean backwardCompatible) throws Exception {
         WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
         send.configure();
-        StringParameter ciStatusParam = send.addParameter(StringParameter.class);
-        ciStatusParam.setName("CI_STATUS2");
-        ciStatusParam.setDefault("");
         send.script.set("node('master') {\n sendCIMessage" +
                 " providerName: 'test', " +
                 " failOnError: true, " +
@@ -367,6 +370,9 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
             pd = "providerList: [" + pd + "]";
         }
         WorkflowJob workflowJob = jenkins.jobs.create(WorkflowJob.class);
+        TextParameter ciStatusParam = workflowJob.addParameter(TextParameter.class);
+        ciStatusParam.setName("CI_MESSAGE");
+        ciStatusParam.setDefault("");
         workflowJob.script.set("def number = currentBuild.getNumber().toString()\n" +
                 "properties(\n" +
                 "    [\n" +
