@@ -16,6 +16,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.model.StringParameterDefinition;
+import hudson.model.TextParameterDefinition;
+import hudson.model.TextParameterValue;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -532,11 +535,16 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	    }
 	    for (String key : messageParams.keySet()) {
 	        if (newParams.containsKey(key)) {
-	            StringParameterValue spv = new StringParameterValue(key, messageParams.get(key));
-	            newParams.put(key, spv);
+	        	if (newParams.get(key) instanceof TextParameterValue) {
+	        		TextParameterValue tpv = new TextParameterValue(key, messageParams.get(key));
+					newParams.put(key, tpv);
+				} else {
+					StringParameterValue spv = new StringParameterValue(key, messageParams.get(key));
+					newParams.put(key, spv);
+				}
 	        }
 	    }
-	    return new ArrayList<>(newParams.values());
+        return new ArrayList<>(newParams.values());
 	}
 
 	private List<ParameterValue> getDefinedParameters(BuildableItem project) {
@@ -545,7 +553,13 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 
 	    if (properties != null  && properties.getParameterDefinitions() != null) {
 	        for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {
-	            ParameterValue param = paramDef.getDefaultParameterValue();
+                ParameterValue param = null;
+                if (paramDef instanceof StringParameterDefinition) {
+                    param = new StringParameterValue(paramDef.getName(), "");
+                }
+                if (paramDef instanceof TextParameterDefinition) {
+                    param = new TextParameterValue(paramDef.getName(), "");
+                }
 	            if (param != null) {
 	                parameters.add(param);
 	            }

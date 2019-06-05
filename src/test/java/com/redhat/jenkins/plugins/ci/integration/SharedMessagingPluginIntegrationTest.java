@@ -14,6 +14,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -82,6 +83,31 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("Hello World"));
 
+    }
+
+    public void _testSimpleCIEventTriggerWithTextArea(String body, String matchString) {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_MESSAGE = \"$CI_MESSAGE\"");
+        TextParameter p = jobA.addParameter(TextParameter.class);
+        p.setName("CI_MESSAGE");
+        p.setDefault("");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageContent.set(body);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString(matchString));
     }
 
     public void _testSimpleCIEventSubscribeWithCheck() throws Exception {

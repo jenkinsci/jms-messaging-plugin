@@ -81,6 +81,12 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithTextArea() {
+        _testSimpleCIEventTriggerWithTextArea("{ \"message\": \"Hello\\nWorld\" }",
+                "Hello\\nWorld");
+    }
+
+    @Test
     public void testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception, InterruptedException {
         _testSimpleCIEventSubscribeWithCheckWithTopicOverride();
     }
