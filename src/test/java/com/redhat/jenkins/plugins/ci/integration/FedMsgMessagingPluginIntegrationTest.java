@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.Matchers;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
@@ -409,6 +410,9 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         job.sandbox.check(true);
         job.save();
         job.startBuild().shouldSucceed();
+        // See https://github.com/jenkinsci/jms-messaging-plugin/issues/125
+        // timestamp == 0 indicates timestamp was not set in message
+        assertThat(job.getLastBuild().getConsole(), Matchers.not(containsString("\"timestamp\":0")));
     }
 
     @WithPlugins("workflow-aggregator")

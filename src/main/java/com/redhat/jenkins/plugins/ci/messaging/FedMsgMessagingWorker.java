@@ -269,6 +269,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             FedmsgMessage fm = new FedmsgMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
                                                  PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
+            fm.setTimestamp(System.currentTimeMillis());
+
             body = fm.toJson(); // Use toString() instead of getBodyJson so that message ID is included and sent.
             msgId = fm.getMsgId();
             if (!sock.sendMore(fm.getTopic()) && pd.isFailOnError()) {
