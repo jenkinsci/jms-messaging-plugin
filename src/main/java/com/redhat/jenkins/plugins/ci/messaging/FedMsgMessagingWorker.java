@@ -55,9 +55,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private static final Logger log = Logger.getLogger(FedMsgMessagingWorker.class.getName());
 
-    private final FedMsgMessagingProvider provider;
-
     public static final String DEFAULT_TOPIC = "org.fedoraproject";
+    private final FedMsgMessagingProvider provider;
 
     private ZMQ.Context context;
     private ZMQ.Poller poller;
@@ -66,10 +65,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private boolean pollerClosed = false;
 
-    public FedMsgMessagingWorker(FedMsgMessagingProvider fedMsgMessagingProvider, MessagingProviderOverrides overrides, String jobname) {
-        this.provider = fedMsgMessagingProvider;
-        this.overrides = overrides;
-        this.jobname = jobname;
+    public FedMsgMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+        super(messagingProvider, overrides, jobname);
+        this.provider = (FedMsgMessagingProvider) messagingProvider;
     }
 
     @Override
