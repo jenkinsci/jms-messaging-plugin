@@ -62,6 +62,13 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "scott=123\ntom=456");
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testSimpleCIEventTriggerWithBooleanParam() {
+        _testSimpleCIEventTriggerWithBoolParam("scott=123\ntom=456",
+                "dryrun is false");
+    }
+
     @Test
     public void testAddDuplicateMessageProvider() throws IOException {
         jenkins.configure();
