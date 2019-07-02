@@ -1,10 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
-import hudson.EnvVars;
-import hudson.model.Result;
-import hudson.model.TaskListener;
-import hudson.model.Run;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -36,8 +32,6 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 
-import jenkins.model.Jenkins;
-
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,6 +46,12 @@ import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderDat
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
+
+import hudson.EnvVars;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
 
 /*
  * The MIT License
@@ -266,7 +266,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     private void process (String jobname, Message message) {
         try {
-            Map<String, String> params = new HashMap<String, String>();
+            Map<String, String> params = new HashMap<>();
             params.put("CI_MESSAGE", getMessageBody(message));
             params.put("MESSAGE_HEADERS", getMessageHeaders(message));
 
@@ -378,7 +378,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message = session.createTextMessage("");
                 message.setJMSType(JSON_TYPE);
 
-                TreeMap<String, String> envVarParts = new TreeMap<String, String>();
+                TreeMap<String, String> envVarParts = new TreeMap<>();
                 message.setStringProperty("CI_NAME", build.getParent().getName());
                 envVarParts.put("CI_NAME", build.getParent().getName());
 
@@ -403,7 +403,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
                 if (!StringUtils.isEmpty(pd.getMessageProperties())) {
                     OrderedProperties p = new OrderedProperties();
-                    p.load(new StringReader(pd.getMessageProperties()));
+                    p.load(new StringReader(PluginUtils.getSubstitutedValue(pd.getMessageProperties(), envVars)));
                     @SuppressWarnings("unchecked")
                     Enumeration<String> e = p.propertyNames();
                     while (e.hasMoreElements()) {
