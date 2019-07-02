@@ -1,12 +1,13 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
-import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
@@ -19,7 +20,11 @@ import org.junit.Test;
 import com.google.inject.Inject;
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 
 /*
  * The MIT License
@@ -461,5 +466,41 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testPipelineInvalidProvider() throws Exception {
         _testPipelineInvalidProvider();
+    }
+
+    @Test
+    public void testSimpleCIEventWithMessagePropertiesAsVariable() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
+        jobA.addShellStep("echo TEST_PROP1 = $TEST_PROP1");
+        jobA.addShellStep("echo TEST_PROP2 = $TEST_PROP2");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        pd.overrides.check();
+        pd.topic.set("otopic");
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        TextParameter param = jobB.addParameter(TextParameter.class);
+        param.setName("MESSAGE_PROPERTIES");
+        param.setDefault("CI_STATUS = failed\nTEST_PROP1 = GOT 1\nTEST_PROP2 = GOT 2");
+        CINotifierBuildStep notifier = jobB.addBuildStep(CINotifierBuildStep.class);
+        notifier.overrides.check();
+        notifier.topic.set("otopic");
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("${MESSAGE_PROPERTIES}");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo TEST_PROP1 = GOT 1"));
+        assertThat(jobA.getLastBuild().getConsole(), containsString("echo TEST_PROP2 = GOT 2"));
     }
 }
