@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.model.BooleanParameterDefinition;
+import hudson.model.BooleanParameterValue;
 import hudson.model.StringParameterDefinition;
 import hudson.model.TextParameterDefinition;
 import hudson.model.TextParameterValue;
@@ -531,17 +533,20 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	    // Update any build parameters that may have values from the triggering message.
 	    HashMap<String, ParameterValue> newParams = new HashMap<>();
 	    for (ParameterValue def : definedParams) {
-	        newParams.put(def.getName(), def);
-	    }
-	    for (String key : messageParams.keySet()) {
-	        if (newParams.containsKey(key)) {
-	        	if (newParams.get(key) instanceof TextParameterValue) {
-	        		TextParameterValue tpv = new TextParameterValue(key, messageParams.get(key));
-					newParams.put(key, tpv);
-				} else {
-					StringParameterValue spv = new StringParameterValue(key, messageParams.get(key));
-					newParams.put(key, spv);
-				}
+            newParams.put(def.getName(), def);
+        }
+        for (String key : messageParams.keySet()) {
+            if (newParams.containsKey(key)) {
+                if (newParams.get(key) instanceof TextParameterValue) {
+                    TextParameterValue tpv = new TextParameterValue(key, messageParams.get(key));
+                    newParams.put(key, tpv);
+                } else if (newParams.get(key) instanceof BooleanParameterValue) {
+                    BooleanParameterValue bpv = new BooleanParameterValue(key, Boolean.getBoolean(messageParams.get(key)));
+                    newParams.put(key, bpv);
+                } else {
+                    StringParameterValue spv = new StringParameterValue(key, messageParams.get(key));
+                    newParams.put(key, spv);
+                }
 	        }
 	    }
         return new ArrayList<>(newParams.values());
@@ -559,6 +564,9 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 }
                 if (paramDef instanceof TextParameterDefinition) {
                     param = new TextParameterValue(paramDef.getName(), "");
+                }
+                if (paramDef instanceof BooleanParameterDefinition) {
+                    param = new BooleanParameterValue(paramDef.getName(), false);
                 }
 	            if (param != null) {
 	                parameters.add(param);
