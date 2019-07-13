@@ -10,6 +10,7 @@ import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -83,6 +84,41 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString("Hello World"));
 
+    }
+
+    public void _testSimpleCIEventTriggerWithDefaultValue() {
+        FreeStyleJob jobA = jenkins.jobs.create();
+        jobA.configure();
+        jobA.addShellStep("echo hello $DEFAULTPARAM");
+        StringParameter p = jobA.addParameter(StringParameter.class);
+        p.setName("CI_MESSAGE");
+        p.setDefault("");
+        StringParameter qq = jobA.addParameter(StringParameter.class);
+        qq.setName("DEFAULTPARAM");
+        qq.setDefault("world");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageContent.set("");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("hello world"));
+
+        HashMap params = new HashMap();
+        params.put("DEFAULTPARAM", "scott");
+        jobA.scheduleBuild(params);
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("hello scott"));
     }
 
     public void _testSimpleCIEventTriggerWithTextArea(String body, String matchString) {

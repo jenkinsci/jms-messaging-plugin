@@ -98,6 +98,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
+    public void testSimpleCIEventTriggerWithDefaultValue() throws Exception {
+        _testSimpleCIEventTriggerWithDefaultValue();
+    }
+
+    @Test
     public void testSimpleCIEventSubscribeWithCheck() throws Exception {
         _testSimpleCIEventSubscribeWithCheck();
     }

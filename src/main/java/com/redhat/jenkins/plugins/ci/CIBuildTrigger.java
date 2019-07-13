@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.model.BooleanParameterDefinition;
+import hudson.model.BooleanParameterValue;
 import hudson.model.StringParameterDefinition;
 import hudson.model.TextParameterDefinition;
 import hudson.model.TextParameterValue;
@@ -555,10 +557,13 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	        for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {
                 ParameterValue param = null;
                 if (paramDef instanceof StringParameterDefinition) {
-                    param = new StringParameterValue(paramDef.getName(), "");
+                    param = new StringParameterValue(paramDef.getName(), ((StringParameterDefinition) paramDef).getDefaultValue());
                 }
                 if (paramDef instanceof TextParameterDefinition) {
-                    param = new TextParameterValue(paramDef.getName(), "");
+                    param = new TextParameterValue(paramDef.getName(), ((TextParameterDefinition) paramDef).getDefaultValue());
+                }
+                if (paramDef instanceof BooleanParameterDefinition) {
+                    param = new BooleanParameterValue(paramDef.getName(), Boolean.getBoolean(paramDef.getDefaultParameterValue().getValue().toString()));
                 }
 	            if (param != null) {
 	                parameters.add(param);
