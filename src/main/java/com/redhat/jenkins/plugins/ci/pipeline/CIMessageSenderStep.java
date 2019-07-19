@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.utils.MessageUtils;
 import hudson.Extension;
 import hudson.Launcher;
@@ -184,6 +185,12 @@ public class CIMessageSenderStep extends Step {
                             fpd.setMessageContent(step.getMessageContent());
                             fpd.setFailOnError(step.getFailOnError());
                             pd = fpd;
+                        } else {
+                            RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(step.getProviderName());
+                            rpd.setOverrides(step.getOverrides());
+                            rpd.setMessageContent(step.getMessageContent());
+                            rpd.setFailOnError(step.getFailOnError());
+                            pd = rpd;
                         }
                         CIMessageNotifier notifier = new CIMessageNotifier(pd);
                         StepContext c = getContext();

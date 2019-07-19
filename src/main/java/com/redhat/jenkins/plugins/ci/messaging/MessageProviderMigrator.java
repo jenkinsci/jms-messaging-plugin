@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.jenkins.plugins.ci.provider.data.*;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -18,10 +19,6 @@ import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 
 /*
  * The MIT License
@@ -71,12 +68,18 @@ public class MessageProviderMigrator {
                 apd.setMessageContent(builder.getMessageContent());
                 apd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(apd);
-            } else {
+            } else if (prov instanceof FedMsgMessagingProvider) {
                 FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(builder.getProviderName());
                 fpd.setOverrides(builder.getOverrides());
                 fpd.setMessageContent(builder.getMessageContent());
                 fpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(fpd);
+            } else {
+                RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(builder.getProviderName());
+                rpd.setOverrides(builder.getOverrides());
+                rpd.setMessageContent(builder.getMessageContent());
+                rpd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(rpd);
             }
             try {
                 p.save();
@@ -108,12 +111,18 @@ public class MessageProviderMigrator {
                 apd.setMessageContent(builder.getMessageContent());
                 apd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(apd);
-            } else {
+            } else if (prov instanceof FedMsgMessagingProvider) {
                 FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(builder.getProviderName());
                 fpd.setOverrides(builder.getOverrides());
                 fpd.setMessageContent(builder.getMessageContent());
                 fpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(fpd);
+            } else {
+                RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(builder.getProviderName());
+                rpd.setOverrides(builder.getOverrides());
+                rpd.setMessageContent(builder.getMessageContent());
+                rpd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(rpd);
             }
             try {
                 p.save();
@@ -144,12 +153,18 @@ public class MessageProviderMigrator {
                 apd.setVariable(builder.getVariable());
                 apd.setTimeout(builder.getTimeout());
                 builder.setProviderData(apd);
-            } else {
+            } else if (prov instanceof FedMsgMessagingProvider) {
                 FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(builder.getProviderName());
                 fpd.setOverrides(builder.getOverrides());
                 fpd.setVariable(builder.getVariable());
                 fpd.setTimeout(builder.getTimeout());
                 builder.setProviderData(fpd);
+            } else {
+                RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(builder.getProviderName());
+                rpd.setOverrides(builder.getOverrides());
+                rpd.setVariable(builder.getVariable());
+                rpd.setTimeout(builder.getTimeout());
+                builder.setProviderData(rpd);
             }
             try {
                 p.save();

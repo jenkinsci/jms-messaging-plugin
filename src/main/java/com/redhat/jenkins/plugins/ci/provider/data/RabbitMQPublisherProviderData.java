@@ -40,8 +40,6 @@ import org.kohsuke.stapler.StaplerRequest;
 public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
-    private MESSAGE_TYPE messageType;
-    private String messageProperties;
     private String messageContent;
     private Boolean failOnError = false;
 
@@ -67,30 +65,10 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         super(name, overrides);
     }
 
-    public RabbitMQPublisherProviderData(String name, MessagingProviderOverrides overrides, MESSAGE_TYPE messageType, String messageProperties, String messageContent, Boolean failOnError) {
+    public RabbitMQPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent, Boolean failOnError) {
         this(name, overrides);
-        this.messageType = messageType;
-        this.messageProperties = messageProperties;
         this.messageContent = messageContent;
         this.failOnError = failOnError;
-    }
-
-    public MESSAGE_TYPE getMessageType() {
-        return messageType;
-    }
-
-    @DataBoundSetter
-    public void setMessageType(MESSAGE_TYPE messageType) {
-        this.messageType = messageType;
-    }
-
-    public String getMessageProperties() {
-        return messageProperties;
-    }
-
-    @DataBoundSetter
-    public void setMessageProperties(String messageProperties) {
-        this.messageProperties = messageProperties;
     }
 
     public String getMessageContent() {
@@ -125,8 +103,6 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         RabbitMQPublisherProviderData thatp = (RabbitMQPublisherProviderData)that;
         return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
                (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
-               (this.messageType != null ? this.messageType.equals(thatp.messageType) : thatp.messageType == null) &&
-               (this.messageProperties != null ? this.messageProperties.equals(thatp.messageProperties) : thatp.messageProperties == null) &&
                (this.messageContent != null ? this.messageContent.equals(thatp.messageContent) : thatp.messageContent == null) &&
                (this.failOnError != null ? this.failOnError.equals(thatp.failOnError) : thatp.failOnError == null);
     }
@@ -149,8 +125,6 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
             return new RabbitMQPublisherProviderData(
                     jo.getString("name"),
                     mpo,
-                    MESSAGE_TYPE.fromString(jo.getString("messageType")),
-                    jo.getString("messageProperties"),
                     jo.getString("messageContent"),
                     jo.getBoolean("failOnError"));
         }

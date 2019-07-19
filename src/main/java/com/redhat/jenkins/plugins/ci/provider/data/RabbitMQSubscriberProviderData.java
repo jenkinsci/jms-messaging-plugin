@@ -46,7 +46,6 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
-    private String selector;
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private String variable;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
@@ -72,22 +71,13 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         super(name, overrides);
     }
 
-    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, String selector, List<MsgCheck> checks, String variable, Integer timeout) {
+    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
-        this.selector = selector;
         this.checks = checks;
         this.variable = variable;
         this.timeout = timeout;
     }
 
-    public String getSelector() {
-        return selector;
-    }
-
-    @DataBoundSetter
-    public void setSelector(String selector) {
-        this.selector = selector;
-    }
 
     public List<MsgCheck> getChecks() {
         return checks;
@@ -129,7 +119,6 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
 
         RabbitMQSubscriberProviderData thatp = (RabbitMQSubscriberProviderData)that;
         return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
-               (this.selector != null ? this.selector.equals(thatp.selector) : thatp.selector == null) &&
                (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
                (this.checks != null ? this.checks.equals(thatp.checks) : thatp.checks == null) &&
                (this.variable != null ? this.variable.equals(thatp.variable) : thatp.variable == null) &&
@@ -150,6 +139,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
             MessagingProviderOverrides mpo = null;
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
+                mpo.setQueue(jo.getJSONObject("overrides").getString("queue"));
             }
             List<MsgCheck> checks = sr.bindJSONToList(MsgCheck.class, jo.get("checks"));
             String variable = null;
@@ -160,7 +150,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
             if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
-            return new RabbitMQSubscriberProviderData(jo.getString("name"), mpo, jo.getString("selector"), checks, variable, timeout);
+            return new RabbitMQSubscriberProviderData(jo.getString("name"), mpo, checks, variable, timeout);
         }
 
         public String getDefaultVariable() {

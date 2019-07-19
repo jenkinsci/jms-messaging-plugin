@@ -1,14 +1,6 @@
 package com.redhat.jenkins.plugins.ci.authentication;
 
-import hudson.ExtensionList;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-
 import java.io.Serializable;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import jenkins.model.Jenkins;
 
@@ -35,26 +27,9 @@ import jenkins.model.Jenkins;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public abstract class AuthenticationMethod implements Describable<AuthenticationMethod>, Serializable  {
+public abstract class AuthenticationMethod implements Serializable  {
 
     private static final long serialVersionUID = -6077120270692721571L;
-    private transient static final Logger log = Logger.getLogger(AuthenticationMethod.class.getName());
-
-    public abstract static class AuthenticationMethodDescriptor extends Descriptor<AuthenticationMethod> {
-        public static ExtensionList<AuthenticationMethodDescriptor> all() {
-            return Jenkins.getInstance().getExtensionList(AuthenticationMethodDescriptor.class);
-        }
-
-        public static boolean isValidURL(String url) {
-            try {
-                new URI(url);
-            } catch (URISyntaxException e) {
-                log.log(Level.SEVERE, "URISyntaxException, returning false.");
-                return false;
-            }
-            return true;
-        }
-    }
 
     /**
      * Taken from gerrit-trigger-plugin
