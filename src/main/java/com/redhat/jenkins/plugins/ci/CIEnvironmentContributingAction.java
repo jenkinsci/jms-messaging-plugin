@@ -3,6 +3,7 @@ package com.redhat.jenkins.plugins.ci;
 import hudson.EnvVars;
 import hudson.model.EnvironmentContributingAction;
 import hudson.model.ParameterValue;
+import hudson.model.Run;
 import hudson.model.AbstractBuild;
 
 import java.util.HashSet;
@@ -64,18 +65,27 @@ public class CIEnvironmentContributingAction implements EnvironmentContributingA
     }
 
     @Override
+    public void buildEnvironment(Run<?, ?> run, EnvVars env) {
+	addEnvVars(env);
+    }
+
+    @Override
     public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
+	addEnvVars(env);
+    }
 
-        if (env == null || messageParams == null) {
-            return;
-        }
+    private void addEnvVars(EnvVars env) {
 
-        // Only include variables in environment that are not defined as job parameters. And
-        // do not overwrite any existing environment variables (like PATH).
-        for (String key : messageParams.keySet()) {
-            if (!jobParams.contains(key) && !env.containsKey(key)) {
-                env.put(key, messageParams.get(key));
-            }
-        }
+	if (env == null || messageParams == null) {
+	    return;
+	}
+
+	// Only include variables in environment that are not defined as job parameters. And
+	// do not overwrite any existing environment variables (like PATH).
+	for (String key : messageParams.keySet()) {
+	    if (!jobParams.contains(key) && !env.containsKey(key)) {
+		env.put(key, messageParams.get(key));
+	    }
+	}
     }
 }
