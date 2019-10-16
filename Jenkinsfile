@@ -10,8 +10,8 @@ node('docker') {
         docker.image('jenkins/ath:acceptance-test-harness-1.65').inside(containerArgs) {
             sh '''
                 eval $(./vnc.sh 2> /dev/null)
-                mvn clean install -DskipTests
-                mvn test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.121.1 -DforkCount=1 -B
+                mvn -B clean install -DskipTests
+                mvn -B test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.121.1 -DforkCount=1
             '''
         }
     }
