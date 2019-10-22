@@ -7,12 +7,15 @@ node('docker') {
 
     String containerArgs = '-v /var/run/docker.sock:/var/run/docker.sock --shm-size 2g'
     stage('Test') {
-        docker.image('jenkins/ath:acceptance-test-harness-1.65').inside(containerArgs) {
-            sh '''
-                eval $(./vnc.sh 2> /dev/null)
+        docker.image('jenkins/ath:acceptance-test-harness-1.69').inside(containerArgs) {
+            sh """
                 mvn -B clean install -DskipTests
-                mvn -B test -Dmaven.test.failure.ignore=true -DElasticTime.factor=2 -Djenkins.version=2.121.1 -DforkCount=1
-            '''
+                set-java.sh 8
+                eval \$(vnc.sh)
+                java -version
+
+                run.sh firefox 2.176.1 -Dmaven.test.failure.ignore=true -DforkCount=1 -B
+            """
         }
     }
 
