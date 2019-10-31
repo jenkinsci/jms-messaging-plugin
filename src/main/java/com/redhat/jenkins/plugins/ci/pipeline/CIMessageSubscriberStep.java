@@ -1,5 +1,7 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
+import com.redhat.jenkins.plugins.ci.messaging.*;
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
 import hudson.AbortException;
 import hudson.Extension;
@@ -29,10 +31,6 @@ import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
@@ -168,8 +166,14 @@ public class CIMessageSubscriberStep extends Step {
                             fpd.setChecks(step.getChecks());
                             fpd.setTimeout(step.getTimeout());
                             pd = fpd;
+                        } else if (p instanceof RabbitMQMessagingProvider) {
+                            RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(step.getProviderName());
+                            rpd.setOverrides(step.getOverrides());
+                            rpd.setChecks(step.getChecks());
+                            rpd.setTimeout(step.getTimeout());
+                            pd = rpd;
                         }
-                        CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
+                    CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
                         StepContext c = getContext();
                         String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
                         if (result != null) {

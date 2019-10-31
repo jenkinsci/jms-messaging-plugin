@@ -1,28 +1,29 @@
-package com.redhat.jenkins.plugins.ci.authentication.activemq;
+package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
-import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.utils.PluginUtils;
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.activemq.ActiveMQSslConnectionFactory;
-import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-import javax.jms.Connection;
-import javax.jms.JMSException;
-import javax.jms.Session;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultSaslConfig;
+
+import javax.net.ssl.*;
 import javax.servlet.ServletException;
+import java.io.FileInputStream;
+import java.security.KeyStore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.redhat.jenkins.plugins.ci.Messages;
 /*
  * The MIT License
  *
@@ -46,22 +47,28 @@ import java.util.logging.Logger;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMethod {
+public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMethod {
     private static final long serialVersionUID = -5934219869726669459L;
     private transient static final Logger log = Logger.getLogger(SSLCertificateAuthenticationMethod.class.getName());
 
+    private String username;
     private String keystore;
     private Secret keypwd = Secret.fromString("");
     private String truststore;
     private Secret trustpwd = Secret.fromString("");
 
     @DataBoundConstructor
-    public SSLCertificateAuthenticationMethod(String keystore, Secret keypwd, String truststore, Secret trustpwd) {
+    public SSLCertificateAuthenticationMethod(String username, String keystore, Secret keypwd, String truststore, Secret trustpwd) {
+        this.setUsername(username);
         this.setKeystore(keystore);
         this.setKeypwd(keypwd);
         this.setTruststore(truststore);
         this.setTrustpwd(trustpwd);
     }
+
+    public String getUsername() { return username; }
+
+    public void setUsername(String username) { this.username = username; }
 
     public String getKeystore() {
         return keystore;
@@ -77,12 +84,6 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
     public void setKeypwd(Secret password) {
         this.keypwd = password;
-    }
-
-    private String getSubstitutedValue(String value) {
-        EnvVars vars = new EnvVars();
-        vars.put("JENKINS_HOME", Jenkins.getInstance().getRootDir().toString());
-        return PluginUtils.getSubstitutedValue(value, vars);
     }
 
     public String getTruststore() {
@@ -102,13 +103,32 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
     }
 
     @Override
-    public ActiveMQSslConnectionFactory getConnectionFactory(String broker) {
+    public ConnectionFactory getConnectionFactory(String hostname, Integer portNumber, String virtualHost) {
         try {
-            ActiveMQSslConnectionFactory connectionFactory = new ActiveMQSslConnectionFactory(broker);
-            connectionFactory.setKeyStore(getSubstitutedValue(getKeystore()));
-            connectionFactory.setKeyStorePassword(Secret.toString(getKeypwd()));
-            connectionFactory.setTrustStore(getSubstitutedValue(getTruststore()));
-            connectionFactory.setTrustStorePassword(Secret.toString(getTrustpwd()));
+            // Prepare SSL context
+            KeyStore ks = KeyStore.getInstance("PKCS12");
+            ks.load(new FileInputStream(getKeystore()), getKeypwd().getPlainText().toCharArray());
+
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+            keyManagerFactory.init(ks, getKeypwd().getPlainText().toCharArray());
+
+            KeyStore tks = KeyStore.getInstance("JKS");
+            tks.load(new FileInputStream(getTruststore()), getTrustpwd().getPlainText().toCharArray());
+
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
+            trustManagerFactory.init(tks);
+
+            SSLContext c = SSLContext.getInstance("TLSv1.2");
+            c.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            connectionFactory.setUsername(getUsername());
+            connectionFactory.setHost(hostname);
+            connectionFactory.setPort(portNumber);
+            connectionFactory.setVirtualHost(virtualHost);
+            connectionFactory.useSslProtocol(c);
+            connectionFactory.setSaslConfig(DefaultSaslConfig.EXTERNAL);
+            connectionFactory.enableHostnameVerification();
             return connectionFactory;
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception creating connection factory.", e);;
@@ -117,7 +137,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
     }
 
     @Override
-    public Descriptor<ActiveMQAuthenticationMethod> getDescriptor() {
+    public Descriptor<RabbitMQAuthenticationMethod> getDescriptor() {
         return Jenkins.getInstance().getDescriptorByType(SSLCertificateAuthenticationMethodDescriptor.class);
     }
 
@@ -131,7 +151,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
+            return new SSLCertificateAuthenticationMethod(jo.getString("username"),jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
                                                           jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
         }
 
@@ -140,7 +160,10 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
         }
 
         @RequirePOST
-        public FormValidation doTestConnection(@QueryParameter("broker") String broker,
+        public FormValidation doTestConnection(@QueryParameter("username") String username,
+                                               @QueryParameter("hostname") String hostname,
+                                               @QueryParameter("portNumber") Integer portNumber,
+                                               @QueryParameter("virtualHost") String virtualHost,
                                                @QueryParameter("keystore") String keystore,
                                                @QueryParameter("keypwd") String keypwd,
                                                @QueryParameter("truststore") String truststore,
@@ -148,36 +171,31 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
             checkAdmin();
 
-            broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
             Connection connection = null;
-            Session session = null;
-            if (broker != null && isValidURL(broker)) {
+            Channel channel = null;
+            try {
+                SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(username,
+                        keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
+                ConnectionFactory connectionFactory = sam.getConnectionFactory(hostname, portNumber, virtualHost);
+                connection = connectionFactory.newConnection();
+                channel = connection.createChannel();
+                channel.close();
+                connection.close();
+                return FormValidation.ok(Messages.SuccessBrokerConnect(hostname + ":" + portNumber));
+            } catch (Exception e) {
+                log.log(Level.SEVERE, "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
+                return FormValidation.error(Messages.Error() + ": " + e);
+            } finally {
                 try {
-                    SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
-                    ActiveMQSslConnectionFactory connectionFactory = sam.getConnectionFactory(broker);
-                    connection = connectionFactory.createConnection();
-                    connection.start();
-                    session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    session.close();
-                    connection.close();
-                    return FormValidation.ok(Messages.SuccessBrokerConnect(broker));
-                } catch (Exception e) {
-                    log.log(Level.SEVERE, "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
-                    return FormValidation.error(Messages.Error() + ": " + e);
-                } finally {
-                    try {
-                        if (session != null) {
-                            session.close();
-                        }
-                        if (connection != null) {
-                            connection.close();
-                        }
-                    } catch (JMSException e) {
-                        //
+                    if (channel != null) {
+                        channel.close();
                     }
+                    if (connection != null) {
+                        connection.close();
+                    }
+                } catch (Exception e) {
+                    //
                 }
-            } else {
-                return FormValidation.error(Messages.InvalidURI());
             }
         }
     }

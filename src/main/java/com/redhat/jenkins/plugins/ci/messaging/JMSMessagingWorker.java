@@ -55,6 +55,11 @@ public abstract class JMSMessagingWorker {
 
     public abstract void disconnect();
 
+    public JMSMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+        this.overrides = overrides;
+        this.jobname = jobname;
+    }
+
     public abstract SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
     public abstract String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
 
