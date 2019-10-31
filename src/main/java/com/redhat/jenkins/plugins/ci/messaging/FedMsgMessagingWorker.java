@@ -104,7 +104,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     // then we just unsubscribe here, sleep, so that we may
                     // try again on the next iteration.
 
-                    log.log(Level.SEVERE, "Eexception raised while subscribing job '" + jobname + "', retrying in " + RETRY_MINUTES + " minutes.", ex);
+                    log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in " + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
 
                         unsubscribe(jobname);

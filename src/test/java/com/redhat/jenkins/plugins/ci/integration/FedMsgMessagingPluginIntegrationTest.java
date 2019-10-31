@@ -284,7 +284,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 "#!/bin/sh\n" +
                         "exec ssh -o StrictHostKeyChecking=no -i "
                         + privateKey.getAbsolutePath()
-                        + " fedmsg2@" + fedmsgRelay.getIpAddress()
+                        + " fedmsg2@" + fedmsgRelay.getSshIPAndPort()
                         + " fedmsg-logger "
                         + " \"$@\""
         );
@@ -337,7 +337,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 "#!/bin/sh\n" +
                         "exec ssh -o StrictHostKeyChecking=no -i "
                         + privateKey.getAbsolutePath()
-                        + " fedmsg2@" + fedmsgRelay.getIpAddress()
+                        + " fedmsg2@" + fedmsgRelay.getSshIPAndPort()
                         + " fedmsg-logger "
                         + " \"$@\""
         );
@@ -389,7 +389,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 "#!/bin/sh\n" +
                         "exec ssh -o StrictHostKeyChecking=no -i "
                         + privateKey.getAbsolutePath()
-                        + " fedmsg2@" + fedmsgRelay.getIpAddress()
+                        + " fedmsg2@" + fedmsgRelay.getSshIPAndPort()
                         + " fedmsg-logger "
                         + " \"$@\""
         );

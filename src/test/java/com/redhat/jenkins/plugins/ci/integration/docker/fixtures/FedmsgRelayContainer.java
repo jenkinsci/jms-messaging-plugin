@@ -1,5 +1,6 @@
 package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
@@ -32,12 +33,39 @@ import java.io.IOException;
 public class FedmsgRelayContainer extends DockerContainer {
 
     public String getPublisher() throws IOException {
+        String ip = super.getIpAddress();
+        if (ip == null || ip.equals("")) {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("2003/tcp").get(0);
+            String hostIP = binding.get("HostIp").asText();
+            String hostPort = binding.get("HostPort").asText();
+            ip = hostIP + ":" + hostPort;
+            System.out.println(ip);
+            return "tcp://"+ip;
+        }
         return "tcp://"+getIpAddress()+":2003";
     }
     public String getHub() throws IOException {
+        String ip = super.getIpAddress();
+        if (ip == null || ip.equals("")) {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("4001/tcp").get(0);
+            String hostIP = binding.get("HostIp").asText();
+            String hostPort = binding.get("HostPort").asText();
+            ip = hostIP + ":" + hostPort;
+            System.out.println(ip);
+            return "tcp://"+ip;
+        }
         return "tcp://"+getIpAddress()+":4001";
     }
-    public String getSSHLocation() throws IOException {
-        return "-p 22 fedmsg2@" + getIpAddress();
+    public String getSshIPAndPort() throws IOException {
+        String ip = super.getIpAddress();
+        if (ip == null || ip.equals("")) {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("22/tcp").get(0);
+            String hostIP = binding.get("HostIp").asText();
+            String hostPort = binding.get("HostPort").asText();
+            ip = hostIP + " -p " + hostPort;
+            System.out.println(ip);
+            return ip;
+        }
+        return getIpAddress()+" -p 22";
     }
 }

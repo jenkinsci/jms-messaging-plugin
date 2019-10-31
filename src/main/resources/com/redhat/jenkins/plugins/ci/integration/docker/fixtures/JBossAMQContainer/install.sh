@@ -11,7 +11,10 @@ set -e
 cd /opt/jboss
 
 # Download and extract the distro
-curl -O ${FUSE_DISTRO_URL}
+echo ${FUSE_DISTRO_URL}
+curl --HEAD ${FUSE_DISTRO_URL}
+curl -L -O ${FUSE_DISTRO_URL}
+ls -l
 jar -xvf ${FUSE_ARTIFACT_ID}-${FUSE_VERSION}.zip
 rm ${FUSE_ARTIFACT_ID}-${FUSE_VERSION}.zip
 mv jboss-a-mq-${FUSE_VERSION} jboss-a-mq
