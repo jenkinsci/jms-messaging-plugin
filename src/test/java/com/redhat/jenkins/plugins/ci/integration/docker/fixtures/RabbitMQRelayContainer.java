@@ -1,8 +1,10 @@
-package com.redhat.jenkins.plugins.ci.authentication;
+package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
 
-import java.io.Serializable;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.jenkinsci.test.acceptance.docker.DockerContainer;
+import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-import jenkins.model.Jenkins;
+import java.io.IOException;
 
 /*
  * The MIT License
@@ -27,18 +29,25 @@ import jenkins.model.Jenkins;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public abstract class AuthenticationMethod implements Serializable  {
+@DockerFixture(id="rabbitmq-relay", ports=5672)
+public class RabbitMQRelayContainer extends DockerContainer {
 
-    private static final long serialVersionUID = -6077120270692721571L;
-
-    /**
-     * Taken from gerrit-trigger-plugin
-     */
-    public static void checkAdmin() {
-        final Jenkins jenkins = Jenkins.getInstance(); //Hoping this method doesn't change meaning again
-        if (jenkins != null) {
-            //If Jenkins is not alive then we are not started, so no unauthorised user might do anything
-            jenkins.checkPermission(Jenkins.ADMINISTER);
+    public String getHost() throws IOException {
+        String ip = getIpAddress();
+        if (ip == null || ip.equals(""))  {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
+            String hostIP = binding.get("HostIp").asText();
+            ip = hostIP;
         }
+        return ip;
+    }
+    public String getPort() throws IOException {
+        String hostPort = "5672";
+        String ip = super.getIpAddress();
+        if (ip == null || ip.equals("")) {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
+            hostPort = binding.get("HostPort").asText();
+        }
+        return hostPort;
     }
 }

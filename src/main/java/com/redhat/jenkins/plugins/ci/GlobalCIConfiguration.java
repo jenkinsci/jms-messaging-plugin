@@ -1,5 +1,7 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
+import com.redhat.jenkins.plugins.ci.provider.data.*;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.PluginManager;
@@ -30,11 +32,6 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 /*
  * The MIT License
@@ -248,8 +245,10 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             for (JMSMessagingProvider p : getConfigs()) {
                 if (p instanceof ActiveMqMessagingProvider) {
                     pds.add(new ActiveMQSubscriberProviderData(p.getName()));
-                } else {
+                } else if (p instanceof FedMsgMessagingProvider) {
                     pds.add(new FedMsgSubscriberProviderData(p.getName()));
+                } else {
+                    pds.add(new RabbitMQSubscriberProviderData(p.getName()));
                 }
             }
         }
@@ -262,8 +261,10 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             for (JMSMessagingProvider p : getConfigs()) {
                 if (p instanceof ActiveMqMessagingProvider) {
                     pds.add(new ActiveMQPublisherProviderData(p.getName()));
-                } else {
+                } else if (p instanceof FedMsgMessagingProvider) {
                     pds.add(new FedMsgPublisherProviderData(p.getName()));
+                } else {
+                    pds.add(new RabbitMQPublisherProviderData(p.getName()));
                 }
             }
         }

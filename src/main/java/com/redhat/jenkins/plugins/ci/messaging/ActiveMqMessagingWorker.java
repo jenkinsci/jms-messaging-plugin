@@ -87,10 +87,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private MessageConsumer subscriber;
     private String uuid = UUID.randomUUID().toString();
 
-    public ActiveMqMessagingWorker(ActiveMqMessagingProvider provider, MessagingProviderOverrides overrides, String jobname) {
-        this.provider = provider;
-        this.overrides = overrides;
-        this.jobname = jobname;
+    public ActiveMqMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+        super(messagingProvider, overrides, jobname);
+        this.provider = (ActiveMqMessagingProvider) messagingProvider;
     }
 
     @Override

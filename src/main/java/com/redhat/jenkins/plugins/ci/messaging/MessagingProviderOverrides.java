@@ -16,6 +16,7 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
     private static final long serialVersionUID = -8815444484948038651L;
 
     private String topic;
+    private String queue;
 
     @Whitelisted
     @DataBoundConstructor
@@ -27,9 +28,19 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
         return topic;
     }
 
+
+    public String getQueue() {
+        return queue;
+    }
+
     @DataBoundSetter
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    @DataBoundSetter
+    public void setQueue(String queue) {
+        this.queue = queue;
     }
 
     @Override
@@ -39,7 +50,8 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
 
         MessagingProviderOverrides that = (MessagingProviderOverrides) o;
 
-        return topic != null ? topic.equals(that.topic) : that.topic == null;
+        return (topic != null ? topic.equals(that.topic) : that.topic == null) &&
+                (queue != null ? queue.equals(that.queue) : that.queue == null);
     }
 
     @Override

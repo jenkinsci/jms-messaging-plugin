@@ -1,13 +1,11 @@
-package com.redhat.jenkins.plugins.ci.authentication.activemq;
+package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
-import com.redhat.jenkins.plugins.ci.Messages;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -15,13 +13,15 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-import javax.jms.Connection;
-import javax.jms.JMSException;
-import javax.jms.Session;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.Channel;
+
 import javax.servlet.ServletException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.redhat.jenkins.plugins.ci.Messages;
 /*
  * The MIT License
  *
@@ -45,7 +45,7 @@ import java.util.logging.Logger;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  {
+public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod  {
     private static final long serialVersionUID = 452156745621333923L;
     private transient static final Logger log = Logger.getLogger(UsernameAuthenticationMethod.class.getName());
 
@@ -77,12 +77,18 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
     }
 
     @Override
-    public ActiveMQConnectionFactory getConnectionFactory(String broker) {
-        return new ActiveMQConnectionFactory(getUsername(), getPassword().getPlainText(), broker);
+    public ConnectionFactory getConnectionFactory(String hostname, Integer portNumber, String virtualHost) {
+        ConnectionFactory connectionFactory = new ConnectionFactory();
+        connectionFactory.setHost(hostname);
+        connectionFactory.setPort(portNumber);
+        connectionFactory.setVirtualHost(virtualHost);
+        connectionFactory.setUsername(getUsername());
+        connectionFactory.setPassword(getPassword().getPlainText());
+        return connectionFactory;
     }
 
     @Override
-    public Descriptor<ActiveMQAuthenticationMethod> getDescriptor() {
+    public Descriptor<RabbitMQAuthenticationMethod> getDescriptor() {
         return Jenkins.getInstance().getDescriptorByType(UsernameAuthenticationMethodDescriptor.class);
     }
 
@@ -104,42 +110,38 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
         }
 
         @RequirePOST
-        public FormValidation doTestConnection(@QueryParameter("broker") String broker,
+        public FormValidation doTestConnection(@QueryParameter("hostname") String hostname,
+                                               @QueryParameter("portNumber") Integer portNumber,
+                                               @QueryParameter("virtualHost") String virtualHost,
                                                @QueryParameter("username") String username,
                                                @QueryParameter("password") String password) throws ServletException {
 
             checkAdmin();
 
-            broker = StringUtils.strip(StringUtils.stripToNull(broker), "/");
-            Session session = null;
             Connection connection = null;
-            if (broker != null && isValidURL(broker)) {
+            Channel channel = null;
+            try {
+                UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
+                ConnectionFactory connectionFactory = uam.getConnectionFactory(hostname, portNumber, virtualHost);
+                connection = connectionFactory.newConnection();
+                channel = connection.createChannel();
+                channel.close();
+                connection.close();
+                return FormValidation.ok(Messages.SuccessBrokerConnect(hostname + ":" + portNumber));
+            } catch (Exception e) {
+                log.log(Level.SEVERE, "Unhandled exception in UsernameAuthenticationMethod.doTestConnection: ", e);
+                return FormValidation.error(Messages.Error() + ": " + e);
+            } finally {
                 try {
-                    UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
-                    ActiveMQConnectionFactory connectionFactory = uam.getConnectionFactory(broker);
-                    connection = connectionFactory.createConnection();
-                    connection.start();
-                    session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    session.close();
-                    connection.close();
-                    return FormValidation.ok(Messages.SuccessBrokerConnect(broker));
-                } catch (Exception e) {
-                    log.log(Level.SEVERE, "Unhandled exception in UsernameAuthenticationMethod.doTestConnection: ", e);
-                    return FormValidation.error(Messages.Error() + ": " + e);
-                } finally {
-                    try {
-                        if (session != null) {
-                            session.close();
-                        }
-                        if (connection != null) {
-                            connection.close();
-                        }
-                    } catch (JMSException e) {
-                        //
+                    if (channel != null) {
+                        channel.close();
                     }
+                    if (connection != null) {
+                        connection.close();
+                    }
+                } catch (Exception e) {
+                    //
                 }
-            } else {
-                return FormValidation.error(Messages.InvalidURI());
             }
         }
     }

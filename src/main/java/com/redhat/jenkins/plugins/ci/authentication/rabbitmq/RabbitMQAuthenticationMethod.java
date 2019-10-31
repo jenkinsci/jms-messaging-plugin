@@ -1,15 +1,10 @@
-package com.redhat.jenkins.plugins.ci.authentication.activemq;
+package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
-import hudson.ExtensionList;
+import com.rabbitmq.client.ConnectionFactory;
+
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import hudson.ExtensionList;
 
 import jenkins.model.Jenkins;
 
@@ -38,27 +33,16 @@ import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod implements Describable<ActiveMQAuthenticationMethod> {
+public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod implements Describable<RabbitMQAuthenticationMethod> {
 
     private static final long serialVersionUID = -6077120270692721571L;
-    private transient static final Logger log = Logger.getLogger(AuthenticationMethod.class.getName());
 
-    public abstract static class AuthenticationMethodDescriptor extends Descriptor<ActiveMQAuthenticationMethod> {
+    public abstract static class AuthenticationMethodDescriptor extends Descriptor<RabbitMQAuthenticationMethod> {
         public static ExtensionList<AuthenticationMethodDescriptor> all() {
             return Jenkins.getInstance().getExtensionList(AuthenticationMethodDescriptor.class);
         }
-
-        public static boolean isValidURL(String url) {
-            try {
-                new URI(url);
-            } catch (URISyntaxException e) {
-                log.log(Level.SEVERE, "URISyntaxException, returning false.");
-                return false;
-            }
-            return true;
-        }
     }
 
-
-    public abstract ActiveMQConnectionFactory getConnectionFactory(String broker);
+    public abstract ConnectionFactory getConnectionFactory(String hostname, Integer portNumber,
+                                                           String VirtualHost);
 }

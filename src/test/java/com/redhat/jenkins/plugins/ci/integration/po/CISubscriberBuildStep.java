@@ -36,6 +36,7 @@ public class CISubscriberBuildStep extends AbstractStep implements BuildStep {
     public final Control providerData = control("/");
     public final Control overrides = control("providerData/overrides");
     public final Control topic = control("providerData/overrides/topic");
+    public final Control queue = control("providerData/overrides/queue");
     public final Control selector = control("providerData/selector");
     public final Control checks = control("providerData/repeatable-add");
     public final Control variable = control("providerData/variable");
