@@ -247,13 +247,6 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         jenkins.save();
     }
 
-    @WithPlugins("workflow-aggregator")
-    @Test
-    public void testSimpleCIEventTriggerWithBooleanParam() {
-        _testSimpleCIEventTriggerWithBoolParam("scott=123\ntom=456",
-                "dryrun is false");
-    }
-
     @Test
     public void testTriggerWithComplexCheck() throws Exception {
 
