@@ -147,9 +147,9 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(jobA.getLastBuild().getConsole(), containsString(matchString));
     }
 
-    public void _testSimpleCIEventTriggerWithBoolParam(String body, String matchString) {
+    public void _testSimpleCIEventTriggerWithBoolParam(String properties, String body, String matchString) {
         WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
-        jobA.script.set("node('master') {\n echo \"dryrun is $dryrun\"\n}");
+        jobA.script.set("node('master') {\n echo \"dryrun is $dryrun, scott is $scott\"\n}");
         jobA.save();
 
         jobA.configure();
@@ -161,6 +161,10 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         bb.setName("dryrun");
         bb.setDefault(false);
 
+        StringParameter s = jobA.addParameter(StringParameter.class);
+        s.setName("scott");
+        s.setDefault("");
+
         CIEventTrigger ciEvent = new CIEventTrigger(jobA);
         ProviderData pd = ciEvent.addProviderData();
         jobA.save();
@@ -170,6 +174,7 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
         CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageProperties.set(properties);
         notifier.messageContent.set(body);
         jobB.save();
         jobB.startBuild().shouldSucceed();

@@ -70,8 +70,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithBooleanParam() {
-        _testSimpleCIEventTriggerWithBoolParam("scott=123\ntom=456",
-                "dryrun is false");
+        _testSimpleCIEventTriggerWithBoolParam("scott=123\ntom=456\ndryrun=true", "{ \"scott\": \"123\", \"tom\": \"456\", \"dryrun\": true }",
+                "dryrun is true, scott is 123");
     }
 
     @Test

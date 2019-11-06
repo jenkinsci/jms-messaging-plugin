@@ -536,12 +536,13 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
             newParams.put(def.getName(), def);
         }
         for (String key : messageParams.keySet()) {
+
             if (newParams.containsKey(key)) {
                 if (newParams.get(key) instanceof TextParameterValue) {
                     TextParameterValue tpv = new TextParameterValue(key, messageParams.get(key));
                     newParams.put(key, tpv);
                 } else if (newParams.get(key) instanceof BooleanParameterValue) {
-                    BooleanParameterValue bpv = new BooleanParameterValue(key, Boolean.getBoolean(messageParams.get(key)));
+                    BooleanParameterValue bpv = new BooleanParameterValue(key, Boolean.parseBoolean(messageParams.get(key)));
                     newParams.put(key, bpv);
                 } else {
                     StringParameterValue spv = new StringParameterValue(key, messageParams.get(key));
@@ -567,9 +568,6 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
                 }
                 if (paramDef instanceof BooleanParameterDefinition) {
                     param = new BooleanParameterValue(paramDef.getName(), Boolean.getBoolean(paramDef.getDefaultParameterValue().getValue().toString()));
-                }
-                if (paramDef instanceof BooleanParameterDefinition) {
-                    param = new BooleanParameterValue(paramDef.getName(), false);
                 }
 	            if (param != null) {
 	                parameters.add(param);
