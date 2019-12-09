@@ -42,6 +42,10 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
 
     private String messageContent;
     private Boolean failOnError = false;
+    // Fedora messaging related fields
+    private Boolean fedoraMessaging = false;
+    private Integer severity = 20;
+    private String schema;
 
     @DataBoundConstructor
     public RabbitMQPublisherProviderData() {
@@ -65,10 +69,14 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         super(name, overrides);
     }
 
-    public RabbitMQPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent, Boolean failOnError) {
+    public RabbitMQPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent,
+                                         Boolean failOnError, Boolean fedoraMessaging, Integer severity, String schema) {
         this(name, overrides);
         this.messageContent = messageContent;
         this.failOnError = failOnError;
+        this.fedoraMessaging = fedoraMessaging;
+        this.severity = severity;
+        this.schema = schema;
     }
 
     public String getMessageContent() {
@@ -89,6 +97,33 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         this.failOnError = failOnError;
     }
 
+    public Boolean isFedoraMessaging() {
+        return fedoraMessaging;
+    }
+
+    @DataBoundSetter
+    public void setFedoraMessaging(boolean fedoraMessaging) {
+        this.fedoraMessaging = fedoraMessaging;
+    }
+
+    public Integer getSeverity() {
+        return severity;
+    }
+
+    @DataBoundSetter
+    public void setSeverity(Integer severity) {
+        this.severity = severity;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    @DataBoundSetter
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
     @Override
     public Descriptor<ProviderData> getDescriptor() {
         return Jenkins.getInstance().getDescriptorByType(RabbitMQPublisherProviderDataDescriptor.class);
@@ -104,7 +139,9 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
                (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
                (this.messageContent != null ? this.messageContent.equals(thatp.messageContent) : thatp.messageContent == null) &&
-               (this.failOnError != null ? this.failOnError.equals(thatp.failOnError) : thatp.failOnError == null);
+               (this.failOnError != null ? this.failOnError.equals(thatp.failOnError) : thatp.failOnError == null) &&
+               (this.fedoraMessaging != null ? this.fedoraMessaging.equals(thatp.fedoraMessaging) : thatp.fedoraMessaging == null) &&
+               (this.schema != null ? this.schema.equals(thatp.schema) : thatp.schema == null);
     }
 
     @Extension
@@ -119,14 +156,25 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         @Override
         public RabbitMQPublisherProviderData newInstance(StaplerRequest sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
+            Boolean fedoraMessaging = false;
+            Integer severity = 20;
+            String schema = "";
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
+            }
+            if (!jo.getJSONObject("fedoraMessagingFields").isNullObject()) {
+                fedoraMessaging = true;
+                severity = jo.getJSONObject("fedoraMessagingFields").getInt("severity");
+                schema = jo.getJSONObject("fedoraMessagingFields").getString("schema");
             }
             return new RabbitMQPublisherProviderData(
                     jo.getString("name"),
                     mpo,
                     jo.getString("messageContent"),
-                    jo.getBoolean("failOnError"));
+                    jo.getBoolean("failOnError"),
+                    fedoraMessaging,
+                    severity,
+                    schema);
         }
 
         public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {

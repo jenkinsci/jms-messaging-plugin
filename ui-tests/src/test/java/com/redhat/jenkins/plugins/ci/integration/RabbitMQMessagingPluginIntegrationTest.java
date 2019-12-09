@@ -14,6 +14,7 @@ import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
+import org.openqa.selenium.By;
 
 import java.io.File;
 import java.io.IOException;
@@ -314,5 +315,24 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         job.scheduleBuild();
         job.getLastBuild().shouldFail().shouldExist();
         assertThat(job.getLastBuild().getConsole(), containsString("ERROR: Connection to broker can't be established!"));
+    }
+
+    @Test
+    public void testFedoraMessagingHeaders() throws Exception {
+        FreeStyleJob job = jenkins.jobs.create();
+        job.configure();
+        CINotifierPostBuildStep notifier = job.addPublisher(CINotifierPostBuildStep.class);
+        notifier.fedoraMessaging.click();
+        notifier.severity.select("20");
+        notifier.schema.sendKeys("schema");
+        job.save();
+        job.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        job.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(job.getLastBuild().getConsole(), containsString(
+                "fedora_messaging_severity=20, fedora_messaging_schema=schema}"));
+        assertThat(job.getLastBuild().getConsole(), containsString(
+                "{sent_at="));
     }
 }
