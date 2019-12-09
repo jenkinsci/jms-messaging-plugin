@@ -19,10 +19,8 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -257,6 +255,15 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         }
         String body = "";
         String msgId = "";
+
+        // Fedora messaging wire format support
+        Map<String, Object> headers = new HashMap<String, Object>();
+        if (pd.isFedoraMessaging()) {
+            headers.put("fedora_messaging_severity", pd.getSeverity());
+            headers.put("fedora_messaging_schema", pd.getSchema());
+            headers.put("sent_at", ZonedDateTime.now().toString());
+        }
+        System.out.println(headers);
         try {
 
             EnvVars env = new EnvVars();
@@ -277,7 +284,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             try {
                 channel.exchangeDeclarePassive(exchangeName);
                 channel.basicPublish(exchangeName, msg.getTopic(),
-                        new AMQP.BasicProperties.Builder()
+                        new AMQP.BasicProperties.Builder().headers(headers)
                         .messageId(msgId).build(), body.getBytes());
             } catch (IOException e) {
                 if (pd.isFailOnError()) {
@@ -285,9 +292,11 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     return new SendResult(false, msgId, body);
                 }
             }
+            log.fine("Message headers:\n" + headers);
             log.fine("JSON message:\n" + msg.toJson());
             listener.getLogger().println("Message id: " + msg.getMsgId());
             listener.getLogger().println("Message topic: " + msg.getTopic());
+            listener.getLogger().println("Message headers:\n" + headers);
             listener.getLogger().println("JSON message body:\n" + body);
 
         } catch (Exception e) {

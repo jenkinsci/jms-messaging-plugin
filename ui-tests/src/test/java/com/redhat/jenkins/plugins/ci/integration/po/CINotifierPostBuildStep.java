@@ -39,6 +39,9 @@ public class CINotifierPostBuildStep extends AbstractStep implements PostBuildSt
     public final Control messageProperties = control("providerData/messageProperties");
     public final Control messageContent = control("providerData/messageContent");
     public final Control failOnError = control("providerData/failOnError");
+    public final Control fedoraMessaging = control("providerData/fedoraMessagingFields");
+    public final Control severity = control("providerData/fedoraMessagingFields/severity");
+    public final Control schema = control("providerData/fedoraMessagingFields/schema");
 
     public CINotifierPostBuildStep(Job parent, String path) {
         super(parent, path);
