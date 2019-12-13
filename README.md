@@ -132,35 +132,54 @@ See above.
 
 ### Triggers
 
-The CI trigger is available via properties in the root of a Jenkins
-declarative pipeline (outside the \`pipeline\` block):
+The CI trigger is available via the triggers section in a declarative pipeline:
 
 ``` syntaxhighlighter-pre
-properties([
-  pipelineTriggers([
-    [
-      $class: 'CIBuildTrigger',
-      noSquash: false,
-      providerData: [
-        $class: 'ActiveMQSubscriberProviderData',
-        checks: [
-          [
-            expectedValue: '^foo.*bar$',
-            field: '$.msg.tag'
-          ]
-        ],
-        name: 'Red Hat UMB',
-        overrides: [
-          topic: 'Consumer.rh-jenkins-ci-plugin.da3c13a1-021d-4629-81a1-5f522dc1a9e3.VirtualTopic.qe.ci.>'
-        ],
-        selector: 'name = \'my-job\'',
-        timeout: 30
-      ]
-    ]
-  ])
-])
+triggers {
+    ciBuildTrigger(noSquash: false,
+        providerList: [ activeMQSubscriber(name: 'Red Hat UMB',
+                        checks: [
+                            [
+                                expectedValue: '^foo.*bar$',
+                                field: '$.msg.tag'
+                            ]
+                        ],
+                        overrides: [topic: 'Consumer.rh-jenkins-ci-plugin.8dad9900-abcabc.VirtualTopic.eng.ci.example.durable.test.abcabc'] )
+        ]
+    )
+}
 ```
 
+## Job DSL Support
+
+Here is a usage example for Job DSL:
+
+``` syntaxhighlighter-pre
+ciBuildTrigger {
+    providers {
+      providerDataEnvelope {
+        providerData {
+          activeMQSubscriber {
+            name("Red Hat UMB")
+            overrides {
+              def uuid = "4ba46bbc-949b-11e8-b83f-54ee754ea14c"
+              topic("Consumer.rh-jenkins-ci-plugin.${uuid}.VirtualTopic.eng.ci.redhat-container-image.pipeline.running")
+            }
+            // Message Checks
+            checks {
+              msgCheck {
+                field('$.artifact.type')
+                expectedValue("cvp")
+              }
+            }
+          }
+        }
+      }
+    }
+    noSquash(true)
+  }
+}
+```
 ### Steps
 
 This plugin provides the steps when using the Jenkins Pipeline feature:
