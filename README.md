@@ -10,6 +10,7 @@ JMS Messaging Providers
 -   This plugin supports the following JMS Message Provider types
     -   ActiveMQ
     -   FedMsg
+    -   RabbitMQ
 
 Older versions of this plugin may not be safe to use. Please review the
 following warnings before using an older version:
@@ -27,6 +28,7 @@ list of currently supported JMS Message Providers:
 
 -   ActiveMQ
 -   FedMsg
+-   RabbitMQ
 
 ![](https://wiki.jenkins.io/download/attachments/103088201/jms-messaging-screenshot.png?version=4&modificationDate=1491231804000&api=v2){.confluence-embedded-image
 .confluence-content-image-border}
@@ -198,6 +200,14 @@ node('master') {
 ```
 
 ## Change Log
+
+#### Version 1.1.12 (January 8, 2020)
+
+- Update json-path from 2.3.0 to 2.4.0 (#129)
+- Update jeromq from 0.4.0 to 0.4.3 (#128)
+- Upgrade jackson-* packages (#156)
+- Upgrade activemq-amqp to 5.15.9
+- Add simple client for RabbitMQ (#154) (thanks @Zlopez)
 
 #### Version 1.1.11 (November 6, 2019)
 
