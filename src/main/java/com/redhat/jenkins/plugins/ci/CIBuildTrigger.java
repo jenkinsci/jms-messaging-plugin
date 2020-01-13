@@ -16,11 +16,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.model.AbstractBuild;
 import hudson.model.BooleanParameterDefinition;
 import hudson.model.BooleanParameterValue;
+import hudson.model.Run;
 import hudson.model.StringParameterDefinition;
 import hudson.model.TextParameterDefinition;
 import hudson.model.TextParameterValue;
+import hudson.model.queue.QueueTaskFuture;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -510,23 +513,23 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         return new ParametersAction(parameters);
     }
 
-    public void scheduleBuild(Map<String, String> messageParams) {
+    public QueueTaskFuture<AbstractBuild> scheduleBuild(Map<String, String> messageParams) {
         ParametersAction parameters = createParameters(job, messageParams);
 	    List<ParameterValue> definedParameters = getDefinedParameters(job);
 	    List<ParameterValue> buildParameters = getUpdatedParameters(messageParams, definedParameters);
-        ParameterizedJobMixIn<?, ?> jobMixIn = new ParameterizedJobMixIn() {
+        ParameterizedJobMixIn jobMixIn = new ParameterizedJobMixIn() {
             @Override
             protected Job<?, ?> asJob() {
                 return (Job<?, ?>)job;
             }
         };
 
-        jobMixIn.scheduleBuild2(0,
+        return jobMixIn.scheduleBuild2(0,
                 new CauseAction(new CIBuildCause()),
                 parameters,
                 new CIEnvironmentContributingAction(messageParams, buildParameters),
                 new CIShouldScheduleQueueAction(noSquash)
-                );
+        );
 	}
 
 	private List<ParameterValue> getUpdatedParameters(Map<String, String> messageParams, List<ParameterValue> definedParams) {
