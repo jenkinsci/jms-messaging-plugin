@@ -43,7 +43,7 @@ import java.util.List;
 public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
-    public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
+    private static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
