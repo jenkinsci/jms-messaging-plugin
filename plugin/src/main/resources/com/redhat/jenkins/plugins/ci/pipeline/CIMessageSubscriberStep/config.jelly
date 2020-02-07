@@ -1,0 +1,73 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+     * The MIT License
+     *
+     * Copyright (c) Red Hat, Inc.
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in
+     * all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     * THE SOFTWARE.
+     */
+  -->
+  <f:entry title="${%Messaging Provider}" field="providerName">
+      <f:select onchange="javascript: onProviderChange(this, 'subscriber');"/>
+  </f:entry>
+  <f:nested>
+    <j:choose>
+      <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
+      <j:when test="${empty(instance)}">
+        <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
+        <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic();}"/>
+      </j:when>
+      <j:otherwise>
+        <j:set var="checked" value="${instance.getOverrides() != null}"/>
+        <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
+      </j:otherwise>
+    </j:choose>
+    <table>
+      <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
+        <f:entry title="${%Topic name}" field="topic">
+          <f:textbox value="${value}"/>
+        </f:entry>
+      </f:optionalBlock>
+    </table>
+  </f:nested>
+  <f:entry title="${%JMS selector}" field="selector">
+    <f:expandableTextbox />
+  </f:entry>
+  <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
+      <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}">
+        <table width="100%">
+          <f:entry title="${%Field}">
+            <f:textbox name="checks.field" value="${check.field}"
+                       checkUrl="'descriptorByName/com.redhat.jenkins.plugins.ci.CIBuildTrigger/checkField?value='+escape(this.value)" />
+          </f:entry>
+          <f:entry title="${%Expected value}">
+            <f:textbox name="checks.expectedValue" value="${check.expectedValue}" />
+          </f:entry>
+          <f:entry>
+            <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+              <f:repeatableDeleteButton value="${%Delete check}" />
+              <br/>
+            </div>
+          </f:entry>
+      </table>
+    </f:repeatable>
+  </f:entry>
+
+</j:jelly>
