@@ -56,6 +56,7 @@
         <java.level>8</java.level>
         <jenkins.version>2.176.1</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
+        <findbugs.failOnError>false</findbugs.failOnError>
     </properties>
 
     <scm>
@@ -318,18 +319,6 @@
 <!--                    </environmentVariables>-->
 <!--                </configuration>-->
 <!--            </plugin>-->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-                 <executions>
-                    <execution>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
