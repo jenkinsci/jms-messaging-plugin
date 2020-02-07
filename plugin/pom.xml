@@ -205,12 +205,6 @@
             <version>1.68</version>
         </dependency>
         <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility-proxy</artifactId>
-            <version>3.1.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>1.8.15</version>
@@ -299,26 +293,6 @@
                     </dependency>
                 </dependencies>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-surefire-plugin</artifactId>-->
-<!--		<version>3.0.0-M3</version>-->
-<!--                <configuration>-->
-<!--                    <forkCount>1</forkCount>-->
-<!--                    <reuseForks>false</reuseForks>-->
-<!--                    <excludes>-->
-<!--                        <exclude>InjectedTest.java</exclude>-->
-<!--                    </excludes>-->
-
-<!--                    <argLine>${argLine}</argLine>-->
-<!--                    <environmentVariables>-->
-<!--                        <JENKINS_WAR>${user.home}/.m2/repository/org/jenkins-ci/main/jenkins-war/${jenkins.version}/jenkins-war-${jenkins.version}.war</JENKINS_WAR>-->
-<!--                        <LOCAL_SNAPSHOTS>true</LOCAL_SNAPSHOTS>-->
-<!--                        <JENKINS_JAVA_OPTS2>-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y -Dhudson.model.ParametersAction.keepUndefinedParameters=true</JENKINS_JAVA_OPTS2>-->
-<!--                        <JENKINS_JAVA_OPTS>-Dhudson.model.ParametersAction.keepUndefinedParameters=true</JENKINS_JAVA_OPTS>-->
-<!--                    </environmentVariables>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -339,9 +313,5 @@
                 </executions>
             </plugin>
         </plugins>
-        <pluginManagement>
-            <plugins>
-            </plugins>
-        </pluginManagement>
     </build>
 </project>
