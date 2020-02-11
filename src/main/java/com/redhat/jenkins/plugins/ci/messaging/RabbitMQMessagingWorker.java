@@ -177,7 +177,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     //
                     if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<String, String>();
-                        params.put("CI_MESSAGE", data.toJson());
+                        params.put("CI_MESSAGE", data.getBodyJson());
                         trigger(jobname, data.getBodyJson(), params);
                     }
                     channel.basicAck(data.getDeliveryTag(), false);
