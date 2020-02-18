@@ -79,7 +79,7 @@ import jenkins.model.ParameterizedJobMixIn;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class CIBuildTrigger extends Trigger<BuildableItem> {
+public class CIBuildTrigger extends Trigger<Job> {
 	private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
 	private transient String providerName;
@@ -247,7 +247,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
 	}
 
 	@Override
-	public void start(BuildableItem project, boolean newInstance) {
+	public void start(Job project, boolean newInstance) {
 		super.start(project, newInstance);
 		startTriggerThreads();
 	}
@@ -472,7 +472,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         }
     }
 
-    protected ParametersAction createParameters(BuildableItem project, Map<String, String> messageParams) {
+    protected ParametersAction createParameters(Job project, Map<String, String> messageParams) {
         List<ParameterValue> definedParameters = getDefinedParameters(project);
         List<ParameterValue> parameters = getUpdatedParameters(messageParams, definedParameters);
         try {
@@ -553,7 +553,7 @@ public class CIBuildTrigger extends Trigger<BuildableItem> {
         return new ArrayList<>(newParams.values());
 	}
 
-	private List<ParameterValue> getDefinedParameters(BuildableItem project) {
+	private List<ParameterValue> getDefinedParameters(Job project) {
 	    List<ParameterValue> parameters = new ArrayList<>();
 	    ParametersDefinitionProperty properties = ((Job<?, ?>)project).getProperty(ParametersDefinitionProperty.class);
 
