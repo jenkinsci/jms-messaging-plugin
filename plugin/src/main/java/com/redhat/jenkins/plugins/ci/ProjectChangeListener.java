@@ -62,7 +62,7 @@ public class ProjectChangeListener extends ItemListener {
                         // Job may have been enabled. Let's start the trigger thread.
                         log.info("Job " + item.getFullName() + " may have been previously been disabled." +
                                 " Attempting to start trigger thread(s)...");
-                        cibt.start((BuildableItem) item, false);
+                        cibt.start((Job) item, false);
                     }
                 }
             }

@@ -177,7 +177,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     //
                     if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<String, String>();
-                        params.put("CI_MESSAGE", data.toJson());
+                        params.put("CI_MESSAGE", data.getBodyJson());
                         trigger(jobname, data.getBodyJson(), params);
                     }
                     channel.basicAck(data.getDeliveryTag(), false);
@@ -270,7 +270,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             RabbitMQMessage msg = new RabbitMQMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
                                                      PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
-            msg.setTimestamp(System.currentTimeMillis());
+            msg.setTimestamp(System.currentTimeMillis() / 1000L);
 
             body = msg.getBodyJson();
             msgId = msg.getMsgId();
