@@ -220,6 +220,14 @@ node('master') {
 
 ## Change Log
 
+#### Version 1.1.13 (Feb 20, 2020)
+
+- When Jenkins is restarted, customized JMS configuration is silently reverted to same (default?) values (#170)
+- Fix: Incorrect timestamp format with RabbitMq (#169)
+- Fix: CI_MESSAGE has incorrect format with RabiitMq (#168)
+- Move ath to module to escape the dependency hell (#164)
+- Add example for triggers in pipeline dsl and job dsl (#160)
+
 #### Version 1.1.12 (January 8, 2020)
 
 - Update json-path from 2.3.0 to 2.4.0 (#129)
