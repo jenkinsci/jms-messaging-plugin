@@ -54,7 +54,7 @@
              than the parent version above
         -->
         <java.level>8</java.level>
-        <jenkins.version>2.176.1</jenkins.version>
+        <jenkins.version>2.150.2</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <findbugs.failOnError>false</findbugs.failOnError>
     </properties>
