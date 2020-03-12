@@ -220,6 +220,13 @@ node('master') {
 
 ## Change Log
 
+#### Version 1.1.14 (March 12, 2020)
+
+- Do not ignore Select/Choice parameters when triggering builds
+- Set minimum core version to 2.150.2
+- Add support for Fedora messaging wire format
+- Bump jackson-databind from 2.9.10.1 to 2.9.10.3 in /plugin
+
 #### Version 1.1.13 (Feb 20, 2020)
 
 - When Jenkins is restarted, customized JMS configuration is silently reverted to same (default?) values (#170)
