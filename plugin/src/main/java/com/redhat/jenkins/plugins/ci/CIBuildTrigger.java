@@ -16,11 +16,22 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.model.AbstractProject;
 import hudson.model.BooleanParameterDefinition;
 import hudson.model.BooleanParameterValue;
+import hudson.model.CauseAction;
+import hudson.model.ChoiceParameterDefinition;
+import hudson.model.Item;
+import hudson.model.Job;
+import hudson.model.ParameterDefinition;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
+import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterDefinition;
+import hudson.model.StringParameterValue;
 import hudson.model.TextParameterDefinition;
 import hudson.model.TextParameterValue;
+import hudson.triggers.Trigger;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -40,17 +51,6 @@ import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
 
 import hudson.Extension;
 import hudson.Util;
-import hudson.model.AbstractProject;
-import hudson.model.BuildableItem;
-import hudson.model.CauseAction;
-import hudson.model.Item;
-import hudson.model.Job;
-import hudson.model.ParameterDefinition;
-import hudson.model.ParameterValue;
-import hudson.model.ParametersAction;
-import hudson.model.ParametersDefinitionProperty;
-import hudson.model.StringParameterValue;
-import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
@@ -568,6 +568,9 @@ public class CIBuildTrigger extends Trigger<Job> {
                 }
                 if (paramDef instanceof BooleanParameterDefinition) {
                     param = new BooleanParameterValue(paramDef.getName(), Boolean.getBoolean(paramDef.getDefaultParameterValue().getValue().toString()));
+                }
+                if (paramDef instanceof ChoiceParameterDefinition) {
+                    param = ((ChoiceParameterDefinition) paramDef).getDefaultParameterValue();
                 }
 	            if (param != null) {
 	                parameters.add(param);
