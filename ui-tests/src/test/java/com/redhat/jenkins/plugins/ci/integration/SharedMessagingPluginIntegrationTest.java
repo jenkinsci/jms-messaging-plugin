@@ -16,7 +16,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import com.redhat.jenkins.plugins.ci.integration.po.BooleanParameter;
-import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.ChoiceParameter;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -30,15 +34,12 @@ import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.JenkinsLogger;
 import org.jenkinsci.test.acceptance.po.Job;
 import org.jenkinsci.test.acceptance.po.StringParameter;
+import org.jenkinsci.test.acceptance.po.TextParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.MsgCheck;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 
 /**
  * Created by shebert on 06/06/17.
@@ -145,6 +146,41 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         elasticSleep(1000);
         jobA.getLastBuild().shouldSucceed().shouldExist();
         assertThat(jobA.getLastBuild().getConsole(), containsString(matchString));
+    }
+
+    public void _testSimpleCIEventTriggerWithChoiceParam(String properties, String body, String matchString) {
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.script.set("node('master') {\n echo \"mychoice is $mychoice\"\n}");
+        jobA.save();
+
+        jobA.configure();
+        StringParameter p = jobA.addParameter(StringParameter.class);
+        p.setName("CI_MESSAGE");
+        p.setDefault("");
+
+        ChoiceParameter bb = jobA.addParameter(ChoiceParameter.class);
+        bb.setName("mychoice");
+        bb.setChoices("scott\ntom");
+
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        jobA.save();
+        // Allow for connection
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageProperties.set(properties);
+        notifier.messageContent.set(body);
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        System.out.println(jobA.getLastBuild().getConsole());
+        assertThat(jobA.getLastBuild().getConsole(), containsString(matchString));
+
     }
 
     public void _testSimpleCIEventTriggerWithBoolParam(String properties, String body, String matchString) {
