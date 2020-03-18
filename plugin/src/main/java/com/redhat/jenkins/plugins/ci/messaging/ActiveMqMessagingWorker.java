@@ -371,8 +371,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 connection.start();
 
                 session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                Destination destination = session.createTopic(ltopic);
-                publisher = session.createProducer(destination);
+                if (provider.getUseQueues()) {
+                    Queue destination = session.createQueue(ltopic);
+                    publisher = session.createProducer(destination);
+                } else {
+                    Destination destination = session.createTopic(ltopic);
+                    publisher = session.createProducer(destination);
+                }
 
                 message = session.createTextMessage("");
                 message.setJMSType(JSON_TYPE);
