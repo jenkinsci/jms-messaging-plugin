@@ -3,7 +3,6 @@ package com.redhat.jenkins.plugins.ci.pipeline;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.utils.MessageUtils;
 import hudson.Extension;
-import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
@@ -194,7 +193,7 @@ public class CIMessageSenderStep extends Step {
                         }
                         CIMessageNotifier notifier = new CIMessageNotifier(pd);
                         StepContext c = getContext();
-                        SendResult status = notifier.doMessageNotifier(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
+                        SendResult status = notifier.doMessageNotifier(c.get(Run.class), null, c.get(TaskListener.class));
                         if (status.isSucceeded()) {
                             getContext().onSuccess(status);
                         } else {
@@ -228,7 +227,7 @@ public class CIMessageSenderStep extends Step {
     public static class DescriptorImpl extends StepDescriptor {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, Launcher.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, TaskListener.class);
         }
 
         @Override
