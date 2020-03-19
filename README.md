@@ -220,6 +220,11 @@ node('master') {
 
 ## Change Log
 
+#### Version 1.1.15 (March 19, 2020)
+
+- Allow sending notification to queue when useQueues is true (#181) @ArturHarasimiuk
+- remove not used context dependency on hudson.Launcher (#182) @ArturHarasimiuk
+
 #### Version 1.1.14 (March 12, 2020)
 
 - Do not ignore Select/Choice parameters when triggering builds
