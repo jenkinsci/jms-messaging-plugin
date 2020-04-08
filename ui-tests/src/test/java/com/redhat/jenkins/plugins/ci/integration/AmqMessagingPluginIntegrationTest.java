@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
@@ -18,7 +19,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
@@ -52,9 +52,9 @@ import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 @WithPlugins({"jms-messaging", "dumpling"})
 @WithDocker
 public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
-    @Inject private DockerContainerHolder<JBossAMQContainer> docker;
+    @Inject private DockerContainerHolder<ActiveMQContainer> docker;
 
-    private JBossAMQContainer amq = null;
+    private ActiveMQContainer amq = null;
     private static final int INIT_WAIT = 360;
 
     @Test

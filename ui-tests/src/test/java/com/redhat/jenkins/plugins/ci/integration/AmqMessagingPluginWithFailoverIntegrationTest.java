@@ -9,8 +9,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
 import org.jenkinsci.test.acceptance.docker.Docker;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
@@ -24,7 +26,6 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
@@ -54,25 +55,25 @@ import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@WithPlugins({"jms-messaging", "dumpling"})
+@WithPlugins({"jms-messaging", "dumpling", "monitoring"})
 @WithDocker
 public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnitTest {
-    @Inject private DockerContainerHolder<JBossAMQContainer> docker;
+    @Inject private DockerContainerHolder<ActiveMQContainer> docker1;
 
-    private JBossAMQContainer amq = null;
+    private ActiveMQContainer amq1 = null;
     private static final int INIT_WAIT = 360;
 
     @Before public void setUp() throws Exception {
         Plugin plugin = jenkins.getPlugin("dumpling");
         assertNotNull(plugin);
 
-        amq = docker.get();
+        amq1 = docker1.get();
         jenkins.configure();
         elasticSleep(5000);
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
         msgConfig.name("test")
-            .broker(createFailoverUrl(amq.getBroker()))
+            .broker(createFailoverUrl(amq1.getBroker()))
             .topic("CI")
             .userNameAuthentication("admin", "redhat");
 
@@ -81,7 +82,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         while (counter < INIT_WAIT) {
             try {
                 msgConfig.testConnection();
-                waitFor(driver, hasContent("Successfully connected to " + createFailoverUrl(amq.getBroker())), 5);
+                waitFor(driver, hasContent("Successfully connected to " + createFailoverUrl(amq1.getBroker())), 5);
                 connected = true;
                 break;
             } catch (Exception e) {
@@ -108,7 +109,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     public void testSimpleCIEventTrigger() throws Exception {
         ArrayList<FreeStyleJob> jobs = new ArrayList<FreeStyleJob>();
 
-        for (int i = 0 ; i < 10 ; i++) {
+        for (int i = 0 ; i < 2 ; i++) {
             FreeStyleJob jobA = jenkins.jobs.create(FreeStyleJob.class, "receiver" + i);
             jobA.configure();
             jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
@@ -190,7 +191,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         jobA.apply();
         elasticSleep(5000);
 
-        List<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
+        ArrayList<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
         assertTrue("Trigger threads invalid syntax size", ids1.size() == 0);
         jobA.open();
         assertTrue(driver.getPageSource().contains("CI Build Trigger Issue"));
@@ -202,7 +203,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         jobA.save();
         elasticSleep(5000);
 
-        List<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
+        ArrayList<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
         assertTrue("Trigger threads valid selector size", ids2.size() == 1);
     }
 
@@ -236,14 +237,14 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         elasticSleep(5000);
 
         // No trigger threads created on save. Must run once.
-        List<Integer> ids = getCurrentTriggerThreadIds("pipeline");
+        ArrayList<Integer> ids = getCurrentTriggerThreadIds("pipeline");
         assertTrue("Trigger threads initial pipeline save", ids.size() == 0);
 
         pipe.startBuild().shouldSucceed();
         elasticSleep(5000);
         // No trigger threads created because of bad syntax.
-        ids = getCurrentTriggerThreadIds("pipeline");
-        assertTrue("Trigger threads invalid syntax size", ids.size() == 0);
+        ArrayList<Integer> ids2 = getCurrentTriggerThreadIds("pipeline");
+        assertTrue("Trigger threads invalid syntax size", ids2.size() == 0);
 
         pipe.open();
         assertTrue(driver.getPageSource().contains("CI Build Trigger Issue"));
@@ -274,15 +275,12 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         pipe.save();
         elasticSleep(5000);
 
-
-        // No trigger threads created on save. Must run once.
-        ids = getCurrentTriggerThreadIds("pipeline");
-        assertTrue("Trigger threads updated pipeline save", ids.size() == 0);
-
+        // Let's start a build to get new selector activated.
         pipe.startBuild().shouldSucceed();
         elasticSleep(5000);
-        ids = getCurrentTriggerThreadIds("pipeline");
-        assertTrue("Trigger threads valid selector size", ids.size() == 1);
+        ArrayList<Integer> ids5 = getCurrentTriggerThreadIds("pipeline");
+        System.err.println("ids5: " + ids5.size());
+        assertTrue("Trigger threads valid selector size: " + ids5.size(), ids5.size() == 1);
     }
 
     @Test
@@ -298,7 +296,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         jobA.apply();
         elasticSleep(5000);
 
-        List<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
+        ArrayList<Integer> ids1 = getCurrentTriggerThreadIds("receiver");
         assertTrue("Trigger threads valud selector size", ids1.size() == 1);
 
         //Now change the selector.
@@ -307,7 +305,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         jobA.save();
         elasticSleep(5000);
 
-        List<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
+        ArrayList<Integer> ids2 = getCurrentTriggerThreadIds("receiver");
         assertTrue("Trigger threads changed selector size", ids2.size() == 1);
         assertTrue("Trigger threads new thread created", ids1.get(0) != ids2.get(0));
     }
@@ -325,7 +323,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
             return m.readValue(jenkins.runScript(script), ArrayList.class);
         } catch (Exception e) {
         }
-        return new ArrayList<Integer>();
+        return new ArrayList<>();
     }
 
     private int getCurrentAMQThreadCount() {
@@ -335,11 +333,12 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     }
 
     private void startAMQ() throws Exception {
-        System.out.println(Docker.cmd("start", amq.getCid())
+        System.out.println(Docker.cmd("restart", amq1.getCid()));
+        System.out.println(Docker.cmd("restart", amq1.getCid())
                 .popen()
                 .verifyOrDieWith("Unable to start container"));
         elasticSleep(3000);
-        amq.assertRunning();
+        amq1.assertRunning();
     }
 
     private void ensureNoUnconnectedThreads() {
@@ -412,20 +411,21 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     }
 
     private void stopAMQ() throws Exception {
-        System.out.println(Docker.cmd("stop", amq.getCid())
+        System.out.println(Docker.cmd("stop", amq1.getCid()));
+        System.out.println(Docker.cmd("stop", amq1.getCid())
                 .popen()
                 .verifyOrDieWith("Unable to stop container"));
         elasticSleep(3000);
         boolean running = false;
         try {
-            amq.assertRunning();
+            amq1.assertRunning();
             running = false;
         }
         catch (Error e) {
             //This is ok
         }
         if (running) {
-            throw new Exception("Container " + amq.getCid() + " not stopped");
+            throw new Exception("Container " + amq1.getCid() + " not stopped");
         }
     }
 

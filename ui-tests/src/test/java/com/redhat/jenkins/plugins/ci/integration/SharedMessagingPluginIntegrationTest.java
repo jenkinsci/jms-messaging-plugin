@@ -71,6 +71,12 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
 
         jobA.addShellStep("echo $HELLO");
         jobA.save();
+
+        // perform a configure and save again
+        // to ensure sane persistence and display
+        // of model
+        jobA.configure();
+        jobA.save();
         jobA.scheduleBuild();
 
         FreeStyleJob jobB = jenkins.jobs.create();
@@ -80,6 +86,14 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         notifier.messageProperties.sendKeys("CI_STATUS = failed");
         notifier.messageContent.set("Hello World");
         jobB.save();
+
+        // perform a configure and verify persistence and display
+        // of model
+        jobB.configure();
+        CINotifierPostBuildStep notifier2 = jobB.getPublisher(CINotifierPostBuildStep.class);
+        assertThat(notifier2.messageType.get(), equalTo("CodeQualityChecksDone"));
+        assertThat(notifier2.messageContent.get(), equalTo("Hello World"));
+
         jobB.startBuild().shouldSucceed();
 
         elasticSleep(1000);
