@@ -1,7 +1,7 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
 import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.JBossAMQContainer;
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
 import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 import org.apache.http.HttpHost;
@@ -10,14 +10,12 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
@@ -65,11 +63,11 @@ import static org.jenkinsci.test.acceptance.plugins.matrix_auth.MatrixRow.OVERAL
 @WithPlugins({"jms-messaging", "mock-security-realm", "matrix-auth@2.3"})
 @WithDocker
 public class AmqMessagingPluginLockdownIntegrationTest extends AbstractJUnitTest {
-    @Inject private DockerContainerHolder<JBossAMQContainer> docker;
+    @Inject private DockerContainerHolder<ActiveMQContainer> docker;
     final private String adminUser = "admin";
     final private String user = "user";
 
-    private JBossAMQContainer amq = null;
+    private ActiveMQContainer amq = null;
     private static final int INIT_WAIT = 360;
 
     private void loginAsUser() {
