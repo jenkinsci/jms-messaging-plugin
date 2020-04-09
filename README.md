@@ -220,6 +220,11 @@ node('master') {
 
 ## Change Log
 
+#### Version 1.1.16 (April 9, 2020)
+
+- Correct presentation of data model for CI Notifier and CI Subscriber (#187) @scoheb
+- Correct location of RabbitMQPublisherProviderData help files (#188) @scoheb
+
 #### Version 1.1.15 (March 19, 2020)
 
 - Allow sending notification to queue when useQueues is true (#181) @ArturHarasimiuk
