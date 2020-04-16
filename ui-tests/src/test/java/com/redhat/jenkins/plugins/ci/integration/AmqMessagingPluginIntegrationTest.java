@@ -61,6 +61,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public void testGlobalConfigTestConnection() throws Exception {
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testVerifyModelUIPersistence() throws Exception {
+        _testVerifyModelUIPersistence();
+    }
+
     @Test
     public void testSimpleCIEventTriggerWithTextArea() {
         _testSimpleCIEventTriggerWithTextArea("scott=123\ntom=456",

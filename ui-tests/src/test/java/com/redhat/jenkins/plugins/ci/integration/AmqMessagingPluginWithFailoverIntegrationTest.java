@@ -109,7 +109,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     public void testSimpleCIEventTrigger() throws Exception {
         ArrayList<FreeStyleJob> jobs = new ArrayList<FreeStyleJob>();
 
-        for (int i = 0 ; i < 2 ; i++) {
+        for (int i = 0 ; i < 10 ; i++) {
             FreeStyleJob jobA = jenkins.jobs.create(FreeStyleJob.class, "receiver" + i);
             jobA.configure();
             jobA.addShellStep("echo CI_TYPE = $CI_TYPE");

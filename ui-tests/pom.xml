@@ -72,12 +72,14 @@
                 <version>3.0.0-M4</version>
                 <configuration>
                     <reuseForks>false</reuseForks>
+                    <forkCount>3</forkCount>
                     <environmentVariables>
                         <!-- Read by ATH -->
                         <JENKINS_VERSION>${jenkins.version}</JENKINS_VERSION>
                         <LOCAL_JARS>../plugin/target/jms-messaging.hpi</LOCAL_JARS>
                         <BROWSER>firefox-container</BROWSER>
                     </environmentVariables>
+                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
                 </configuration>
             </plugin>
         </plugins>

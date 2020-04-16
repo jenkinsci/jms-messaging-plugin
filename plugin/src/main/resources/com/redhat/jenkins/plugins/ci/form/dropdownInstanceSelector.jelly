@@ -60,7 +60,6 @@ THE SOFTWARE.
           <f:invisibleEntry> <!-- Inject provider name so all config fragments do not have to repeat that -->
             <input type="hidden" name="name" value="${pdata.name}"/>
           </f:invisibleEntry>
-          <j:set var="instance" value="${instance.providerData}"/>
           <st:include from="${descriptor}" page="${descriptor.configPage}" optional="true" />
         </l:ajax>
       </f:dropdownListBlock>

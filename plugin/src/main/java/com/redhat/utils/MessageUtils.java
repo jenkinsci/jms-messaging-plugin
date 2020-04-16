@@ -125,12 +125,17 @@ public class MessageUtils {
     }
 
     public static SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) throws InterruptedException, IOException {
-        log.info("Sending message for job '" + build.getParent().getName() + "'.");
-        listener.getLogger().println("Sending message for job '" + build.getParent().getName() + "'.");
+        String startMessage = "Sending message for job '" + build.getParent().getName() + "'.";
+        log.info(startMessage);
+        listener.getLogger().println(startMessage);
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
         JMSMessagingWorker worker =
                 config.getProvider(pdata.getName()).createWorker(pdata, build.getParent().getName());
-        return worker.sendMessage(build, listener, pdata);
+        SendResult sendResult = worker.sendMessage(build, listener, pdata);
+        String completedMessage = "Sent successfully with messageId: " + sendResult.getMessageId();
+        log.info(completedMessage);
+        listener.getLogger().println(completedMessage);
+        return sendResult;
     }
 
     private static void logIfPossible(PrintStream stream, String logMessage) {
