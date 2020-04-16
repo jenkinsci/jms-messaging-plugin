@@ -433,12 +433,16 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
 
                 publisher.send(message);
-                log.info("Sent " + pd.getMessageType().toString() + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
-                        + formatMessage(message));
 
                 mesgId = message.getJMSMessageID();
                 mesgContent = message.getText();
 
+                String messageType = "unknown type";
+                if (pd.getMessageType() != null) {
+                    messageType = pd.getMessageType().toString();
+                }
+                log.info("Sent " + messageType + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
+                        + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
                 return new SendResult(false, mesgId, mesgContent);

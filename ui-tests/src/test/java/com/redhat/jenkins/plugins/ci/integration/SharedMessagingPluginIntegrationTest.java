@@ -62,6 +62,56 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         // Not sure what else to do here....
     }
 
+    public void _testVerifyModelUIPersistence() throws Exception {
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.configure();
+        jobA.script.set("node('master') {\n echo 'hello world' \n} ");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        MsgCheck check = pd.addMsgCheck();
+        check.field.set(MESSAGE_CHECK_FIELD);
+        check.expectedValue.set(MESSAGE_CHECK_VALUE);
+        pd.overrides.check();
+        pd.topic.set("otopic");
+        jobA.save();
+
+        // mimic user trying to re-open and save again.
+        // See issue #190
+        elasticSleep(1000);
+        jobA.configure();
+        elasticSleep(1000);
+        jobA.save();
+        jobA.configure();
+
+        boolean msgCheckCheck = check.field.exists();
+        assertThat("msgCheck field should exist", msgCheckCheck);
+        boolean topicCheck = pd.topic.exists();
+        assertThat("topic should exist", topicCheck);
+
+        String topicValue = pd.topic.get();
+        System.err.println("topic value" + topicValue);
+        assertThat(topicValue, equalTo("otopic"));
+
+        String msgCheckFieldValue = check.field.get();
+        System.err.println("msgCheckFieldValue: " + msgCheckFieldValue);
+        assertThat(msgCheckFieldValue, equalTo(MESSAGE_CHECK_FIELD));
+
+        WorkflowJob job = jenkins.jobs.create(WorkflowJob.class);
+        job.script.set("node('master') {\n def message = sendCIMessage " +
+                " providerName: 'test', " +
+                " overrides: [topic: 'otopic'], " +
+                " failOnError: true, " +
+                " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n");
+        job.save();
+        job.startBuild().shouldSucceed();
+        System.out.println(job.getLastBuild().getConsole());
+
+        elasticSleep(1000);
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        System.out.println(jobA.getLastBuild().getConsole());
+
+    }
+
     public void _testSimpleCIEventSubscribe() throws Exception {
         FreeStyleJob jobA = jenkins.jobs.create();
         jobA.configure();

@@ -220,7 +220,15 @@ node('master') {
 
 ## Change Log
 
+#### Version 1.1.17 (April 19, 2020)
+
+- Correct regression introduced in 1.1.16 that caused the CI Event configuration of Pipeline jobs
+  to appear to have been reset upon configuring the job.
+
 #### Version 1.1.16 (April 9, 2020)
+
+**WARNING: This version contains a regression involving the display of job configuration data of Pipeline jobs.
+ Please use v1.1.17**
 
 - Correct presentation of data model for CI Notifier and CI Subscriber (#187) @scoheb
 - Correct location of RabbitMQPublisherProviderData help files (#188) @scoheb
