@@ -220,6 +220,11 @@ node('master') {
 
 ## Change Log
 
+#### Version 1.1.18 (April 23, 2020)
+
+- Revert #181. Version 2.x will incorporate an improved ability to override the use of queues and topics
+  on a job/pipeline step level.
+
 #### Version 1.1.17 (April 19, 2020)
 
 - Correct regression introduced in 1.1.16 that caused the CI Event configuration of Pipeline jobs
