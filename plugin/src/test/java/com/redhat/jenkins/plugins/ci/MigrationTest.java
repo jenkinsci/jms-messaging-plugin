@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci;
 
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import hudson.matrix.MatrixProject;
@@ -13,6 +14,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.recipes.LocalData;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQPrefetchPolicy;
 
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
@@ -61,6 +65,37 @@ public class MigrationTest {
         assertNotNull(builder);
         assertEquals("Message Provider name should be default",
                 "default", builder.getProviderName());
+    }
+
+    @LocalData
+    @Test
+    public void testPrefetchSizeSetup() {
+        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
+
+        // Try default setting and forcing to 1
+        for(int prefetchSize : new int[]{0, 1}) {
+            ActiveMqMessagingProvider provider = (ActiveMqMessagingProvider)GlobalCIConfiguration.get().getConfigs().get(0);
+            provider.setPrefetchSize(prefetchSize);
+            ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+            assertNotNull(connectionFactory);
+
+            ActiveMQPrefetchPolicy prefetchPolicy = connectionFactory.getPrefetchPolicy();
+            assertNotNull(prefetchPolicy);
+
+            if(prefetchSize == 0) {
+                assertNotEquals(1, prefetchPolicy.getDurableTopicPrefetch());
+                assertNotEquals(1, prefetchPolicy.getOptimizeDurableTopicPrefetch());
+                assertNotEquals(1, prefetchPolicy.getQueueBrowserPrefetch());
+                assertNotEquals(1, prefetchPolicy.getQueuePrefetch());
+                assertNotEquals(1, prefetchPolicy.getTopicPrefetch());
+            } else {
+                assertEquals(1, prefetchPolicy.getDurableTopicPrefetch());
+                assertEquals(1, prefetchPolicy.getOptimizeDurableTopicPrefetch());
+                assertEquals(1, prefetchPolicy.getQueueBrowserPrefetch());
+                assertEquals(1, prefetchPolicy.getQueuePrefetch());
+                assertEquals(1, prefetchPolicy.getTopicPrefetch());
+            }
+        }
     }
 
     @LocalData
