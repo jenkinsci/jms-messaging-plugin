@@ -8,6 +8,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,40 +62,47 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     @Inject private DockerContainerHolder<ActiveMQContainer> docker1;
 
     private ActiveMQContainer amq1 = null;
+    private ActiveMqMessagingProvider msgConfig = null;
+    private String broker = null;
     private static final int INIT_WAIT = 360;
 
-    @Before public void setUp() throws Exception {
-        Plugin plugin = jenkins.getPlugin("dumpling");
-        assertNotNull(plugin);
-
-        amq1 = docker1.get();
+    private boolean configureAndConnect() throws IOException {
         jenkins.configure();
         elasticSleep(5000);
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
-        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
+        if (msgConfig == null) {
+            msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
+        }
+        broker = amq1.getBroker();
         msgConfig.name("test")
-            .broker(createFailoverUrl(amq1.getBroker()))
+            .broker(createFailoverUrl(broker))
             .topic("CI")
             .userNameAuthentication("admin", "redhat");
 
         int counter = 0;
-        boolean connected = false;
         while (counter < INIT_WAIT) {
             try {
                 msgConfig.testConnection();
                 waitFor(driver, hasContent("Successfully connected to " + createFailoverUrl(amq1.getBroker())), 5);
-                connected = true;
-                break;
+                elasticSleep(1000);
+                jenkins.save();
+                return true;
             } catch (Exception e) {
                 counter++;
                 elasticSleep(1000);
             }
         }
-        if (!connected) {
+        return false;
+    }
+    
+    @Before public void setUp() throws Exception {
+        Plugin plugin = jenkins.getPlugin("dumpling");
+        assertNotNull(plugin);
+
+        amq1 = docker1.get();
+        if (!configureAndConnect()) {
             throw new Exception("Did not get connection successful message in " + INIT_WAIT + " secs.");
         }
-        elasticSleep(1000);
-        jenkins.save();
     }
 
     private String createFailoverUrl(String broker) {
@@ -157,6 +165,18 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         //Now startup
         System.out.println("Starting AMQ");
         startAMQ();
+
+        // after restart the ports may have changed (likely)
+        if (!amq1.getBroker().equals(broker)) {
+            configureAndConnect();
+            // re-save the jobs because the AMQ ports may have changed
+            for (FreeStyleJob job : jobs) {
+                job.configure();
+                job.save();
+            }
+            jobB.configure();
+            jobB.save();
+        }
 
         System.out.println("Waiting 10 secs");
         elasticSleep(10000);
