@@ -1,10 +1,9 @@
-package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import org.jenkinsci.test.acceptance.docker.DockerContainer;
-import org.jenkinsci.test.acceptance.docker.DockerFixture;
+package com.redhat.jenkins.plugins.ci.integration;
 
 import java.io.IOException;
+
+import org.jenkinsci.test.acceptance.junit.WithDocker;
+import org.jenkinsci.test.acceptance.junit.WithPlugins;
 
 /*
  * The MIT License
@@ -29,24 +28,17 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id="activeamq", ports={61616,8161,5672})
-public class ActiveMQContainer extends DockerContainer {
+@WithPlugins({"jms-messaging", "dumpling"})
+@WithDocker
+public class AmqpMessagingPluginIntegrationTest extends AmqMessagingPluginIntegrationTest {
 
-    public String getBroker() throws IOException {
-        String ip = getIpAddress();
-        if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("61616/tcp").get(0);
-            String hostIP = binding.get("HostIp").asText();
-            String hostPort = binding.get("HostPort").asText();
-            ip = hostIP + ":" + hostPort;
-            return "tcp://"+ip;
-        } else {
-            return "tcp://"+ip+":61616";
-        }
-
+    @Override
+    protected String getBroker() throws IOException {
+        return amq.getAmqpBroker();
     }
-    public String getAmqpBroker() throws IOException {
-        return String.format("amqp://%s:%d", ipBound(5672), port(5672));
 
+    @Override
+    protected String getThreadNameRegex() {
+        return "QpidJMS Connection Executor";
     }
 }

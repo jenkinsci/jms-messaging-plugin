@@ -54,8 +54,16 @@ import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
     @Inject private DockerContainerHolder<ActiveMQContainer> docker;
 
-    private ActiveMQContainer amq = null;
+    protected ActiveMQContainer amq = null;
     private static final int INIT_WAIT = 360;
+
+    protected String getBroker() throws IOException {
+        return amq.getBroker();
+    }
+
+    protected String getThreadNameRegex() {
+        return "ActiveMQ.*Task-";
+    }
 
     @Test
     public void testGlobalConfigTestConnection() throws Exception {
@@ -93,7 +101,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
         msgConfig.name("test")
-                .broker(amq.getBroker())
+                .broker(getBroker())
                 .topic("CI")
                 .userNameAuthentication("admin", "redhat");
         _testAddDuplicateMessageProvider();
@@ -105,7 +113,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
         msgConfig.name("queue")
-                .broker(amq.getBroker())
+                .broker(getBroker())
                 .useQueues(true)
                 .topic("CI")
                 .userNameAuthentication("admin", "redhat");
@@ -217,7 +225,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testSimpleCIEventTriggerHeadersInEnv() throws Exception, InterruptedException {
         FreeStyleJob jobB = jenkins.jobs.create();
-        String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"";
+        String expected = "\"CI_STATUS\":\"passed\",\"CI_NAME\":\"";
         expected += jobB.name;
         expected += "\",\"CI_TYPE\":\"code-quality-checks-done\"";
 
@@ -344,7 +352,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
         msgConfig.name("test")
-                .broker(amq.getBroker())
+                .broker(getBroker())
                 .topic("CI")
                 .userNameAuthentication("admin", "redhat");
 
@@ -353,7 +361,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         while (counter < INIT_WAIT) {
             try {
                 msgConfig.testConnection();
-                waitFor(driver, hasContent("Successfully connected to " + amq.getBroker()), 5);
+                waitFor(driver, hasContent("Successfully connected to " + getBroker()), 5);
                 connected = true;
                 break;
             } catch (Exception e) {
@@ -416,18 +424,18 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         workflowJob.startBuild().shouldSucceed();
         // Allow some time for trigger thread stop/start.
         elasticSleep(2000);
-        int ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        int ioCount = getCurrentThreadCountForName(getThreadNameRegex());
+        assertTrue("Thread count is not 1", ioCount == 1);
         int triggers = getCurrentThreadCountForName("CIBuildTrigger");
         assertTrue("CIBuildTrigger count is 1", triggers == 1);
         workflowJob.configure();
         workflowJob.save();
         workflowJob.startBuild().shouldSucceed();
         elasticSleep(2000);
-        printThreadsWithName("ActiveMQ.*Task-");
+        printThreadsWithName(getThreadNameRegex());
         printThreadsWithName("CIBuildTrigger");
-        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        ioCount = getCurrentThreadCountForName(getThreadNameRegex());
+        assertTrue("Thread count is not 1", ioCount == 1);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
         assertTrue("CIBuildTrigger count is 1", triggers == 1);
 
@@ -440,10 +448,10 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         elasticSleep(5000);
         assertTrue("there are not 5 builds", workflowJob.getLastBuild().getNumber() == 5);
 
-        printThreadsWithName("ActiveMQ.*Task-");
+        printThreadsWithName(getThreadNameRegex());
         printThreadsWithName("CIBuildTrigger");
-        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        ioCount = getCurrentThreadCountForName(getThreadNameRegex());
+        assertTrue("Thread count is not 1", ioCount == 1);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
         assertTrue("CIBuildTrigger count is not 1", triggers == 1);
 
@@ -479,10 +487,10 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
             Build b1 = new Build(workflowJob, i+1);
             assertTrue(b1.isSuccess());
         }
-        printThreadsWithName("ActiveMQ.*Task-");
+        printThreadsWithName(getThreadNameRegex());
         printThreadsWithName("CIBuildTrigger");
-        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        ioCount = getCurrentThreadCountForName(getThreadNameRegex());
+        assertTrue("Thread count is not 1", ioCount == 1);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
         assertTrue("CIBuildTrigger count is not 1", triggers == 1);
     }

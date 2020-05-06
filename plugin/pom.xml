@@ -7,7 +7,7 @@
     </parent>
 
     <artifactId>jms-messaging</artifactId>
-    <version>1.1.19-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>JMS Messaging Plugin</name>
     <description>Plugin to listen and emit messages during the build process using a JMS Messaging Provider.</description>
@@ -114,6 +114,11 @@
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-amqp</artifactId>
             <version>5.15.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-jms-client</artifactId>
+            <version>0.45.0</version>
         </dependency>
         <dependency>
             <groupId>org.zeromq</groupId>
@@ -260,6 +265,17 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.qpid</groupId>
+                <artifactId>proton-j</artifactId>
+                <version>0.33.2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
