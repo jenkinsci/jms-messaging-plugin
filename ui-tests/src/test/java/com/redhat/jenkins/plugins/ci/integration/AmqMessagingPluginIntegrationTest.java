@@ -296,6 +296,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testDisabledJobDoesNotGetTriggeredWithCheck();
     }
 
+    @WithPlugins("workflow-aggregator")
+    @Test
+    public void testDisabledWorkflowJobDoesNotGetTriggered() throws Exception {
+        _testDisabledWorkflowJobDoesNotGetTriggered();
+    }
+
     @Test
     public void testEnsureFailedSendingOfMessageFailsBuild() throws Exception {
         stopContainer(amq);

@@ -3,7 +3,6 @@ package com.redhat.jenkins.plugins.ci;
 import hudson.Extension;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
-import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.listeners.ItemListener;
 
@@ -46,8 +45,8 @@ public class ProjectChangeListener extends ItemListener {
         super.onUpdated(item);
         CIBuildTrigger cibt = CIBuildTrigger.findTrigger(item.getFullName());
         if (cibt != null) {
-            if (item instanceof AbstractProject) {
-                AbstractProject<?, ?> project = (AbstractProject<?, ?>) item;
+            if (item instanceof ParameterizedJobMixIn.ParameterizedJob) {
+                ParameterizedJobMixIn.ParameterizedJob project = (ParameterizedJobMixIn.ParameterizedJob) item;
                 List<CITriggerThread> triggerThreads = CIBuildTrigger.locks.get(item.getFullName());
                 if (triggerThreads != null && triggerThreads.size() > 0) {
                     log.info("Getting trigger threads.");

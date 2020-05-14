@@ -1334,6 +1334,36 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         assertThat(jobA.getLastBuild().getConsole(), containsString("echo job ran"));
     }
 
+    public void _testDisabledWorkflowJobDoesNotGetTriggered() {
+        WorkflowJob jobA = jenkins.jobs.create(WorkflowJob.class);
+        jobA.script.set("echo \"CI_TYPE = ${env.CI_TYPE}\"");
+        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
+        ProviderData pd = ciEvent.addProviderData();
+        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
+        jobA.disable();
+        jobA.save();
+        elasticSleep(1000);
+
+        FreeStyleJob jobB = jenkins.jobs.create();
+        jobB.configure();
+        CINotifierPostBuildStep notifier = jobB.addPublisher(CINotifierPostBuildStep.class);
+        notifier.messageType.select("CodeQualityChecksDone");
+        notifier.messageProperties.sendKeys("CI_STATUS = failed");
+        jobB.save();
+        jobB.startBuild().shouldSucceed();
+
+        elasticSleep(5000);
+        jobA.getLastBuild().shouldNotExist();
+
+        jobA.configure();
+        jobA.check((find(by.checkbox("disable"))), false);
+        jobA.save();
+        elasticSleep(5000);
+        jobB.startBuild().shouldSucceed();
+        jobA.getLastBuild().shouldSucceed().shouldExist();
+        assertThat(jobA.getLastBuild().getConsole(), containsString("CI_TYPE = code-quality-checks-done"));
+    }
+
     public void _testEnsureFailedSendingOfMessageFailsBuild() {
         FreeStyleJob jobB = jenkins.jobs.create();
         jobB.configure();
