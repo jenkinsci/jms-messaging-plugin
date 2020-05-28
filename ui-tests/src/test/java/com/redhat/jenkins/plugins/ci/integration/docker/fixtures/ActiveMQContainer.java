@@ -33,7 +33,21 @@ import java.io.IOException;
 public class ActiveMQContainer extends DockerContainer {
 
     public String getBroker() throws IOException {
-        return String.format("tcp://%s:%d", ipBound(61616), port(61616));
+        // using localhost and port forwarding
+        if ("true".equalsIgnoreCase(System.getProperty("docker.portforward"))) {
+            return String.format("tcp://%s:%d", ipBound(61616), port(61616));
+        }
+        // using docker daemon ip
+        String ip = getIpAddress();
+        if (ip == null || ip.equals("")) {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("61616/tcp").get(0);
+            String hostIP = binding.get("HostIp").asText();
+            String hostPort = binding.get("HostPort").asText();
+            ip = hostIP + ":" + hostPort;
+            return "tcp://"+ip;
+        } else {
+            return "tcp://"+ip+":61616";
+        }
 
     }
 }

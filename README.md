@@ -218,6 +218,15 @@ node('master') {
 }
 ```
 
+## Building and Testing
+
+Integration tests live in `ui-tests` using [Jenkins ATH](https://github.com/jenkinsci/acceptance-test-harness) and some will use Docker for the queue service.
+
+When running Docker by default tests will use the Docker daemon ip and ports exposed. To use `localhost` and forwarded ports instead set the system property `-Ddocker.portforward=true`.
+
+To [run with different browsers](https://github.com/jenkinsci/acceptance-test-harness/blob/master/docs/BROWSER.md) the environment variable `BROWSER` can be set, ie. `BROWSER=firefox`
+
+
 ## Change Log
 
 #### Version 1.1.18 (April 23, 2020)
