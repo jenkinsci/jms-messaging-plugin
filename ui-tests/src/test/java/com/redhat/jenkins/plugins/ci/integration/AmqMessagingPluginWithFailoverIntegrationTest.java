@@ -8,10 +8,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
 import org.jenkinsci.test.acceptance.docker.Docker;
@@ -62,47 +60,43 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     @Inject private DockerContainerHolder<ActiveMQContainer> docker1;
 
     private ActiveMQContainer amq1 = null;
-    private ActiveMqMessagingProvider msgConfig = null;
-    private String broker = null;
     private static final int INIT_WAIT = 360;
 
-    private boolean configureAndConnect() throws IOException {
+    @Before public void setUp() throws Exception {
+        Plugin plugin = jenkins.getPlugin("dumpling");
+        assertNotNull(plugin);
+        // add a random number to the port without exceeding 65535
+        // so the port stays the same after container restart
+        int rand = ThreadLocalRandom.current().nextInt(1, 65535-61616);
+        amq1 = docker1.starter().withPortOffset(rand).start();
+
         jenkins.configure();
         elasticSleep(5000);
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
-        if (msgConfig == null) {
-            msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
-        }
-        broker = amq1.getBroker();
+        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
         msgConfig.name("test")
-            .broker(createFailoverUrl(broker))
+            .broker(createFailoverUrl(amq1.getBroker()))
             .topic("CI")
             .userNameAuthentication("admin", "redhat");
 
         int counter = 0;
+        boolean connected = false;
         while (counter < INIT_WAIT) {
             try {
                 msgConfig.testConnection();
                 waitFor(driver, hasContent("Successfully connected to " + createFailoverUrl(amq1.getBroker())), 5);
-                elasticSleep(1000);
-                jenkins.save();
-                return true;
+                connected = true;
+                break;
             } catch (Exception e) {
                 counter++;
                 elasticSleep(1000);
             }
         }
-        return false;
-    }
-    
-    @Before public void setUp() throws Exception {
-        Plugin plugin = jenkins.getPlugin("dumpling");
-        assertNotNull(plugin);
-
-        amq1 = docker1.get();
-        if (!configureAndConnect()) {
+        if (!connected) {
             throw new Exception("Did not get connection successful message in " + INIT_WAIT + " secs.");
         }
+        elasticSleep(1000);
+        jenkins.save();
     }
 
     private String createFailoverUrl(String broker) {
@@ -165,18 +159,6 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         //Now startup
         System.out.println("Starting AMQ");
         startAMQ();
-
-        // after restart the ports may have changed (likely)
-        if (!amq1.getBroker().equals(broker)) {
-            configureAndConnect();
-            // re-save the jobs because the AMQ ports may have changed
-            for (FreeStyleJob job : jobs) {
-                job.configure();
-                job.save();
-            }
-            jobB.configure();
-            jobB.save();
-        }
 
         System.out.println("Waiting 10 secs");
         elasticSleep(10000);
