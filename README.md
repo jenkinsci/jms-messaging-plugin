@@ -226,6 +226,7 @@ When running Docker by default tests will use the Docker daemon ip and ports exp
 
 To [run with different browsers](https://github.com/jenkinsci/acceptance-test-harness/blob/master/docs/BROWSER.md) the environment variable `BROWSER` can be set, ie. `BROWSER=firefox`
 
+
 ## Change Log
 
 #### Version 1.1.18 (April 23, 2020)
