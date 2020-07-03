@@ -360,6 +360,9 @@ public class CIBuildTrigger extends Trigger<Job> {
             int instance = 1;
             for (ProviderData pd : providers) {
                 JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
+                if (provider == null) {
+                    continue;
+                }
                 // We create a new thread here only to be able to
                 // use .equals() to compare.
                 // The thread is never started.

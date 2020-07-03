@@ -11,6 +11,8 @@ import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.jms.ConnectionFactory;
+
 import jenkins.model.Jenkins;
 
 import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
@@ -60,5 +62,5 @@ public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod 
     }
 
 
-    public abstract ActiveMQConnectionFactory getConnectionFactory(String broker);
+    public abstract ConnectionFactory getConnectionFactory(String broker);
 }

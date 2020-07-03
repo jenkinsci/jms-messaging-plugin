@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.InvalidSelectorException;
@@ -154,7 +155,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean connect() {
         connection = null;
-        ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+        ConnectionFactory connectionFactory = provider.getConnectionFactory();
 
         Connection connectiontmp = null;
         try {
@@ -366,7 +367,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
-                ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+                ConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
                 connection.start();
 
@@ -505,7 +506,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 Connection connection = null;
                 MessageConsumer consumer = null;
                 try {
-                    ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+                    ConnectionFactory connectionFactory = provider.getConnectionFactory();
                     connection = connectionFactory.createConnection();
                     connection.setClientID(ip + "_" + UUID.randomUUID().toString());
                     connection.start();

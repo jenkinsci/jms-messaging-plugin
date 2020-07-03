@@ -11,13 +11,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
 
 import com.redhat.utils.PluginUtils;
 
@@ -74,7 +73,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
             Connection connection = null;
             MessageConsumer consumer = null;
             try {
-                ActiveMQConnectionFactory connectionFactory = activeMqMessagingProvider.getConnectionFactory();
+                ConnectionFactory connectionFactory = activeMqMessagingProvider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
                 connection.setClientID(ip + "_" + UUID.randomUUID().toString());
                 connection.start();
