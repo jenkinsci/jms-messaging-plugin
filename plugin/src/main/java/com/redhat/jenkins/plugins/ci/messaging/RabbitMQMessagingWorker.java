@@ -68,8 +68,16 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     if (channel == null || !channel.isOpen()) {
                         this.channel = connection.createChannel();
                         log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
-                        channel.exchangeDeclarePassive(exchangeName);
                         String queueName = getQueue(provider);
+                        try {
+                            // Check if queue exists
+                            channel.queueDeclarePassive(queueName);
+                        } catch (IOException e) {
+                            // Request new queue - durable false, exclusive true, autodelete true
+                            this.channel = connection.createChannel();
+                            channel.queueDeclare(queueName, false, true, true, null);
+                        }
+                        channel.exchangeDeclarePassive(exchangeName);
                         channel.queueBind(queueName, exchangeName, this.topic);
 
                         // Create deliver callback to listen for messages
