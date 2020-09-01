@@ -7,6 +7,7 @@ import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -93,6 +94,7 @@ public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod  
     }
 
     @Extension
+    @Symbol("password")
     public static class UsernameAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override

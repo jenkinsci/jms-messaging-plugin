@@ -1,0 +1,32 @@
+unclassified:
+  jmsProviders:
+    configs:
+      - fedMsg:
+          name: "Fedora messages"
+          hubAddr: "tcp://example.com:5678"
+          pubAddr: "tcp://example.com:6789"
+          topic: "org.fedora.bar"
+      - activeMq:
+          name: "Active MQ"
+          broker: "foo.com:4242"
+          topic: "active.mq.com"
+          topicProvider: "default"
+          useQueues: false
+          authenticationMethod:
+            password:
+              username: "foo"
+              password: "bar" # User, encrypt secrets
+      - rabbitMq:
+          name: "Rabbit MQ"
+          exchange: "ex"
+          hostname: "rabbitmq.example.com"
+          portNumber: "4545"
+          queue: "foo.bar"
+          topic: "baz"
+          virtualHost: "rabbitvh.example.com"
+          authenticationMethod:
+            sslCertificate:
+              keystore: "/tmp/key"
+              keypwd: "keypwd" # User, encrypt secrets
+              truststore: "/tmp/trust"
+              trustpwd: "trustpwd" # User, encrypt secrets

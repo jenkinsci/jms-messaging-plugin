@@ -6,6 +6,7 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -142,6 +143,7 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
     }
 
     @Extension
+    @Symbol("sslCertificate")
     public static class SSLCertificateAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override

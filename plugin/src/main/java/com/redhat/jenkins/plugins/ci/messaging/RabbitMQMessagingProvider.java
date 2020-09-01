@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.logging.Logger;
@@ -83,6 +84,7 @@ public class RabbitMQMessagingProvider extends JMSMessagingProvider {
     }
 
     @Extension
+    @Symbol("rabbitMq")
     public static class RabbitMQProviderDescriptor extends MessagingProviderDescriptor {
         @Override
         public String getDisplayName() {

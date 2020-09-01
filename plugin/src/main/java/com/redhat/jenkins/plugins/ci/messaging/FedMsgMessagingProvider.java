@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
@@ -86,6 +87,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     }
 
     @Extension
+    @Symbol("fedMsg")
     public static class FedMsgMessagingProviderDescriptor extends MessagingProviderDescriptor {
         @Override
         public String getDisplayName() {
