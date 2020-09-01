@@ -33,7 +33,8 @@ import org.apache.commons.lang.text.StrSubstitutor;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class PluginUtils {
+ */
+public class PluginUtils {
 
     public static String getSubstitutedValue(String id, EnvVars env) {
         if (id == null) {
@@ -50,11 +51,10 @@ import org.apache.commons.lang.text.StrSubstitutor;
 
 
     public static Map<String, String> getNodeGlobalProperties() {
-        Map<String, String> globalNodeProperties = new HashMap<String, String>();
+        Map<String, String> globalNodeProperties = new HashMap<>();
         // Get latest global properties by looking for all
         // instances of EnvironmentVariablesNodeProperty in the global node properties
-        for (NodeProperty<?> nodeProperty : Jenkins.getInstance()
-                .getGlobalNodeProperties()) {
+        for (NodeProperty<?> nodeProperty : Jenkins.get().getGlobalNodeProperties()) {
             if (nodeProperty instanceof EnvironmentVariablesNodeProperty) {
                 globalNodeProperties.putAll(((EnvironmentVariablesNodeProperty) nodeProperty).getEnvVars());
             }

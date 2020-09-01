@@ -138,7 +138,7 @@ public class CIMessageSenderStep extends Step {
     }
 
     @Override
-    public StepExecution start(StepContext context) throws Exception {
+    public StepExecution start(StepContext context) {
         return new CIMessageSenderStep.Execution(this, context);
     }
 
@@ -164,48 +164,42 @@ public class CIMessageSenderStep extends Step {
                 throw new Exception("Unrecognized provider name.");
             }
 
-            task = Timer.get().submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ProviderData pd = null;
-                        JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
-                        if (p instanceof ActiveMqMessagingProvider) {
-                            ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(step.getProviderName());
-                            apd.setOverrides(step.getOverrides());
-                            apd.setMessageType(step.getMessageType());
-                            apd.setMessageProperties(step.getMessageProperties());
-                            apd.setMessageContent(step.getMessageContent());
-                            apd.setFailOnError(step.getFailOnError());
-                            pd = apd;
-                        } else if (p instanceof FedMsgMessagingProvider) {
-                            FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(step.getProviderName());
-                            fpd.setOverrides(step.getOverrides());
-                            fpd.setMessageContent(step.getMessageContent());
-                            fpd.setFailOnError(step.getFailOnError());
-                            pd = fpd;
-                        } else {
-                            RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(step.getProviderName());
-                            rpd.setOverrides(step.getOverrides());
-                            rpd.setMessageContent(step.getMessageContent());
-                            rpd.setFailOnError(step.getFailOnError());
-                            pd = rpd;
-                        }
-                        CIMessageNotifier notifier = new CIMessageNotifier(pd);
-                        StepContext c = getContext();
-                        SendResult status = notifier.doMessageNotifier(c.get(Run.class), null, c.get(TaskListener.class));
-                        if (status.isSucceeded()) {
-                            getContext().onSuccess(status);
-                        } else {
-                            getContext().onFailure(new Exception("Exception sending message. Please check server logs."));
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        getContext().onFailure(e);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        getContext().onFailure(e);
+            task = Timer.get().submit(() -> {
+                try {
+                    ProviderData pd;
+                    JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
+                    if (p instanceof ActiveMqMessagingProvider) {
+                        ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(step.getProviderName());
+                        apd.setOverrides(step.getOverrides());
+                        apd.setMessageType(step.getMessageType());
+                        apd.setMessageProperties(step.getMessageProperties());
+                        apd.setMessageContent(step.getMessageContent());
+                        apd.setFailOnError(step.getFailOnError());
+                        pd = apd;
+                    } else if (p instanceof FedMsgMessagingProvider) {
+                        FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(step.getProviderName());
+                        fpd.setOverrides(step.getOverrides());
+                        fpd.setMessageContent(step.getMessageContent());
+                        fpd.setFailOnError(step.getFailOnError());
+                        pd = fpd;
+                    } else {
+                        RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(step.getProviderName());
+                        rpd.setOverrides(step.getOverrides());
+                        rpd.setMessageContent(step.getMessageContent());
+                        rpd.setFailOnError(step.getFailOnError());
+                        pd = rpd;
                     }
+                    CIMessageNotifier notifier = new CIMessageNotifier(pd);
+                    StepContext c = getContext();
+                    SendResult status = notifier.doMessageNotifier(c.get(Run.class), null, c.get(TaskListener.class));
+                    if (status.isSucceeded()) {
+                        getContext().onSuccess(status);
+                    } else {
+                        getContext().onFailure(new Exception("Exception sending message. Please check server logs."));
+                    }
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                    getContext().onFailure(e);
                 }
             });
 
@@ -213,7 +207,7 @@ public class CIMessageSenderStep extends Step {
         }
 
         @Override
-        public void stop(@Nonnull Throwable throwable) throws Exception {
+        public void stop(@Nonnull Throwable throwable) {
             task.cancel(true);
         }
 
@@ -236,7 +230,7 @@ public class CIMessageSenderStep extends Step {
         }
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return Messages.MessageNotifier();
         }
 

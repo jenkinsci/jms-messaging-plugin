@@ -136,7 +136,7 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
     public abstract static class MessagingProviderDescriptor extends Descriptor<JMSMessagingProvider> {
 
         public static ExtensionList<MessagingProviderDescriptor> all() {
-            return Jenkins.getInstance().getExtensionList(MessagingProviderDescriptor.class);
+            return Jenkins.get().getExtensionList(MessagingProviderDescriptor.class);
         }
     }
 }

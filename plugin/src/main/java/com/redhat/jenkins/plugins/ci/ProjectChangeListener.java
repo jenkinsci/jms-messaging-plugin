@@ -1,18 +1,15 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
 import hudson.Extension;
-import hudson.model.BuildableItem;
-import hudson.model.Item;
 import hudson.model.AbstractProject;
+import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.listeners.ItemListener;
+import jenkins.model.ParameterizedJobMixIn;
 
 import java.util.List;
 import java.util.logging.Logger;
-
-import jenkins.model.ParameterizedJobMixIn;
-
-import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
 
 @Extension
 public class ProjectChangeListener extends ItemListener {

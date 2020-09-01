@@ -10,7 +10,6 @@ import hudson.model.Run;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -27,6 +26,8 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
+import javax.annotation.Nonnull;
 
 /*
  * The MIT License
@@ -59,8 +60,8 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
     private transient MessagingProviderOverrides overrides;
     private transient String selector;
     private transient String variable;
-    private transient List<MsgCheck> checks = new ArrayList<MsgCheck>();
-    private transient Integer timeout;;
+    private transient List<MsgCheck> checks = new ArrayList<>();
+    private transient Integer timeout;
     private ProviderData providerData;
 
     @DataBoundConstructor
@@ -144,19 +145,19 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
         return worker.waitForMessage(build, listener, providerData);
     }
 
-    public boolean doMessageSubscribe(Run<?,?> run, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+    public boolean doMessageSubscribe(Run<?,?> run, Launcher launcher, TaskListener listener) {
         return waitforCIMessage(run, launcher, listener) != null;
     }
 
     @Override
-    public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) {
         return doMessageSubscribe(build, launcher, listener);
     }
 
     @Extension
     public static class CIMessageSubscriberBuilderDescriptor extends BuildStepDescriptor<Builder> {
 
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return BUILDER_NAME;
         }
 
@@ -169,12 +170,11 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
                 jo.getJSONObject("providerData").put("name", jo.remove(""));
                 return (CIMessageSubscriberBuilder)super.newInstance(sr, jo);
             } catch (hudson.model.Descriptor.FormException e) {
-                log.log(Level.SEVERE, "Unable to create new instance.", e);;
+                log.log(Level.SEVERE, "Unable to create new instance.", e);
             }
             return null;
         }
 
-        @SuppressWarnings("rawtypes")
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;

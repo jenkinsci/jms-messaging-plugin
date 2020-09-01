@@ -39,7 +39,7 @@ public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod 
 
     public abstract static class AuthenticationMethodDescriptor extends Descriptor<RabbitMQAuthenticationMethod> {
         public static ExtensionList<AuthenticationMethodDescriptor> all() {
-            return Jenkins.getInstance().getExtensionList(AuthenticationMethodDescriptor.class);
+            return Jenkins.get().getExtensionList(AuthenticationMethodDescriptor.class);
         }
     }
 

@@ -37,7 +37,7 @@ public abstract class TopicProvider implements Describable<TopicProvider>, Seria
         }
 
         public static ExtensionList<TopicProviderDescriptor> all() {
-            return Jenkins.getInstance().getExtensionList(TopicProviderDescriptor.class);
+            return Jenkins.get().getExtensionList(TopicProviderDescriptor.class);
         }
     }
 }

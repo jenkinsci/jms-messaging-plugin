@@ -6,6 +6,7 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import jenkins.model.Jenkins;
 
@@ -79,7 +80,7 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
         }
 
         ProviderData thatp = (ProviderData)that;
-        return this.name != null ? this.name.equals(thatp.name) : thatp.name == null;
+        return Objects.equals(this.name, thatp.name);
     }
 
     private void setProvider() {
@@ -88,7 +89,7 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
 
     public abstract static class ProviderDataDescriptor extends Descriptor<ProviderData> {
         public static ExtensionList<ProviderDataDescriptor> all() {
-            return Jenkins.getInstance().getExtensionList(ProviderDataDescriptor.class);
+            return Jenkins.get().getExtensionList(ProviderDataDescriptor.class);
         }
     }
 }

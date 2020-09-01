@@ -178,8 +178,7 @@ public class MessageProviderMigrator {
 
     @Initializer(after = InitMilestone.JOB_LOADED)
     public static void migrateCIMessageBuilders() {
-        Jenkins instance = Jenkins.getInstance();
-        if (instance == null) { return; }
+        Jenkins instance = Jenkins.get();
         if (GlobalCIConfiguration.get().isMigrationInProgress()) {
             log.info("isMigrationInProgress - > true | Forcing GlobalCIConfiguration.save()");
             GlobalCIConfiguration.get().save();

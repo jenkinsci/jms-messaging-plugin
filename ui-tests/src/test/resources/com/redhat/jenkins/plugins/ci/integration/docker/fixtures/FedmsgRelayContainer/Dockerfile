@@ -1,4 +1,4 @@
-from fedora:25
+FROM fedora:25
 
 RUN yum install -y fedmsg-relay
 

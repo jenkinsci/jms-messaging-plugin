@@ -25,6 +25,7 @@ package com.redhat.jenkins.plugins.ci.messaging.data;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -91,7 +92,7 @@ public class FedmsgMessage {
 
     public FedmsgMessage(String topic, String body) {
         this.topic = topic;
-        this.msgId = Integer.toString(Calendar.getInstance().get(1)) + "-" + UUID.randomUUID().toString();
+        this.msgId = Calendar.getInstance().get(1) + "-" + UUID.randomUUID().toString();
 
         if (!StringUtils.isBlank(body)) {
             try {
@@ -148,7 +149,7 @@ public class FedmsgMessage {
             ObjectWriter writer = mapper.writer();
             writer.with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValue(os, this);
             os.close();
-            return new String(os.toByteArray(), "UTF-8");
+            return new String(os.toByteArray(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }

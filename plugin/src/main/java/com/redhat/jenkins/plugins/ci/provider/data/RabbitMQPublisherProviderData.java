@@ -14,6 +14,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 /*
  * The MIT License
  *
@@ -126,7 +129,7 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(RabbitMQPublisherProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(RabbitMQPublisherProviderDataDescriptor.class);
     }
 
     @Override
@@ -136,12 +139,12 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         }
 
         RabbitMQPublisherProviderData thatp = (RabbitMQPublisherProviderData)that;
-        return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
-               (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
-               (this.messageContent != null ? this.messageContent.equals(thatp.messageContent) : thatp.messageContent == null) &&
-               (this.failOnError != null ? this.failOnError.equals(thatp.failOnError) : thatp.failOnError == null) &&
-               (this.fedoraMessaging != null ? this.fedoraMessaging.equals(thatp.fedoraMessaging) : thatp.fedoraMessaging == null) &&
-               (this.schema != null ? this.schema.equals(thatp.schema) : thatp.schema == null);
+        return Objects.equals(this.name, thatp.name) &&
+               Objects.equals(this.overrides, thatp.overrides) &&
+               Objects.equals(this.messageContent, thatp.messageContent) &&
+               Objects.equals(this.failOnError, thatp.failOnError) &&
+               Objects.equals(this.fedoraMessaging, thatp.fedoraMessaging) &&
+               Objects.equals(this.schema, thatp.schema);
     }
 
     @Extension
@@ -149,15 +152,15 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
     public static class RabbitMQPublisherProviderDataDescriptor extends RabbitMQProviderDataDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "RabbitMQ Publisher Provider Data";
         }
 
         @Override
         public RabbitMQPublisherProviderData newInstance(StaplerRequest sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
-            Boolean fedoraMessaging = false;
-            Integer severity = 20;
+            boolean fedoraMessaging = false;
+            int severity = 20;
             String schema = "";
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));

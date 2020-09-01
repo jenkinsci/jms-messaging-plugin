@@ -16,8 +16,8 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultSaslConfig;
 
+import javax.annotation.Nonnull;
 import javax.net.ssl.*;
-import javax.servlet.ServletException;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.util.logging.Level;
@@ -131,21 +131,21 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
             connectionFactory.enableHostnameVerification();
             return connectionFactory;
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception creating connection factory.", e);;
+            log.log(Level.SEVERE, "Unhandled exception creating connection factory.", e);
         }
         return null;
     }
 
     @Override
     public Descriptor<RabbitMQAuthenticationMethod> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(SSLCertificateAuthenticationMethodDescriptor.class);
+        return Jenkins.get().getDescriptorByType(SSLCertificateAuthenticationMethodDescriptor.class);
     }
 
     @Extension
     public static class SSLCertificateAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "SSL Certificate Authentication";
         }
 
@@ -167,7 +167,7 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
                                                @QueryParameter("keystore") String keystore,
                                                @QueryParameter("keypwd") String keypwd,
                                                @QueryParameter("truststore") String truststore,
-                                               @QueryParameter("trustpwd") String trustpwd) throws ServletException {
+                                               @QueryParameter("trustpwd") String trustpwd) {
 
             checkAdmin();
 

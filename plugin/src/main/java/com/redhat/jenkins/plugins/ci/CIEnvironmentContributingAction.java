@@ -6,6 +6,7 @@ import hudson.model.ParameterValue;
 import hudson.model.Run;
 import hudson.model.AbstractBuild;
 
+import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +37,8 @@ import java.util.Set;
  */
 public class CIEnvironmentContributingAction implements EnvironmentContributingAction {
 
-    private transient Map<String, String> messageParams;
-    private transient Set<String> jobParams = new HashSet<String>();
+    private final transient Map<String, String> messageParams;
+    private final transient Set<String> jobParams = new HashSet<>();
 
     public CIEnvironmentContributingAction(Map<String, String> messageParams) {
         this(messageParams, null);
@@ -57,7 +58,7 @@ public class CIEnvironmentContributingAction implements EnvironmentContributingA
     }
 
     public String getDisplayName() {
-         return null;
+        return null;
     }
 
     public String getUrlName() {
@@ -65,27 +66,27 @@ public class CIEnvironmentContributingAction implements EnvironmentContributingA
     }
 
     @Override
-    public void buildEnvironment(Run<?, ?> run, EnvVars env) {
-	addEnvVars(env);
+    public void buildEnvironment(@Nonnull Run<?, ?> run, @Nonnull EnvVars env) {
+        addEnvVars(env);
     }
 
     @Override
     public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
-	addEnvVars(env);
+        addEnvVars(env);
     }
 
     private void addEnvVars(EnvVars env) {
 
-	if (env == null || messageParams == null) {
-	    return;
-	}
+        if (env == null || messageParams == null) {
+            return;
+        }
 
-	// Only include variables in environment that are not defined as job parameters. And
-	// do not overwrite any existing environment variables (like PATH).
-	for (String key : messageParams.keySet()) {
-	    if (!jobParams.contains(key) && !env.containsKey(key)) {
-		env.put(key, messageParams.get(key));
-	    }
-	}
+        // Only include variables in environment that are not defined as job parameters. And
+        // do not overwrite any existing environment variables (like PATH).
+        for (String key : messageParams.keySet()) {
+            if (!jobParams.contains(key) && !env.containsKey(key)) {
+                env.put(key, messageParams.get(key));
+            }
+        }
     }
 }

@@ -6,6 +6,7 @@ import hudson.util.FormValidation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -19,6 +20,8 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+
+import javax.annotation.Nonnull;
 
 /*
  * The MIT License
@@ -50,7 +53,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
     private String selector;
-    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
+    private List<MsgCheck> checks = new ArrayList<>();
     private String variable;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
@@ -111,7 +114,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(ActiveMQSubscriberProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(ActiveMQSubscriberProviderDataDescriptor.class);
     }
 
     @Override
@@ -121,12 +124,12 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
         }
 
         ActiveMQSubscriberProviderData thatp = (ActiveMQSubscriberProviderData)that;
-        return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
-               (this.selector != null ? this.selector.equals(thatp.selector) : thatp.selector == null) &&
-               (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
-               (this.checks != null ? this.checks.equals(thatp.checks) : thatp.checks == null) &&
-               (this.variable != null ? this.variable.equals(thatp.variable) : thatp.variable == null) &&
-               (this.timeout != null ? this.timeout.equals(thatp.timeout) : thatp.timeout == null);
+        return Objects.equals(this.name, thatp.name) &&
+               Objects.equals(this.selector, thatp.selector) &&
+               Objects.equals(this.overrides, thatp.overrides) &&
+               Objects.equals(this.checks, thatp.checks) &&
+               Objects.equals(this.variable, thatp.variable) &&
+               Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Extension
@@ -134,7 +137,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     public static class ActiveMQSubscriberProviderDataDescriptor extends ActiveMQProviderDataDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "ActiveMQ Subscriber Provider Data";
         }
 

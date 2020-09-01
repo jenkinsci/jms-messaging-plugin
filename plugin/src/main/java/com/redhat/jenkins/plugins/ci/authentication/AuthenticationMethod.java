@@ -35,10 +35,8 @@ public abstract class AuthenticationMethod implements Serializable  {
      * Taken from gerrit-trigger-plugin
      */
     public static void checkAdmin() {
-        final Jenkins jenkins = Jenkins.getInstance(); //Hoping this method doesn't change meaning again
-        if (jenkins != null) {
-            //If Jenkins is not alive then we are not started, so no unauthorised user might do anything
-            jenkins.checkPermission(Jenkins.ADMINISTER);
-        }
+        final Jenkins jenkins = Jenkins.get();
+        //If Jenkins is not alive then we are not started, so no unauthorised user might do anything
+        jenkins.checkPermission(Jenkins.ADMINISTER);
     }
 }

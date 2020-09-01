@@ -16,10 +16,10 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
+import javax.annotation.Nonnull;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Session;
-import javax.servlet.ServletException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -81,7 +81,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
     private String getSubstitutedValue(String value) {
         EnvVars vars = new EnvVars();
-        vars.put("JENKINS_HOME", Jenkins.getInstance().getRootDir().toString());
+        vars.put("JENKINS_HOME", Jenkins.get().getRootDir().toString());
         return PluginUtils.getSubstitutedValue(value, vars);
     }
 
@@ -111,21 +111,21 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             connectionFactory.setTrustStorePassword(Secret.toString(getTrustpwd()));
             return connectionFactory;
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception creating connection factory.", e);;
+            log.log(Level.SEVERE, "Unhandled exception creating connection factory.", e);
         }
         return null;
     }
 
     @Override
     public Descriptor<ActiveMQAuthenticationMethod> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(SSLCertificateAuthenticationMethodDescriptor.class);
+        return Jenkins.get().getDescriptorByType(SSLCertificateAuthenticationMethodDescriptor.class);
     }
 
     @Extension
     public static class SSLCertificateAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "SSL Certificate Authentication";
         }
 
@@ -144,7 +144,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
                                                @QueryParameter("keystore") String keystore,
                                                @QueryParameter("keypwd") String keypwd,
                                                @QueryParameter("truststore") String truststore,
-                                               @QueryParameter("trustpwd") String trustpwd) throws ServletException {
+                                               @QueryParameter("trustpwd") String trustpwd) {
 
             checkAdmin();
 

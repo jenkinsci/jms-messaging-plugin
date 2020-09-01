@@ -28,6 +28,8 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
+import javax.annotation.Nonnull;
+
 /*
  * The MIT License
  *
@@ -50,7 +52,8 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */public class CIMessageNotifier extends Notifier {
+ */
+public class CIMessageNotifier extends Notifier {
      private static final Logger log = Logger.getLogger(CIMessageNotifier.class.getName());
 
      private static final String BUILDER_NAME = Messages.MessageNotifier();
@@ -157,7 +160,6 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
              load();
          }
 
-         @SuppressWarnings("rawtypes")
          @Override
          public boolean isApplicable(Class<? extends AbstractProject> arg0) {
              return true;
@@ -172,13 +174,13 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
                  jo.getJSONObject("providerData").put("name", jo.remove(""));
                  return (CIMessageNotifier)super.newInstance(sr, jo);
              } catch (hudson.model.Descriptor.FormException e) {
-                 log.log(Level.SEVERE, "Unable to create new instance.", e);;
+                 log.log(Level.SEVERE, "Unable to create new instance.", e);
              }
              return null;
          }
 
          @Override
-         public String getDisplayName() {
+         public @Nonnull String getDisplayName() {
              return BUILDER_NAME;
          }
      }
