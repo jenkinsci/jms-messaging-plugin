@@ -11,6 +11,7 @@ import hudson.model.Run;
 import hudson.util.ListBoxModel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -79,7 +80,7 @@ public class CIMessageSubscriberStep extends Step {
         this.selector = selector;
         this.timeout = timeout;
         if (checks == null) {
-            this.checks = checks;
+            this.checks = Collections.emptyList();
         }
     }
 
@@ -182,7 +183,7 @@ public class CIMessageSubscriberStep extends Step {
                     e.printStackTrace();
                     getContext().onFailure(e);
                 }
-});
+            });
             return false;
         }
 

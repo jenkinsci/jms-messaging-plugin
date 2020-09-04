@@ -48,7 +48,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
-    private List<MsgCheck> checks = new ArrayList<>();
+    private @Nonnull List<MsgCheck> checks = new ArrayList<>();
     private String variable;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
@@ -73,20 +73,22 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         super(name, overrides);
     }
 
-    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks, String variable, Integer timeout) {
+    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, @Nonnull List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
+        if (checks == null) throw new IllegalArgumentException("checks are null");
         this.checks = checks;
         this.variable = variable;
         this.timeout = timeout;
     }
 
 
-    public List<MsgCheck> getChecks() {
+    public @Nonnull List<MsgCheck> getChecks() {
         return checks;
     }
 
     @DataBoundSetter
-    public void setChecks(List<MsgCheck> checks) {
+    public void setChecks(@Nonnull List<MsgCheck> checks) {
+        if (checks == null) throw new IllegalArgumentException("checks are null");
         this.checks = checks;
     }
 
