@@ -65,7 +65,7 @@ public class CIMessageSubscriberStep extends Step {
     private String providerName;
     private MessagingProviderOverrides overrides;
     private String selector;
-    private List<MsgCheck> checks = new ArrayList<>();
+    private List<MsgCheck> checks;
     private Integer timeout;
 
     @DataBoundConstructor
@@ -79,9 +79,7 @@ public class CIMessageSubscriberStep extends Step {
         this.overrides = overrides;
         this.selector = selector;
         this.timeout = timeout;
-        if (checks == null) {
-            this.checks = Collections.emptyList();
-        }
+        this.checks = checks == null ? Collections.emptyList() : checks;
     }
 
     public String getProviderName() {
