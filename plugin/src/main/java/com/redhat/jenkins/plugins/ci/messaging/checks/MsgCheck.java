@@ -25,9 +25,11 @@ package com.redhat.jenkins.plugins.ci.messaging.checks;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.util.Objects;
+
 public class MsgCheck {
-    private String field;
-    private String expectedValue;
+    private final String field;
+    private final String expectedValue;
 
     @Override
     public boolean equals(Object o) {
@@ -36,8 +38,8 @@ public class MsgCheck {
 
         MsgCheck msgCheck = (MsgCheck) o;
 
-        if (field != null ? !field.equals(msgCheck.field) : msgCheck.field != null) return false;
-        return expectedValue != null ? expectedValue.equals(msgCheck.expectedValue) : msgCheck.expectedValue == null;
+        if (!Objects.equals(field, msgCheck.field)) return false;
+        return Objects.equals(expectedValue, msgCheck.expectedValue);
     }
 
     @Override

@@ -6,6 +6,8 @@ import jenkins.model.Jenkins;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import javax.annotation.Nonnull;
+
 public class DefaultTopicProvider extends TopicProvider {
 
     private static final long serialVersionUID = -8194184157003849025L;
@@ -15,14 +17,14 @@ public class DefaultTopicProvider extends TopicProvider {
 
     @Override
     public Descriptor<TopicProvider> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(DefaultTopicProviderDescriptor.class);
+        return Jenkins.get().getDescriptorByType(DefaultTopicProviderDescriptor.class);
     }
 
     @Extension
     public static class DefaultTopicProviderDescriptor extends TopicProviderDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "Default Topic Provider";
         }
 

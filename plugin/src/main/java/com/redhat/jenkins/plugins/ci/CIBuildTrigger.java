@@ -1,12 +1,11 @@
 package com.redhat.jenkins.plugins.ci;
 
 import java.io.IOException;
-import java.io.ObjectStreamException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -56,6 +55,8 @@ import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import jenkins.model.ParameterizedJobMixIn;
 
+import javax.annotation.Nonnull;
+
 /*
  * The MIT License
  *
@@ -79,7 +80,7 @@ import jenkins.model.ParameterizedJobMixIn;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-public class CIBuildTrigger extends Trigger<Job> {
+public class CIBuildTrigger extends Trigger<Job<?,?>> {
 	private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
 	private transient String providerName;
@@ -144,7 +145,7 @@ public class CIBuildTrigger extends Trigger<Job> {
 
     @DataBoundSetter
     public void setProviderData(ProviderData providerData) {
-        setProviderList(Arrays.asList(providerData));
+        setProviderList(Collections.singletonList(providerData));
     }
 
     public Boolean getNoSquash() {
@@ -199,7 +200,7 @@ public class CIBuildTrigger extends Trigger<Job> {
 	}
 
 	@Override
-	protected Object readResolve() throws ObjectStreamException {
+	protected Object readResolve() {
 	    if (providers == null) {
 	        log.info("Migrating CIBuildTrigger for job '" + getJobName() + "'.");
 	        providers = new ArrayList<>();
@@ -412,7 +413,6 @@ public class CIBuildTrigger extends Trigger<Job> {
     private static class ParametersActionInspection {
         private static final Class<ParametersAction> KLASS = ParametersAction.class;
         private boolean inspectionFailure;
-        private boolean safeParametersSet = false;
         private boolean keepUndefinedParameters = false;
         private boolean hasSafeParameterConfig = false;
 
@@ -436,7 +436,6 @@ public class CIBuildTrigger extends Trigger<Job> {
                     if (Boolean.getBoolean(KLASS.getName() + ".keepUndefinedParameters")) {
                         this.keepUndefinedParameters = true;
                     }
-                    this.safeParametersSet = false;
                 }
                 this.inspectionFailure = false;
             } catch (Exception e) {
@@ -472,7 +471,7 @@ public class CIBuildTrigger extends Trigger<Job> {
         }
     }
 
-    protected ParametersAction createParameters(Job project, Map<String, String> messageParams) {
+    protected ParametersAction createParameters(Job<?, ?> project, Map<String, String> messageParams) {
         List<ParameterValue> definedParameters = getDefinedParameters(project);
         List<ParameterValue> parameters = getUpdatedParameters(messageParams, definedParameters);
         try {
@@ -517,7 +516,7 @@ public class CIBuildTrigger extends Trigger<Job> {
         ParameterizedJobMixIn<?, ?> jobMixIn = new ParameterizedJobMixIn() {
             @Override
             protected Job<?, ?> asJob() {
-                return (Job<?, ?>)job;
+                return job;
             }
         };
 
@@ -553,9 +552,9 @@ public class CIBuildTrigger extends Trigger<Job> {
         return new ArrayList<>(newParams.values());
 	}
 
-	private List<ParameterValue> getDefinedParameters(Job project) {
+	private List<ParameterValue> getDefinedParameters(Job<?, ?> project) {
 	    List<ParameterValue> parameters = new ArrayList<>();
-	    ParametersDefinitionProperty properties = ((Job<?, ?>)project).getProperty(ParametersDefinitionProperty.class);
+	    ParametersDefinitionProperty properties = project.getProperty(ParametersDefinitionProperty.class);
 
 	    if (properties != null  && properties.getParameterDefinitions() != null) {
 	        for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {
@@ -620,7 +619,7 @@ public class CIBuildTrigger extends Trigger<Job> {
 		}
 
 		@Override
-		public String getDisplayName() {
+		public @Nonnull String getDisplayName() {
 			return Messages.PluginName();
 		}
 

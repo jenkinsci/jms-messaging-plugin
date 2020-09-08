@@ -11,6 +11,7 @@ import hudson.model.Run;
 import hudson.util.ListBoxModel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -64,7 +65,7 @@ public class CIMessageSubscriberStep extends Step {
     private String providerName;
     private MessagingProviderOverrides overrides;
     private String selector;
-    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
+    private List<MsgCheck> checks;
     private Integer timeout;
 
     @DataBoundConstructor
@@ -78,10 +79,7 @@ public class CIMessageSubscriberStep extends Step {
         this.overrides = overrides;
         this.selector = selector;
         this.timeout = timeout;
-        if (checks == null) {
-            checks = new ArrayList<>();
-        }
-        this.checks = checks;
+        this.checks = checks == null ? Collections.emptyList() : checks;
     }
 
     public String getProviderName() {
@@ -121,7 +119,7 @@ public class CIMessageSubscriberStep extends Step {
     }
 
     @Override
-    public StepExecution start(StepContext context) throws Exception {
+    public StepExecution start(StepContext context) {
         return new Execution(this, context);
     }
 
@@ -147,45 +145,42 @@ public class CIMessageSubscriberStep extends Step {
                 throw new Exception("Unrecognized provider name.");
             }
 
-            task = Timer.get().submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ProviderData pd = null;
-                        JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
-                        if (p instanceof ActiveMqMessagingProvider) {
-                            ActiveMQSubscriberProviderData apd = new ActiveMQSubscriberProviderData(step.getProviderName());
-                            apd.setOverrides(step.getOverrides());
-                            apd.setSelector(step.getSelector());
-                            apd.setChecks(step.getChecks());
-                            apd.setTimeout(step.getTimeout());
-                            pd = apd;
-                        } else if (p instanceof FedMsgMessagingProvider) {
-                            FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(step.getProviderName());
-                            fpd.setOverrides(step.getOverrides());
-                            fpd.setChecks(step.getChecks());
-                            fpd.setTimeout(step.getTimeout());
-                            pd = fpd;
-                        } else if (p instanceof RabbitMQMessagingProvider) {
-                            RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(step.getProviderName());
-                            rpd.setOverrides(step.getOverrides());
-                            rpd.setChecks(step.getChecks());
-                            rpd.setTimeout(step.getTimeout());
-                            pd = rpd;
-                        }
-                    CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
-                        StepContext c = getContext();
-                        String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
-                        if (result != null) {
-                            getContext().onSuccess(result);
-                        } else {
-                            getContext().onFailure(new AbortException("Timeout waiting for message!"));
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        getContext().onFailure(e);
+            task = Timer.get().submit(() -> {
+                try {
+                    ProviderData pd = null;
+                    JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
+                    if (p instanceof ActiveMqMessagingProvider) {
+                        ActiveMQSubscriberProviderData apd = new ActiveMQSubscriberProviderData(step.getProviderName());
+                        apd.setOverrides(step.getOverrides());
+                        apd.setSelector(step.getSelector());
+                        apd.setChecks(step.getChecks());
+                        apd.setTimeout(step.getTimeout());
+                        pd = apd;
+                    } else if (p instanceof FedMsgMessagingProvider) {
+                        FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(step.getProviderName());
+                        fpd.setOverrides(step.getOverrides());
+                        fpd.setChecks(step.getChecks());
+                        fpd.setTimeout(step.getTimeout());
+                        pd = fpd;
+                    } else if (p instanceof RabbitMQMessagingProvider) {
+                        RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(step.getProviderName());
+                        rpd.setOverrides(step.getOverrides());
+                        rpd.setChecks(step.getChecks());
+                        rpd.setTimeout(step.getTimeout());
+                        pd = rpd;
                     }
-}
+                CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
+                    StepContext c = getContext();
+                    String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
+                    if (result != null) {
+                        getContext().onSuccess(result);
+                    } else {
+                        getContext().onFailure(new AbortException("Timeout waiting for message!"));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    getContext().onFailure(e);
+                }
             });
             return false;
         }
@@ -223,7 +218,7 @@ public class CIMessageSubscriberStep extends Step {
         }
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return Messages.SubscriberBuilder();
         }
 

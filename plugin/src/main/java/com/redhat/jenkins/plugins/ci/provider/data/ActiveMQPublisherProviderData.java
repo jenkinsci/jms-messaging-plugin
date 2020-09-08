@@ -16,6 +16,9 @@ import org.kohsuke.stapler.StaplerRequest;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 /*
  * The MIT License
  *
@@ -104,7 +107,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(ActiveMQPublisherProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(ActiveMQPublisherProviderDataDescriptor.class);
     }
 
     @Override
@@ -114,12 +117,12 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         }
 
         ActiveMQPublisherProviderData thatp = (ActiveMQPublisherProviderData)that;
-        return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
-               (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
-               (this.messageType != null ? this.messageType.equals(thatp.messageType) : thatp.messageType == null) &&
-               (this.messageProperties != null ? this.messageProperties.equals(thatp.messageProperties) : thatp.messageProperties == null) &&
-               (this.messageContent != null ? this.messageContent.equals(thatp.messageContent) : thatp.messageContent == null) &&
-               (this.failOnError != null ? this.failOnError.equals(thatp.failOnError) : thatp.failOnError == null);
+        return Objects.equals(this.name, thatp.name) &&
+               Objects.equals(this.overrides, thatp.overrides) &&
+               Objects.equals(this.messageType, thatp.messageType) &&
+               Objects.equals(this.messageProperties, thatp.messageProperties) &&
+               Objects.equals(this.messageContent, thatp.messageContent) &&
+               Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Extension
@@ -127,7 +130,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     public static class ActiveMQPublisherProviderDataDescriptor extends ActiveMQProviderDataDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "ActiveMQ Publisher Provider Data";
         }
 

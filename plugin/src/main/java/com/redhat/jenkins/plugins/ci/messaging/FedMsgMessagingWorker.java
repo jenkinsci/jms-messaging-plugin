@@ -134,7 +134,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         }
         try {
             if (poller != null) {
-                for (Integer i = 0; i < poller.getSize(); i++) {
+                for (int i = 0; i < poller.getSize(); i++) {
                     ZMQ.Socket s = poller.getSocket(i);
                     poller.unregister(s);
                     s.disconnect(provider.getHubAddr());
@@ -195,7 +195,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         String json = z.getLast().toString();
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
-                            Map<String, String> params = new HashMap<String, String>();
+                            Map<String, String> params = new HashMap<>();
                             params.put("CI_MESSAGE", data.getBodyJson());
                             trigger(jobname, provider.formatMessage(data), params);
                         }
@@ -323,9 +323,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         String ltopic = getTopic(provider);
         try {
             ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
-        } catch (IOException e) {
-            log.warning(e.getMessage());
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             log.warning(e.getMessage());
         }
 
@@ -338,7 +336,6 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         long startTime = new Date().getTime();
 
         int timeoutInMs = timeout * 60 * 1000;
-        boolean interrupted = false;
         try {
             while ((new Date().getTime() - startTime) < timeoutInMs) {
                 if (lpoller.poll(1000) > 0) {
@@ -355,19 +352,14 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             continue;
                         }
 
-                        if (build != null) {
-                            if (StringUtils.isNotEmpty(pd.getVariable())) {
-                                EnvVars vars = new EnvVars();
-                                vars.put(pd.getVariable(), body);
-                                build.addAction(new CIEnvironmentContributingAction(vars));
-                            }
+                        if (StringUtils.isNotEmpty(pd.getVariable())) {
+                            EnvVars vars = new EnvVars();
+                            vars.put(pd.getVariable(), body);
+                            build.addAction(new CIEnvironmentContributingAction(vars));
                         }
                         return body;
                     }
                 }
-            }
-            if (interrupted) {
-                return null;
             }
             log.severe("Timed out waiting for message!");
             listener.getLogger().println("Timed out waiting for message!");

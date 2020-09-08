@@ -5,14 +5,13 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingWorker;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RabbitMqTriggerThread extends CITriggerThread {
     private static final Logger log = Logger.getLogger(RabbitMqTriggerThread.class.getName());
 
-    private RabbitMQMessagingWorker worker;
+    private final RabbitMQMessagingWorker worker;
 
     public RabbitMqTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
         super(messagingProvider, providerData, jobname, cibt, instance);

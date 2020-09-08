@@ -47,8 +47,6 @@ import com.redhat.utils.PluginUtils;
 public class ActiveMqMessageWatcher extends JMSMessageWatcher {
 
     private static final Logger log = Logger.getLogger(ActiveMqMessageWatcher.class.getName());
-    private ActiveMqMessagingProvider activeMqMessagingProvider;
-    private String topic;
 
     public ActiveMqMessageWatcher(String jobname) {
         super(jobname);
@@ -57,7 +55,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
     @Override
     public String watch() {
 
-        activeMqMessagingProvider = (ActiveMqMessagingProvider)provider;
+        ActiveMqMessagingProvider activeMqMessagingProvider = (ActiveMqMessagingProvider) provider;
 
         String ip = null;
         try {
@@ -66,7 +64,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
             log.severe("Unable to get localhost IP address.");
         }
 
-        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
+        String topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
 
         if (ip != null && activeMqMessagingProvider.getAuthenticationMethod() != null && topic != null && activeMqMessagingProvider.getBroker() != null) {
             log.info("Waiting for message with selector: " + selector);

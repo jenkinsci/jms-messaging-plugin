@@ -15,6 +15,9 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 /*
  * The MIT License
  *
@@ -82,7 +85,7 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(FedMsgPublisherProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(FedMsgPublisherProviderDataDescriptor.class);
     }
 
     @Override
@@ -92,10 +95,10 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
         }
 
         FedMsgPublisherProviderData thatp = (FedMsgPublisherProviderData)that;
-        return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
-               (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
-               (this.messageContent != null ? this.messageContent.equals(thatp.messageContent) : thatp.messageContent == null) &&
-               (this.failOnError != null ? this.failOnError.equals(thatp.failOnError) : thatp.failOnError == null);
+        return Objects.equals(this.name, thatp.name) &&
+               Objects.equals(this.overrides, thatp.overrides) &&
+               Objects.equals(this.messageContent, thatp.messageContent) &&
+               Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Extension
@@ -103,7 +106,7 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
     public static class FedMsgPublisherProviderDataDescriptor extends FedMsgProviderDataDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "FedMsg Publisher Provider Data";
         }
 

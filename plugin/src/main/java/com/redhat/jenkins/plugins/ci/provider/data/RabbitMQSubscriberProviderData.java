@@ -14,8 +14,10 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /*
  * The MIT License
@@ -46,7 +48,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
-    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
+    private @Nonnull List<MsgCheck> checks = new ArrayList<>();
     private String variable;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
@@ -71,20 +73,22 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         super(name, overrides);
     }
 
-    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks, String variable, Integer timeout) {
+    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, @Nonnull List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
+        if (checks == null) throw new IllegalArgumentException("checks are null");
         this.checks = checks;
         this.variable = variable;
         this.timeout = timeout;
     }
 
 
-    public List<MsgCheck> getChecks() {
+    public @Nonnull List<MsgCheck> getChecks() {
         return checks;
     }
 
     @DataBoundSetter
-    public void setChecks(List<MsgCheck> checks) {
+    public void setChecks(@Nonnull List<MsgCheck> checks) {
+        if (checks == null) throw new IllegalArgumentException("checks are null");
         this.checks = checks;
     }
 
@@ -108,7 +112,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(RabbitMQSubscriberProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(RabbitMQSubscriberProviderDataDescriptor.class);
     }
 
     @Override
@@ -118,11 +122,11 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         }
 
         RabbitMQSubscriberProviderData thatp = (RabbitMQSubscriberProviderData)that;
-        return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
-               (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
-               (this.checks != null ? this.checks.equals(thatp.checks) : thatp.checks == null) &&
-               (this.variable != null ? this.variable.equals(thatp.variable) : thatp.variable == null) &&
-               (this.timeout != null ? this.timeout.equals(thatp.timeout) : thatp.timeout == null);
+        return Objects.equals(this.name, thatp.name) &&
+               Objects.equals(this.overrides, thatp.overrides) &&
+               Objects.equals(this.checks, thatp.checks) &&
+               Objects.equals(this.variable, thatp.variable) &&
+               Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Extension
@@ -130,7 +134,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     public static class RabbitMQSubscriberProviderDataDescriptor extends RabbitMQProviderDataDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "RabbitMQ Subscriber Provider Data";
         }
 

@@ -23,6 +23,8 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
+import javax.annotation.Nonnull;
+
 /*
  * The MIT License
  *
@@ -133,7 +135,6 @@ public class CIMessageBuilder extends Builder {
             load();
         }
 
-        @SuppressWarnings("rawtypes")
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> arg0) {
             return true;
@@ -148,13 +149,13 @@ public class CIMessageBuilder extends Builder {
                 jo.getJSONObject("providerData").put("name", jo.remove(""));
                 return (CIMessageBuilder)super.newInstance(sr, jo);
             } catch (hudson.model.Descriptor.FormException e) {
-                log.log(Level.SEVERE, "Unable to create new instance.", e);;
+                log.log(Level.SEVERE, "Unable to create new instance.", e);
             }
             return null;
         }
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "CI Notifier";
         }
     }

@@ -5,12 +5,15 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import jenkins.model.Jenkins;
 
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+
+import javax.annotation.Nonnull;
 
 public class MessagingProviderOverrides implements Describable<MessagingProviderOverrides>, Serializable {
     private static final long serialVersionUID = -8815444484948038651L;
@@ -50,20 +53,19 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
 
         MessagingProviderOverrides that = (MessagingProviderOverrides) o;
 
-        return (topic != null ? topic.equals(that.topic) : that.topic == null) &&
-                (queue != null ? queue.equals(that.queue) : that.queue == null);
+        return Objects.equals(topic, that.topic) && Objects.equals(queue, that.queue);
     }
 
     @Override
     public Descriptor<MessagingProviderOverrides> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(MessagingProviderOverridesDescriptor.class);
+        return Jenkins.get().getDescriptorByType(MessagingProviderOverridesDescriptor.class);
     }
 
     @Extension
     public static class MessagingProviderOverridesDescriptor extends Descriptor<MessagingProviderOverrides> {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "";
         }
     }

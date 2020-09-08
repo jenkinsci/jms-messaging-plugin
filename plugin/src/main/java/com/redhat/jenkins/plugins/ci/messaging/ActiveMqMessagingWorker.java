@@ -85,7 +85,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     private Connection connection;
     private MessageConsumer subscriber;
-    private String uuid = UUID.randomUUID().toString();
+    private final String uuid = UUID.randomUUID().toString();
 
     public ActiveMqMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
         super(messagingProvider, overrides, jobname);
@@ -212,7 +212,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             }
 
             root.set("JMSCorrelationID", mapper.convertValue(message.getJMSCorrelationID(), JsonNode.class));
-            root.set("JMSDeliveryMode", mapper.convertValue(new Integer(message.getJMSDeliveryMode()), JsonNode.class));
+            root.set("JMSDeliveryMode", mapper.convertValue(message.getJMSDeliveryMode(), JsonNode.class));
             root.set("JMSDestination", mapper.convertValue(message.getJMSDestination().toString(), JsonNode.class));
             root.set("JMSExpiration", mapper.convertValue(message.getJMSExpiration(), JsonNode.class));
             root.set("JMSMessageID", mapper.convertValue(message.getJMSMessageID(), JsonNode.class));
@@ -359,7 +359,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         Session session = null;
         MessageProducer publisher = null;
 
-        TextMessage message = null;
+        TextMessage message;
         String mesgId = "0";
         String mesgContent = "";
 
@@ -493,9 +493,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         String ltopic = getTopic(provider);
         try {
             ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
-        } catch (IOException e) {
-            log.warning(e.getMessage());
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             log.warning(e.getMessage());
         }
 
@@ -519,19 +517,17 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     }
 
                     long startTime = new Date().getTime();
-                    Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES)*60*1000;
-                    Message message = null;
+                    int timeout = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES)*60*1000;
+                    Message message;
                     do {
                         message = consumer.receive(timeout);
                         if (message != null) {
                             String value = getMessageBody(message);
                             if (provider.verify(value, pd.getChecks(), jobname)) {
-                                if (build != null) {
-                                    if (StringUtils.isNotEmpty(pd.getVariable())) {
-                                        EnvVars vars = new EnvVars();
-                                        vars.put(pd.getVariable(), value);
-                                        build.addAction(new CIEnvironmentContributingAction(vars));
-                                    }
+                                if (StringUtils.isNotEmpty(pd.getVariable())) {
+                                    EnvVars vars = new EnvVars();
+                                    vars.put(pd.getVariable(), value);
+                                    build.addAction(new CIEnvironmentContributingAction(vars));
                                 }
                                 log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
                                 listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
@@ -564,18 +560,18 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     private static String formatHeaders (Message message) {
-        Destination  dest = null;
-        int delMode = 0;
-        long expiration = 0;
-        Time expTime = null;
-        int priority = 0;
-        String msgID = null;
-        long timestamp = 0;
-        Time timestampTime = null;
-        String correlID = null;
-        Destination replyTo = null;
-        boolean redelivered = false;
-        String type = null;
+        Destination  dest;
+        int delMode;
+        long expiration;
+        Time expTime;
+        int priority;
+        String msgID;
+        long timestamp;
+        Time timestampTime;
+        String correlID;
+        Destination replyTo;
+        boolean redelivered;
+        String type;
 
         StringBuilder sb = new StringBuilder();
         try {

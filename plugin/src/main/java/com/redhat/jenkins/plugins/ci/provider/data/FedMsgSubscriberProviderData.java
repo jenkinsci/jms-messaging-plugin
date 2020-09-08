@@ -20,6 +20,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
+import javax.annotation.Nonnull;
+
 /*
  * The MIT License
  *
@@ -49,7 +51,7 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
-    private List<MsgCheck> checks = new ArrayList<MsgCheck>();
+    private List<MsgCheck> checks = new ArrayList<>();
     private String variable;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
@@ -100,7 +102,7 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(FedMsgSubscriberProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(FedMsgSubscriberProviderDataDescriptor.class);
     }
 
     @Override
@@ -122,7 +124,7 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     public static class FedMsgSubscriberProviderDataDescriptor extends FedMsgProviderDataDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "FedMsg Subscriber Provider Data";
         }
 
