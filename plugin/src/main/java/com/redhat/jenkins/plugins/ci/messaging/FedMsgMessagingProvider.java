@@ -11,6 +11,8 @@ import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
+import javax.annotation.Nonnull;
+
 /*
  * The MIT License
  *
@@ -38,9 +40,9 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
 
     private static final long serialVersionUID = 82154526798596907L;
 
-    private String hubAddr;
-    private String pubAddr;
-    private String topic;
+    private final String hubAddr;
+    private final String pubAddr;
+    private final String topic;
 
     @DataBoundConstructor
     public FedMsgMessagingProvider(String name, String hubAddr,
@@ -79,7 +81,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public Descriptor<JMSMessagingProvider> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(FedMsgMessagingProviderDescriptor.class);
+        return Jenkins.get().getDescriptorByType(FedMsgMessagingProviderDescriptor.class);
     }
 
     public String getPubAddr() {
@@ -90,7 +92,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     @Symbol("fedMsg")
     public static class FedMsgMessagingProviderDescriptor extends MessagingProviderDescriptor {
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "FedMsg";
         }
 

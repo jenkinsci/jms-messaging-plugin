@@ -17,19 +17,21 @@ import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.RabbitMQAuthenticat
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQProviderData;
 
+import javax.annotation.Nonnull;
+
 public class RabbitMQMessagingProvider extends JMSMessagingProvider {
 
     private static final long serialVersionUID = 82154526798596907L;
 
     private static final Logger log = Logger.getLogger(RabbitMQMessagingProvider.class.getName());
 
-    private String virtualHost;
-    private String hostname;
-    private Integer portNumber;
-    private RabbitMQAuthenticationMethod authenticationMethod;
+    private final String virtualHost;
+    private final String hostname;
+    private final Integer portNumber;
+    private final RabbitMQAuthenticationMethod authenticationMethod;
     private Connection connection;
-    private String exchange;
-    private String queue;
+    private final String exchange;
+    private final String queue;
 
     @DataBoundConstructor
     public RabbitMQMessagingProvider(String name, String virtualHost,
@@ -80,14 +82,14 @@ public class RabbitMQMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public Descriptor<JMSMessagingProvider> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(RabbitMQMessagingProvider.RabbitMQProviderDescriptor.class);
+        return Jenkins.get().getDescriptorByType(RabbitMQMessagingProvider.RabbitMQProviderDescriptor.class);
     }
 
     @Extension
     @Symbol("rabbitMq")
     public static class RabbitMQProviderDescriptor extends MessagingProviderDescriptor {
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "RabbitMQ";
         }
 

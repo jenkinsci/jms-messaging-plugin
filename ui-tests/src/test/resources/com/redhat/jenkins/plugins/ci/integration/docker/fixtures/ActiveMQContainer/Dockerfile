@@ -1,1 +1,1 @@
-from rmohr/activemq:5.15.9
+FROM rmohr/activemq:5.15.9

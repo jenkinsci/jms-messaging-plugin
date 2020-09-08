@@ -19,6 +19,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -35,12 +36,12 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     private Channel channel;
     // Thread interruption flag
     private boolean interrupt = false;
-    private String uuid = UUID.randomUUID().toString();
+    private final String uuid = UUID.randomUUID().toString();
     // Concurrent message queue used for saving messages from consumer
-    private ConcurrentLinkedQueue<RabbitMQMessage> messageQueue = new ConcurrentLinkedQueue<RabbitMQMessage>();
+    private final ConcurrentLinkedQueue<RabbitMQMessage> messageQueue = new ConcurrentLinkedQueue<>();
     private String consumerTag = "";
-    private String queueName = "";
-    private String exchangeName = "";
+    private String queueName;
+    private final String exchangeName;
 
     public RabbitMQMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
         super(messagingProvider, overrides, jobname);
@@ -73,7 +74,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
                         // Create deliver callback to listen for messages
                         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-                            String json = new String(delivery.getBody(), "UTF-8");
+                            String json = new String(delivery.getBody(), StandardCharsets.UTF_8);
                             log.info(
                                     "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
                             RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getProperties().getMessageId());
@@ -138,7 +139,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     @Override
     public void receive(String jobname, ProviderData pdata) {
         RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData) pdata;
-        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        int timeout = (pd.getTimeout() != null ? pd.getTimeout() : RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
 
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
@@ -174,7 +175,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     lastSeenMessage = data.getTimestamp().getTime();
                     //
                     if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
-                        Map<String, String> params = new HashMap<String, String>();
+                        Map<String, String> params = new HashMap<>();
                         params.put("CI_MESSAGE", data.getBodyJson());
                         trigger(jobname, data.getBodyJson(), params);
                     }
@@ -207,7 +208,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean connect() {
         ConnectionFactory connectionFactory = provider.getConnectionFactory();
-        Connection connectiontmp = null;
+        Connection connectiontmp;
         try {
             connectiontmp = connectionFactory.newConnection();
             String url = "";
@@ -257,7 +258,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         String msgId = "";
 
         // Fedora messaging wire format support
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         if (pd.isFedoraMessaging()) {
             headers.put("fedora_messaging_severity", pd.getSeverity());
             headers.put("fedora_messaging_schema", pd.getSchema());
@@ -359,7 +360,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
         // Create deliver callback to listen for messages
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-            String json = new String(delivery.getBody(), "UTF-8");
+            String json = new String(delivery.getBody(), StandardCharsets.UTF_8);
             listener.getLogger().println(
                     "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
             log.info(

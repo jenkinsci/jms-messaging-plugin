@@ -24,6 +24,8 @@ import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProvide
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
+import javax.annotation.Nonnull;
+
 /*
  * The MIT License
  *
@@ -51,12 +53,10 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     private static final long serialVersionUID = -5710867670450057616L;
 
-    private static final boolean DEFAULT_USE_QUEUES = false;
-
     private String broker;
-    private Boolean useQueues = DEFAULT_USE_QUEUES;
-    private transient String user;
-    private transient Secret password;
+    private Boolean useQueues;
+    private transient @Deprecated String user;
+    private transient @Deprecated Secret password;
     private transient boolean migrationInProgress = false;
     private TopicProvider topicProvider= new DefaultTopicProvider();
     private ActiveMQAuthenticationMethod authenticationMethod;
@@ -172,7 +172,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     public static class ActiveMqMessagingProviderDescriptor extends MessagingProviderDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "Active MQ";
         }
 

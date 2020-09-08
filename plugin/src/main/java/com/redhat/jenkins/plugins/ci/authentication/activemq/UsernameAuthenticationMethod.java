@@ -16,10 +16,10 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
+import javax.annotation.Nonnull;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Session;
-import javax.servlet.ServletException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -84,7 +84,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
 
     @Override
     public Descriptor<ActiveMQAuthenticationMethod> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(UsernameAuthenticationMethodDescriptor.class);
+        return Jenkins.get().getDescriptorByType(UsernameAuthenticationMethodDescriptor.class);
     }
 
     @Extension
@@ -92,7 +92,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
     public static class UsernameAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "Username and Password Authentication";
         }
 
@@ -108,7 +108,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
         @RequirePOST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
                                                @QueryParameter("username") String username,
-                                               @QueryParameter("password") String password) throws ServletException {
+                                               @QueryParameter("password") String password) {
 
             checkAdmin();
 

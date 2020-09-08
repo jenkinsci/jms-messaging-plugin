@@ -7,7 +7,7 @@ import java.util.List;
 
 public class CIShouldScheduleQueueAction implements QueueAction {
 
-    public Boolean schedule = false;
+    public Boolean schedule;
 
     public CIShouldScheduleQueueAction(Boolean schedule) {
         this.schedule = schedule;

@@ -6,7 +6,6 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -18,7 +17,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 
-import javax.servlet.ServletException;
+import javax.annotation.Nonnull;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -90,7 +89,7 @@ public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod  
 
     @Override
     public Descriptor<RabbitMQAuthenticationMethod> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(UsernameAuthenticationMethodDescriptor.class);
+        return Jenkins.get().getDescriptorByType(UsernameAuthenticationMethodDescriptor.class);
     }
 
     @Extension
@@ -98,7 +97,7 @@ public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod  
     public static class UsernameAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "Username and Password Authentication";
         }
 
@@ -116,7 +115,7 @@ public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod  
                                                @QueryParameter("portNumber") Integer portNumber,
                                                @QueryParameter("virtualHost") String virtualHost,
                                                @QueryParameter("username") String username,
-                                               @QueryParameter("password") String password) throws ServletException {
+                                               @QueryParameter("password") String password) {
 
             checkAdmin();
 

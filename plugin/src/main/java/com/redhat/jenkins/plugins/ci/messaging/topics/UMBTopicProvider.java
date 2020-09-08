@@ -9,6 +9,8 @@ import jenkins.model.Jenkins;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import javax.annotation.Nonnull;
+
 public class UMBTopicProvider extends TopicProvider {
 
     private static final long serialVersionUID = -8194184157003849026L;
@@ -18,14 +20,14 @@ public class UMBTopicProvider extends TopicProvider {
 
     @Override
     public Descriptor<TopicProvider> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(UMBTopicProviderDescriptor.class);
+        return Jenkins.get().getDescriptorByType(UMBTopicProviderDescriptor.class);
     }
 
     @Extension
     public static class UMBTopicProviderDescriptor extends TopicProviderDescriptor {
 
         @Override
-        public String getDisplayName() {
+        public @Nonnull String getDisplayName() {
             return "Red Hat UMB Topic Provider";
         }
 

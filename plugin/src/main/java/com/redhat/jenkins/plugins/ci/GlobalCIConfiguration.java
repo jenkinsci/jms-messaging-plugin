@@ -1,23 +1,24 @@
 package com.redhat.jenkins.plugins.ci;
 
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.provider.data.*;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.PluginManager;
 import hudson.PluginWrapper;
 import hudson.model.Failure;
 import hudson.util.Secret;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.logging.Logger;
-
-import javax.annotation.Nonnull;
-
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
@@ -28,11 +29,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
-import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.logging.Logger;
 
 /*
  * The MIT License
@@ -63,14 +65,14 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     public static final String DEFAULT_PROVIDER = "default";
 
-    private transient String broker;
-    private transient String topic;
-    private transient String user;
-    private transient Secret password;
+    private transient @Deprecated String broker;
+    private transient @Deprecated String topic;
+    private transient @Deprecated String user;
+    private transient @Deprecated Secret password;
     private transient boolean migrationInProgress = false;
 
 
-    private List<JMSMessagingProvider> configs = new ArrayList<JMSMessagingProvider>();
+    private List<JMSMessagingProvider> configs = new ArrayList<>();
 
     public boolean isMigrationInProgress() {
         return migrationInProgress;
@@ -137,7 +139,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     public boolean addMessageProvider(JMSMessagingProvider provider) {
-        if (configs == null) configs = new ArrayList<JMSMessagingProvider>();
+        if (configs == null) configs = new ArrayList<>();
         if (configs.contains(provider)) {
             throw new Failure("Attempt to add a duplicate message provider");
         }
@@ -155,14 +157,12 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     @Override
-    public boolean configure(StaplerRequest req, JSONObject json) throws hudson.model.Descriptor.FormException {
+    public boolean configure(StaplerRequest req, JSONObject json) {
         HashMap<String, String> names = new HashMap<>();
         Object obj = json.get("configs");
         if (obj instanceof JSONArray) {
             JSONArray arr = (JSONArray) obj;
-            Iterator it = arr.iterator();
-            while (it.hasNext()) {
-                Object obj2 = it.next();
+            for (Object obj2 : arr) {
                 JSONObject providerObj = (JSONObject) obj2;
                 String name = providerObj.getString("name");
                 if (names.containsKey(name)) {
@@ -177,7 +177,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     @Override
-    public String getDisplayName() {
+    public @Nonnull String getDisplayName() {
         return Messages.PluginName();
     }
 
@@ -187,7 +187,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         if (c == null) {
             GlobalConfiguration registered = all.getDynamic(GlobalCIConfiguration.class.getCanonicalName());
             if (registered != null) {
-                PluginManager pm = Jenkins.getInstance().pluginManager;
+                PluginManager pm = Jenkins.get().pluginManager;
                 PluginWrapper source = pm.whichPlugin(registered.getClass());
                 throw new AssertionError("Version mismatch: GlobalCIConfiguration provided by other plugin: " + source);
             }
@@ -200,9 +200,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     public Boolean getFirstProviderOverrides() {
         if (configs != null && configs.size() > 0) {
             JMSMessagingProvider prov = configs.get(0);
-            if (prov instanceof ActiveMqMessagingProvider && !(((ActiveMqMessagingProvider) prov).getTopicProvider() instanceof DefaultTopicProvider)) {
-                return true;
-            }
+            return prov instanceof ActiveMqMessagingProvider && !(((ActiveMqMessagingProvider) prov).getTopicProvider() instanceof DefaultTopicProvider);
         }
         return false;
     }

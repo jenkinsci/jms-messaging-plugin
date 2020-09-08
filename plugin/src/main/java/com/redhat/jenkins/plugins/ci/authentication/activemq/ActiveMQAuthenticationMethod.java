@@ -45,7 +45,7 @@ public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod 
 
     public abstract static class AuthenticationMethodDescriptor extends Descriptor<ActiveMQAuthenticationMethod> {
         public static ExtensionList<AuthenticationMethodDescriptor> all() {
-            return Jenkins.getInstance().getExtensionList(AuthenticationMethodDescriptor.class);
+            return Jenkins.get().getExtensionList(AuthenticationMethodDescriptor.class);
         }
 
         public static boolean isValidURL(String url) {
