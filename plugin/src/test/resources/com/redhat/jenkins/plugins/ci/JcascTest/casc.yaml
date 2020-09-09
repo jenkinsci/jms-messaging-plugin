@@ -13,7 +13,7 @@ unclassified:
           topicProvider: "default"
           useQueues: false
           authenticationMethod:
-            password:
+            simple:
               username: "foo"
               password: "bar" # User, encrypt secrets
       - rabbitMq:

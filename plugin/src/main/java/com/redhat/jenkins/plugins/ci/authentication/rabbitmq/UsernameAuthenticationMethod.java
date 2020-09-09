@@ -93,7 +93,7 @@ public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod  
     }
 
     @Extension
-    @Symbol("password")
+    @Symbol("simple")
     public static class UsernameAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override

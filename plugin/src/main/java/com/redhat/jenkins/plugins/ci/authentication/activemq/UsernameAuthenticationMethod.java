@@ -88,7 +88,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
     }
 
     @Extension
-    @Symbol("password")
+    @Symbol("simple")
     public static class UsernameAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override
