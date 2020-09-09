@@ -26,6 +26,11 @@
             <name>Scott Hebert</name>
             <email>shebert@redhat.com</email>
         </developer>
+        <developer>
+            <id>olivergondza</id>
+            <name>Oliver Gondža</name>
+            <email>ogondza@gmail.com</email>
+        </developer>
     </developers>
 
     <distributionManagement>
