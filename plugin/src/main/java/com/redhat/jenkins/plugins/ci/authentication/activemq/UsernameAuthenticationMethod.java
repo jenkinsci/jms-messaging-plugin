@@ -9,6 +9,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -87,6 +88,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  
     }
 
     @Extension
+    @Symbol("simple")
     public static class UsernameAuthenticationMethodDescriptor extends AuthenticationMethodDescriptor {
 
         @Override

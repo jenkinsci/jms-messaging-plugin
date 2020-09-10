@@ -23,6 +23,8 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -58,6 +60,7 @@ import java.util.logging.Logger;
  * THE SOFTWARE.
  */
 @Extension
+@Symbol("jmsProviders")
 public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     public static final String DEFAULT_PROVIDER = "default";

@@ -11,6 +11,7 @@ import jenkins.model.Jenkins;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -167,6 +168,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     @Extension
+    @Symbol("activeMq")
     public static class ActiveMqMessagingProviderDescriptor extends MessagingProviderDescriptor {
 
         @Override
