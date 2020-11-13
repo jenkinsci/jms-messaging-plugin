@@ -75,7 +75,7 @@
                     <forkCount>3</forkCount>
                     <environmentVariables>
                         <!-- Read by ATH -->
-                        <JENKINS_VERSION>${jenkins.version}</JENKINS_VERSION>
+                        <JENKINS_VERSION>2.190.3</JENKINS_VERSION>
                         <LOCAL_JARS>../plugin/target/jms-messaging.hpi</LOCAL_JARS>
                         <BROWSER>firefox-container</BROWSER>
                     </environmentVariables>
