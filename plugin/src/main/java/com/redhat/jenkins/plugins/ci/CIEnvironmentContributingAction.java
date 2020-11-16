@@ -1,17 +1,3 @@
-package com.redhat.jenkins.plugins.ci;
-
-import hudson.EnvVars;
-import hudson.model.EnvironmentContributingAction;
-import hudson.model.ParameterValue;
-import hudson.model.Run;
-import hudson.model.AbstractBuild;
-
-import javax.annotation.Nonnull;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 /*
  * The MIT License
  *
@@ -35,6 +21,20 @@ import java.util.Set;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci;
+
+import hudson.EnvVars;
+import hudson.model.EnvironmentContributingAction;
+import hudson.model.ParameterValue;
+import hudson.model.Run;
+import hudson.model.AbstractBuild;
+
+import javax.annotation.Nonnull;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 public class CIEnvironmentContributingAction implements EnvironmentContributingAction {
 
     private final transient Map<String, String> messageParams;

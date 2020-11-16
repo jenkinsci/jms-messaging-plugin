@@ -1,20 +1,3 @@
-package com.redhat.jenkins.plugins.ci.authentication.activemq;
-
-import hudson.ExtensionList;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
-
 /*
  * The MIT License
  *
@@ -38,6 +21,23 @@ import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.authentication.activemq;
+
+import hudson.ExtensionList;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import jenkins.model.Jenkins;
+
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+
 public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod implements Describable<ActiveMQAuthenticationMethod> {
 
     private static final long serialVersionUID = -6077120270692721571L;
@@ -58,7 +58,6 @@ public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod 
             return true;
         }
     }
-
 
     public abstract ActiveMQConnectionFactory getConnectionFactory(String broker);
 }

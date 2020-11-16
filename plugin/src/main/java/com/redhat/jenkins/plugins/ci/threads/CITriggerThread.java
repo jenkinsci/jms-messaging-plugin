@@ -1,18 +1,3 @@
-package com.redhat.jenkins.plugins.ci.threads;
-
-import hudson.security.ACL;
-import hudson.security.ACLContext;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang3.builder.EqualsBuilder;
-
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-
 /*
  * The MIT License
  *
@@ -36,6 +21,21 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.threads;
+
+import hudson.security.ACL;
+import hudson.security.ACLContext;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
 public class CITriggerThread extends Thread {
     private static final Logger log = Logger.getLogger(CITriggerThread.class.getName());
 
@@ -66,7 +66,7 @@ public class CITriggerThread extends Thread {
     }
 
     public void run() {
-        try (ACLContext ctx = ACL.as(ACL.SYSTEM)){
+        try (ACLContext ignored = ACL.as(ACL.SYSTEM)){
             cibt.clearJobActions();
             try {
                 while (!hasBeenInterrupted()) {

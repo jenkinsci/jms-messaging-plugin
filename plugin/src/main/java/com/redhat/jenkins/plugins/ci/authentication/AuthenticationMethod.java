@@ -1,9 +1,3 @@
-package com.redhat.jenkins.plugins.ci.authentication;
-
-import java.io.Serializable;
-
-import jenkins.model.Jenkins;
-
 /*
  * The MIT License
  *
@@ -27,6 +21,12 @@ import jenkins.model.Jenkins;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.authentication;
+
+import java.io.Serializable;
+
+import jenkins.model.Jenkins;
+
 public abstract class AuthenticationMethod implements Serializable  {
 
     private static final long serialVersionUID = -6077120270692721571L;

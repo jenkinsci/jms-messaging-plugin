@@ -1,19 +1,3 @@
-package com.redhat.jenkins.plugins.ci.messaging;
-
-import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_TOPIC;
-
-import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.utils.PluginUtils;
-
 /*
  * The MIT License
  *
@@ -37,6 +21,22 @@ import com.redhat.utils.PluginUtils;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.messaging;
+
+import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_TOPIC;
+
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.utils.PluginUtils;
+
 public class FedMsgMessageWatcher extends JMSMessageWatcher {
 
     private static final Logger log = Logger.getLogger(FedMsgMessageWatcher.class.getName());

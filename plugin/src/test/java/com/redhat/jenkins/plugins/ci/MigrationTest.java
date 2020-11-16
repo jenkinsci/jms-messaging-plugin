@@ -7,7 +7,6 @@ import hudson.matrix.MatrixProject;
 import hudson.model.Item;
 import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
-import hudson.triggers.Trigger;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,8 +29,8 @@ public class MigrationTest {
 
     @LocalData
     @Test
-    public void testUpgradeFromOnlyUserBaseAuth() throws Exception {
-        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
+    public void testUpgradeFromOnlyUserBaseAuth() {
+        assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
 
         JMSMessagingProvider config =
                 GlobalCIConfiguration.get().getConfigs().get(0);
@@ -50,8 +49,8 @@ public class MigrationTest {
 
     @LocalData
     @Test
-    public void testOtherJobTypes() throws Exception {
-        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
+    public void testOtherJobTypes() {
+        assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
         assertNotNull(j.getInstance().getItem("maven"));
         Item matrixItem = j.getInstance().getItem
                 ("matrix");
@@ -65,20 +64,20 @@ public class MigrationTest {
 
     @LocalData
     @Test
-    public void testConfig() throws Exception {
-        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
+    public void testConfig() {
+        assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
 
         JMSMessagingProvider config =
                 GlobalCIConfiguration.get().getConfigs().get(0);
         ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
         String topic = aconfig.getTopic();
-        assertTrue("topic is not TOM", topic.equals("TOM"));
+        assertEquals("topic is not TOM", "TOM", topic);
 
-        AbstractProject triggerJob = (AbstractProject)j.getInstance().getItem("ci-trigger");
+        AbstractProject<?, ?> triggerJob = (AbstractProject<?, ?>)j.getInstance().getItem("ci-trigger");
 
-        Trigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
+        CIBuildTrigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
         assertNotNull(trigger);
-        CIBuildTrigger cibt = ((CIBuildTrigger)triggerJob.getTrigger(CIBuildTrigger.class));
+        CIBuildTrigger cibt = triggerJob.getTrigger(CIBuildTrigger.class);
         assertTrue(cibt.getProviders().get(0) instanceof ActiveMQSubscriberProviderData);
         assertNotNull(cibt.getProviders().get(0).getName());
         assertNotNull(cibt.getSelector());
@@ -103,26 +102,28 @@ public class MigrationTest {
         JMSMessagingProvider config2 = newGlobalConfig.getConfigs().get(0);
         ActiveMqMessagingProvider aconfig2 = (ActiveMqMessagingProvider) config2;
         assertNotNull(aconfig2.getAuthenticationMethod());
+
+        //assertFalse(GlobalCIConfiguration.get().isMigrationInProgress());
     }
 
     @LocalData
     @Test
-    public void testAlreadyMigratedConfig() throws Exception {
-        assertTrue("config is not 1", GlobalCIConfiguration.get().getConfigs().size() == 1);
+    public void testAlreadyMigratedConfig() {
+        assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
 
         JMSMessagingProvider config =
                 GlobalCIConfiguration.get().getConfigs().get(0);
         ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
         String topic = aconfig.getTopic();
-        assertTrue("topic is not CI", topic.equals("CI"));
+        assertEquals("topic is not CI", "CI", topic);
 
         assertTrue(aconfig.getTopicProvider() instanceof DefaultTopicProvider);
 
-        AbstractProject triggerJob = (AbstractProject)j.getInstance().getItem("ci-trigger");
+        AbstractProject<?, ?> triggerJob = (AbstractProject<?, ?>)j.getInstance().getItem("ci-trigger");
 
-        Trigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
+        CIBuildTrigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
         assertNotNull(trigger);
-        assertNotNull(((CIBuildTrigger)triggerJob.getTrigger(CIBuildTrigger.class)).getProviderName());
+        assertNotNull(triggerJob.getTrigger(CIBuildTrigger.class).getProviderName());
 
         FreeStyleProject notifierJob = (FreeStyleProject)j.getInstance().getItem("ci-notifier");
 
@@ -139,7 +140,5 @@ public class MigrationTest {
                 subscriberJob.getBuildersList().get(CIMessageSubscriberBuilder.class);
         assertNotNull(subscriberBuilder);
         assertNotNull(subscriberBuilder.getProviderName());
-
     }
 }
-

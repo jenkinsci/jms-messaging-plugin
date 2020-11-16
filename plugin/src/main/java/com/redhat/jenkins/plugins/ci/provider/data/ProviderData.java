@@ -1,20 +1,3 @@
-package com.redhat.jenkins.plugins.ci.provider.data;
-
-import com.redhat.utils.MessageUtils;
-import hudson.ExtensionList;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-
-import java.io.Serializable;
-import java.util.Objects;
-
-import jenkins.model.Jenkins;
-
-import org.kohsuke.stapler.DataBoundSetter;
-
-import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-
 /*
  * The MIT License
  *
@@ -38,6 +21,23 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.provider.data;
+
+import com.redhat.utils.MessageUtils;
+import hudson.ExtensionList;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+
+import java.io.Serializable;
+import java.util.Objects;
+
+import jenkins.model.Jenkins;
+
+import org.kohsuke.stapler.DataBoundSetter;
+
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+
 public abstract class ProviderData implements Describable<ProviderData>, Serializable  {
 
     private static final long serialVersionUID = -5475213587386619340L;
