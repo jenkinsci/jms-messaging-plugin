@@ -1,19 +1,3 @@
-package com.redhat.utils;
-
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import hudson.model.TaskListener;
-import hudson.model.Run;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.logging.Logger;
-
-import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import hudson.util.ListBoxModel;
-
 /*
  * The MIT License
  *
@@ -37,6 +21,20 @@ import hudson.util.ListBoxModel;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.utils;
+
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import hudson.model.TaskListener;
+import hudson.model.Run;
+
+import java.util.logging.Logger;
+
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import hudson.util.ListBoxModel;
+
 public class MessageUtils {
 
     private static final Logger log = Logger.getLogger(MessageUtils.class.getName());
@@ -60,7 +58,7 @@ public class MessageUtils {
         return items;
     }
 
-    public static enum MESSAGE_TYPE {
+    public enum MESSAGE_TYPE {
         CodeQualityChecksDone("code-quality-checks-done"),
         ComponentBuildDone("component-build-done"),
         Custom("custom"),
@@ -88,7 +86,7 @@ public class MessageUtils {
         UnitTestCoverageDone("unit-test-coverage-done"),
         UpdateDefectStatus("update-defect-status");
 
-        private String message;
+        private final String message;
 
         MESSAGE_TYPE(String value) {
             this.message = value;
@@ -109,7 +107,7 @@ public class MessageUtils {
 
         public String toDisplayName() {
             String v = name();
-            if (v == null || v.isEmpty())
+            if (v.isEmpty())
                 return v;
 
             StringBuilder result = new StringBuilder();
@@ -124,7 +122,7 @@ public class MessageUtils {
         }
     }
 
-    public static SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) throws InterruptedException, IOException {
+    public static SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
         String startMessage = "Sending message for job '" + build.getParent().getName() + "'.";
         log.info(startMessage);
         listener.getLogger().println(startMessage);
@@ -137,9 +135,4 @@ public class MessageUtils {
         listener.getLogger().println(completedMessage);
         return sendResult;
     }
-
-    private static void logIfPossible(PrintStream stream, String logMessage) {
-        if (stream != null) stream.println(logMessage);
-    }
-
 }

@@ -5,7 +5,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 public abstract class RabbitMQProviderData extends ProviderData {
 
-
     private static final long serialVersionUID = -2179136601230421113L;
 
     protected MessagingProviderOverrides overrides;
@@ -32,5 +31,4 @@ public abstract class RabbitMQProviderData extends ProviderData {
 
     public abstract static class RabbitMQProviderDataDescriptor extends ProviderDataDescriptor {
     }
-
 }

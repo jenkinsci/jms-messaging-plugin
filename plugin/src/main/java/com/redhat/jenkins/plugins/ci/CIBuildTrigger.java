@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) Red Hat, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package com.redhat.jenkins.plugins.ci;
 
 import java.io.IOException;
@@ -57,36 +80,14 @@ import jenkins.model.ParameterizedJobMixIn;
 
 import javax.annotation.Nonnull;
 
-/*
- * The MIT License
- *
- * Copyright (c) Red Hat, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 public class CIBuildTrigger extends Trigger<Job<?,?>> {
+    public static final Logger RESOURCE_LOGGER = Logger.getLogger(CIBuildTrigger.class.getName());
 	private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
-	private transient String providerName;
-	private transient String selector;
-	private transient List<MsgCheck> checks = new ArrayList<>();
-	private transient MessagingProviderOverrides overrides;
+    @Deprecated private transient String providerName;
+    @Deprecated private transient String selector;
+    @Deprecated private transient List<MsgCheck> checks = new ArrayList<>();
+    @Deprecated private transient MessagingProviderOverrides overrides;
 	private Boolean noSquash;
 	@Deprecated // Replaced by providers collection
 	private transient ProviderData providerData;
@@ -106,35 +107,35 @@ public class CIBuildTrigger extends Trigger<Job<?,?>> {
 		this.providers = providers;
 	}
 
-	public String getProviderName() {
+    @Deprecated public String getProviderName() {
 	    return providerName;
 	}
 
-	public void setProviderName(String providerName) {
+    @Deprecated public void setProviderName(String providerName) {
 		this.providerName = providerName;
 	}
 
-	public String getSelector() {
+    @Deprecated public String getSelector() {
         return selector;
     }
 
-    public void setSelector(String selector) {
+    @Deprecated public void setSelector(String selector) {
         this.selector = selector;
     }
 
-    public List<MsgCheck> getChecks() {
+    @Deprecated public List<MsgCheck> getChecks() {
         return checks;
     }
 
-    public void setChecks(List<MsgCheck> checks) {
+    @Deprecated public void setChecks(List<MsgCheck> checks) {
         this.checks = checks;
     }
 
-    public MessagingProviderOverrides getOverrides() {
+    @Deprecated public MessagingProviderOverrides getOverrides() {
         return overrides;
     }
 
-    public void setOverrides(MessagingProviderOverrides overrides) {
+    @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
 

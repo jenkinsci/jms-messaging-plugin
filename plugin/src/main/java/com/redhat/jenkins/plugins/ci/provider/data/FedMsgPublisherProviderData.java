@@ -1,23 +1,3 @@
-package com.redhat.jenkins.plugins.ci.provider.data;
-
-import com.redhat.utils.MessageUtils;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.util.ListBoxModel;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
-
 /*
  * The MIT License
  *
@@ -41,6 +21,26 @@ import java.util.Objects;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.provider.data;
+
+import com.redhat.utils.MessageUtils;
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 public class FedMsgPublisherProviderData extends FedMsgProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 

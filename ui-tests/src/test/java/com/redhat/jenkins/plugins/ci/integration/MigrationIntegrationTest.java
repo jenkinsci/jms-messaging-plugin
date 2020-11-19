@@ -69,7 +69,5 @@ public class MigrationIntegrationTest extends AbstractJUnitTest {
         subscriber.selector.set("CI_TYPE = 'code-quality-checks-done'");
         subscriber.variable.set("HELLO");
         jobA.save();
-
     }
-
 }

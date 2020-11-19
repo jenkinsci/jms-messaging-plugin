@@ -1,18 +1,3 @@
-package com.redhat.jenkins.plugins.ci.messaging;
-
-import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
-import hudson.model.TaskListener;
-import hudson.model.Run;
-
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.PluginUtils;
-
 /*
  * The MIT License
  *
@@ -36,6 +21,21 @@ import com.redhat.utils.PluginUtils;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.messaging;
+
+import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
+import hudson.model.TaskListener;
+import hudson.model.Run;
+
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.PluginUtils;
+
 public abstract class JMSMessagingWorker {
     public static final String MESSAGECONTENTFIELD = "message-content" ;
     public String jobname;
