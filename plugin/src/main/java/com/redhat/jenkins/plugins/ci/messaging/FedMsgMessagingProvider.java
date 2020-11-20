@@ -1,18 +1,3 @@
-package com.redhat.jenkins.plugins.ci.messaging;
-
-import hudson.Extension;
-import hudson.model.Descriptor;
-import jenkins.model.Jenkins;
-
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-
-import javax.annotation.Nonnull;
-
 /*
  * The MIT License
  *
@@ -36,6 +21,21 @@ import javax.annotation.Nonnull;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.messaging;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
+
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
+import javax.annotation.Nonnull;
+
 public class FedMsgMessagingProvider extends JMSMessagingProvider {
 
     private static final long serialVersionUID = 82154526798596907L;

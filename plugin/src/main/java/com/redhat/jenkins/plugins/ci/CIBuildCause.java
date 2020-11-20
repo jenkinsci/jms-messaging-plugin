@@ -1,9 +1,3 @@
-package com.redhat.jenkins.plugins.ci;
-
-import hudson.model.Cause;
-
-import org.kohsuke.stapler.export.Exported;
-
 /*
  * The MIT License
  *
@@ -27,6 +21,12 @@ import org.kohsuke.stapler.export.Exported;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci;
+
+import hudson.model.Cause;
+
+import org.kohsuke.stapler.export.Exported;
+
 public class CIBuildCause extends Cause {
 
 	@Override

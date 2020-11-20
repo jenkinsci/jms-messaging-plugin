@@ -1,15 +1,3 @@
-package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
-
-import com.rabbitmq.client.ConnectionFactory;
-
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import hudson.ExtensionList;
-
-import jenkins.model.Jenkins;
-
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
-
 /*
  * The MIT License
  *
@@ -33,6 +21,18 @@ import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
+
+import com.rabbitmq.client.ConnectionFactory;
+
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import hudson.ExtensionList;
+
+import jenkins.model.Jenkins;
+
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+
 public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod implements Describable<RabbitMQAuthenticationMethod> {
 
     private static final long serialVersionUID = -6077120270692721571L;

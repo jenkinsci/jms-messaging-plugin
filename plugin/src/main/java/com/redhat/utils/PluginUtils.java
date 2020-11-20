@@ -1,16 +1,3 @@
-package com.redhat.utils;
-
-import hudson.EnvVars;
-import hudson.slaves.NodeProperty;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import jenkins.model.Jenkins;
-
-import org.apache.commons.lang.text.StrSubstitutor;
-
 /*
  * The MIT License
  *
@@ -34,6 +21,19 @@ import org.apache.commons.lang.text.StrSubstitutor;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.utils;
+
+import hudson.EnvVars;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.lang.text.StrSubstitutor;
+
 public class PluginUtils {
 
     public static String getSubstitutedValue(String id, EnvVars env) {

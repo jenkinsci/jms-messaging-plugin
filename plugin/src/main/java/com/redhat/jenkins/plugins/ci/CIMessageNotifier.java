@@ -1,35 +1,3 @@
-package com.redhat.jenkins.plugins.ci;
-
-import hudson.Extension;
-import hudson.Launcher;
-import hudson.model.BuildListener;
-import hudson.model.TaskListener;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Run;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Notifier;
-import hudson.tasks.Publisher;
-
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
-
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.MessageUtils;
-import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
-
-import javax.annotation.Nonnull;
-
 /*
  * The MIT License
  *
@@ -53,18 +21,49 @@ import javax.annotation.Nonnull;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci;
+
+import hudson.Extension;
+import hudson.Launcher;
+import hudson.model.BuildListener;
+import hudson.model.TaskListener;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Run;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Notifier;
+import hudson.tasks.Publisher;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import net.sf.json.JSONObject;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.StaplerRequest;
+
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.MessageUtils;
+import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
+
+import javax.annotation.Nonnull;
+
 public class CIMessageNotifier extends Notifier {
      private static final Logger log = Logger.getLogger(CIMessageNotifier.class.getName());
 
      private static final String BUILDER_NAME = Messages.MessageNotifier();
 
-     private transient String providerName;
-     private transient MessagingProviderOverrides overrides;
-     private transient MESSAGE_TYPE messageType;
-     private transient String messageProperties;
-     private transient String messageContent;
-     private transient boolean failOnError = false;
-     private ProviderData providerData;
+     @Deprecated private transient String providerName;
+     @Deprecated private transient MessagingProviderOverrides overrides;
+     @Deprecated private transient MESSAGE_TYPE messageType;
+     @Deprecated private transient String messageProperties;
+     @Deprecated private transient String messageContent;
+     @Deprecated private transient boolean failOnError = false;
+     @Deprecated private ProviderData providerData;
 
      @DataBoundConstructor
      public CIMessageNotifier() {}
@@ -74,51 +73,51 @@ public class CIMessageNotifier extends Notifier {
          this.providerData = providerData;
      }
 
-     public String getProviderName() {
+     @Deprecated public String getProviderName() {
          return providerName;
      }
 
-     public void setProviderName(String providerName) {
+     @Deprecated public void setProviderName(String providerName) {
          this.providerName = providerName;
      }
 
-     public MessagingProviderOverrides getOverrides() {
+     @Deprecated public MessagingProviderOverrides getOverrides() {
          return overrides;
      }
 
-     public void setOverrides(MessagingProviderOverrides overrides) {
+     @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
          this.overrides = overrides;
      }
 
-     public MESSAGE_TYPE getMessageType() {
+     @Deprecated public MESSAGE_TYPE getMessageType() {
          return messageType;
      }
 
-     public void setMessageType(MESSAGE_TYPE messageType) {
+     @Deprecated public void setMessageType(MESSAGE_TYPE messageType) {
          this.messageType = messageType;
      }
 
-     public String getMessageProperties() {
+     @Deprecated public String getMessageProperties() {
          return messageProperties;
      }
 
-     public void setMessageProperties(String messageProperties) {
+     @Deprecated public void setMessageProperties(String messageProperties) {
          this.messageProperties = messageProperties;
      }
 
-     public String getMessageContent() {
+     @Deprecated public String getMessageContent() {
          return messageContent;
      }
 
-     public void setMessageContent(String messageContent) {
+     @Deprecated public void setMessageContent(String messageContent) {
          this.messageContent = messageContent;
      }
 
-     public boolean isFailOnError() {
+     @Deprecated public boolean isFailOnError() {
          return failOnError;
      }
 
-     public void setFailOnError(boolean failOnError) {
+     @Deprecated public void setFailOnError(boolean failOnError) {
          this.failOnError = failOnError;
      }
 
@@ -144,12 +143,12 @@ public class CIMessageNotifier extends Notifier {
          return true;
      }
 
-     public SendResult doMessageNotifier(Run<?, ?> run, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+     public SendResult doMessageNotifier(Run<?, ?> run, Launcher launcher, TaskListener listener) {
          return MessageUtils.sendMessage(run, listener, providerData);
      }
 
      @Override
-     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
          return doMessageNotifier(build, launcher, listener).isSucceeded();
      }
 

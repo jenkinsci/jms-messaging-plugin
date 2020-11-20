@@ -1,26 +1,3 @@
-package com.redhat.jenkins.plugins.ci.messaging;
-
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.DEFAULT_TOPIC;
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
-
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.jms.Connection;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.Topic;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
-
-import com.redhat.utils.PluginUtils;
-
 /*
  * The MIT License
  *
@@ -44,6 +21,29 @@ import com.redhat.utils.PluginUtils;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.messaging;
+
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.DEFAULT_TOPIC;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
+
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.jms.Connection;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.Topic;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
+
+import com.redhat.utils.PluginUtils;
+
 public class ActiveMqMessageWatcher extends JMSMessageWatcher {
 
     private static final Logger log = Logger.getLogger(ActiveMqMessageWatcher.class.getName());

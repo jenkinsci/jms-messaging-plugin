@@ -15,8 +15,7 @@ JMS Messaging Providers
 Older versions of this plugin may not be safe to use. Please review the
 following warnings before using an older version:
 
--   [SSRF
-    vulnerability](https://jenkins.io/security/advisory/2019-02-19/#SECURITY-1033){.external-link}
+-   [SSRF vulnerability](https://jenkins.io/security/advisory/2019-02-19/#SECURITY-1033)
 
 ## Set Up
 
@@ -30,8 +29,7 @@ list of currently supported JMS Message Providers:
 -   FedMsg
 -   RabbitMQ
 
-![](https://wiki.jenkins.io/download/attachments/103088201/jms-messaging-screenshot.png?version=4&modificationDate=1491231804000&api=v2){.confluence-embedded-image
-.confluence-content-image-border}
+![](https://wiki.jenkins.io/download/attachments/103088201/jms-messaging-screenshot.png?version=4&modificationDate=1491231804000&api=v2)
 
 ## Triggering
 
@@ -42,18 +40,15 @@ trigger on a job requires two additional pieces of information:
 -   Provider Name
 -   JMS Selector
 
-![](https://wiki.jenkins.io/download/attachments/103088201/trigger.png?version=1&modificationDate=1482413490000&api=v2){.confluence-embedded-image
-.confluence-content-image-border}  
+![](https://wiki.jenkins.io/download/attachments/103088201/trigger.png?version=1&modificationDate=1482413490000&api=v2)
 The complete documentation for JMS selectors can be found here:
 <http://activemq.apache.org/selectors.html>
 
 ## Message Types
 
-In the image above, the selector contains **CI\_TYPE =
-'\<message-type\>'**
+In the image above, the selector contains **CI\_TYPE = '\<message-type\>'**
 
-The valid values for **'\<message-type\>'** can be found in the
-"**Type**" column in the table below:
+The valid values for **'\<message-type\>'** can be found in the "**Type**" column in the table below:
 
 | Message                                                | Description                                                                                                        | Type                                 |
 |--------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|--------------------------------------|
@@ -100,8 +95,7 @@ Adding the step to the job requires some additional information:
 The full list of message types available in the drop-down menu can be
 found in the Message Type table above.
 
-![](https://wiki.jenkins.io/download/attachments/103088201/ci-notifier.png?version=1&modificationDate=1482416658000&api=v2){.confluence-embedded-image
-.confluence-content-image-border}
+![](https://wiki.jenkins.io/download/attachments/103088201/ci-notifier.png?version=1&modificationDate=1482416658000&api=v2)
 
 ### CI Subscriber
 
@@ -119,8 +113,7 @@ Adding the step to the job requires some additional information:
 The build step will set an environment variable with the name from
 Variable with a value of the message content.
 
-![](https://wiki.jenkins.io/download/attachments/103088201/ci-subscriber-build.png?version=1&modificationDate=1482416989000&api=v2){.confluence-embedded-image
-.confluence-content-image-border}
+![](https://wiki.jenkins.io/download/attachments/103088201/ci-subscriber-build.png?version=1&modificationDate=1482416989000&api=v2)
 
 ## Post-build steps
 
@@ -134,7 +127,7 @@ See above.
 
 The CI trigger is available via the triggers section in a declarative pipeline:
 
-``` syntaxhighlighter-pre
+```groovy
 triggers {
     ciBuildTrigger(noSquash: false,
         providerList: [ activeMQSubscriber(name: 'Red Hat UMB',
@@ -154,7 +147,7 @@ triggers {
 
 Here is a usage example for Job DSL:
 
-``` syntaxhighlighter-pre
+```groovy
 ciBuildTrigger {
     providers {
       providerDataEnvelope {
@@ -192,7 +185,7 @@ This plugin provides the steps when using the Jenkins Pipeline feature:
 
 Here are some examples:
 
-``` syntaxhighlighter-pre
+```groovy
 node('master') {
    // Send a message that CodeQualityChecksDone
     def sendResult = sendCIMessage \
@@ -208,7 +201,7 @@ node('master') {
 
 and
 
-``` syntaxhighlighter-pre
+```groovy
 node('master') {
     // Wait for message and store message content in variable
     def msgContent = waitForCIMessage \
