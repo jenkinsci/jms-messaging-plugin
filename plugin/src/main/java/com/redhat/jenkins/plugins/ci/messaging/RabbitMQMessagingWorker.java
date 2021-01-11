@@ -135,13 +135,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             log.info("We are being interrupted. Skipping unsubscribe...");
             return;
         }
-        try {
-            channel.basicCancel(consumerTag);
-            channel.close();
-        } catch (Exception ex) {
-            log.warning("Exception occurred when closing channel: " + ex.getMessage());
-        }
-
+        disconnect();
     }
 
     @Override
@@ -236,16 +230,23 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void disconnect() {
-        try {
-            channel.close();
-        } catch (Exception ex) {
-            log.warning("Exception occurred when closing channel: " + ex.getMessage());
+        if (channel != null) {
+            try {
+                channel.basicCancel(consumerTag);
+                channel.close();
+            } catch (Exception ex) {
+                log.warning("Exception occurred when closing channel: " + ex.getMessage());
+            }
         }
-        try {
-            connection.close();
-        } catch (Exception ex) {
-            log.warning("Exception occurred when closing connection: " + ex.getMessage());
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (Exception ex) {
+                log.warning("Exception occurred when closing connection: " + ex.getMessage());
+            }
         }
+        channel = null;
+        connection = null;
     }
 
     @Override
