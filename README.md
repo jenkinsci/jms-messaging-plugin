@@ -31,6 +31,45 @@ list of currently supported JMS Message Providers:
 
 ![](https://wiki.jenkins.io/download/attachments/103088201/jms-messaging-screenshot.png?version=4&modificationDate=1491231804000&api=v2)
 
+#### Configuration as code
+
+Example:
+
+```yaml
+unclassified:
+  jmsProviders:
+    configs:
+      - fedMsg:
+          name: "Fedora messages"
+          hubAddr: "tcp://example.com:5678"
+          pubAddr: "tcp://example.com:6789"
+          topic: "org.fedora.bar"
+      - activeMq:
+          name: "Active MQ"
+          broker: "foo.com:4242"
+          topic: "active.mq.com"
+          topicProvider: "default"
+          useQueues: false
+          authenticationMethod:
+            simple:
+              username: "foo"
+              password: "bar" # User, encrypt secrets
+      - rabbitMq:
+          name: "Rabbit MQ"
+          exchange: "ex"
+          hostname: "rabbitmq.example.com"
+          portNumber: "4545"
+          queue: "foo.bar"
+          topic: "baz"
+          virtualHost: "rabbitvh.example.com"
+          authenticationMethod:
+            sslCertificate:
+              keystore: "/tmp/key"
+              keypwd: "keypwd" # User, encrypt secrets
+              truststore: "/tmp/trust"
+              trustpwd: "trustpwd" # User, encrypt secrets
+```
+
 ## Triggering
 
 To enable the CI trigger, go to the job configuration page and add click
