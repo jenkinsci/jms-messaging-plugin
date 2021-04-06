@@ -72,7 +72,6 @@
                 <version>3.0.0-M4</version>
                 <configuration>
                     <reuseForks>false</reuseForks>
-                    <forkCount>3</forkCount>
                     <environmentVariables>
                         <!-- Read by ATH -->
                         <JENKINS_VERSION>2.263.4</JENKINS_VERSION> <!-- Use Jenkins new enough for the update center to still hold the metadata -->
