@@ -1,5 +1,5 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form"
          xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
 
   <!--
@@ -45,7 +45,7 @@
     <td class="setting-leftspace"><st:nbsp/></td>
     <td colspan="2">
       <f:repeatable var="instance" name="providers" items="${instance.providers}" add="${%Add provider}" minimum="1">
-        <table width="100%">
+        <rh:blockWrapper>
           <rh:dropdownInstanceSelector title="${%Messaging Provider}"
                                        field="providerData"
                                        instances="${gdescriptor.getSubscriberProviders()}"/>
@@ -55,7 +55,7 @@
               <br/>
             </div>
           </f:entry>
-        </table>
+        </rh:blockWrapper>
       </f:repeatable>
     </td>
   </tr>

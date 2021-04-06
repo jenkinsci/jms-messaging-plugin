@@ -1,6 +1,5 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
-         xmlns:rh="/com/redhat/jenkins/plugins/ci/CIMessageSubscriberBuilder/form">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
   <!--
      * The MIT License
      *
@@ -43,13 +42,13 @@
         <j:set var="severity" value="20"/>
       </j:otherwise>
     </j:choose>
-    <table width="100%">
+    <rh:blockWrapper>
       <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
         <f:entry title="${%Topic name}" field="topic">
           <f:textbox value="${value}"/>
         </f:entry>
       </f:optionalBlock>
-    </table>
+    </rh:blockWrapper>
   </f:nested>
   <f:entry title="${%Message content}" field="messageContent">
     <f:textarea name="messageContent"/>
@@ -58,7 +57,7 @@
     <f:checkbox title="${%Fail on error}" name="failOnError" default="false"/>
   </f:entry>
   <f:nested>
-    <table width="100%">
+    <rh:blockWrapper>
       <f:optionalBlock field="fedoraMessagingFields" title="Fedora messaging header fields" checked="${fedoraMessaging}">
         <f:entry title="${%Severity}" field="severity">
             <select name="severity" value="${severity}">
@@ -72,6 +71,6 @@
           <f:textbox value="${schema}"/>
         </f:entry>
       </f:optionalBlock>
-    </table>
+    </rh:blockWrapper>
   </f:nested>
 </j:jelly>

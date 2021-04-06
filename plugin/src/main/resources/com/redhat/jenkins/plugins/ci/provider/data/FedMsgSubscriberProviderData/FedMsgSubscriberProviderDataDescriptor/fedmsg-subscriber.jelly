@@ -1,5 +1,5 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
 
   <!--
      * The MIT License
@@ -39,16 +39,16 @@
         <j:set var="name" value="${instance.getName();}"/>
       </j:otherwise>
     </j:choose>
-    <table width="100%">
+    <rh:blockWrapper>
       <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
         <f:entry title="${%Topic name}" field="topic">
           <f:textbox value="${value}"/>
         </f:entry>
       </f:optionalBlock>
-    </table>
+    </rh:blockWrapper>
     <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
         <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}" minimum="0">
-          <table width="100%">
+          <rh:blockWrapper>
             <f:entry title="${%Field}">
               <f:textbox name="checks.field" value="${check.field}"
                          checkUrl="'descriptorByName/com.redhat.jenkins.plugins.ci.CIBuildTrigger/checkField?value='+escape(this.value)" />
@@ -62,7 +62,7 @@
                 <br/>
               </div>
             </f:entry>
-        </table>
+          </rh:blockWrapper>
       </f:repeatable>
     </f:entry>
     <j:if test="${desc.getClass().getSimpleName() != 'CIBuildTriggerDescriptor'}">
