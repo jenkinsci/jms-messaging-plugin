@@ -59,7 +59,7 @@
              than the parent version above
         -->
         <java.level>8</java.level>
-        <jenkins.version>2.150.2</jenkins.version>
+        <jenkins.version>2.190.3</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <findbugs.failOnError>false</findbugs.failOnError>
     </properties>
@@ -150,6 +150,22 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.30</version>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
