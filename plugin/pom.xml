@@ -20,19 +20,6 @@
         </license>
     </licenses>
 
-    <developers>
-        <developer>
-            <id>scoheb</id>
-            <name>Scott Hebert</name>
-            <email>shebert@redhat.com</email>
-        </developer>
-        <developer>
-            <id>olivergondza</id>
-            <name>Oliver Gondža</name>
-            <email>ogondza@gmail.com</email>
-        </developer>
-    </developers>
-
     <distributionManagement>
         <repository>
             <id>repo.jenkins-ci.org</id>
@@ -63,12 +50,6 @@
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <findbugs.failOnError>false</findbugs.failOnError>
     </properties>
-
-    <scm>
-        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
 
     <dependencies>
         <dependency>

@@ -16,6 +16,25 @@
         <module>ui-tests</module>
     </modules>
 
+    <developers>
+        <developer>
+            <id>scoheb</id>
+            <name>Scott Hebert</name>
+            <email>shebert@redhat.com</email>
+        </developer>
+        <developer>
+            <id>olivergondza</id>
+            <name>Oliver Gondža</name>
+            <email>ogondza@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/jenkinsci/jms-messaging-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/jms-messaging-plugin.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
     <build>
         <plugins>
             <!-- Do not deploy anything except for the plugin -->
