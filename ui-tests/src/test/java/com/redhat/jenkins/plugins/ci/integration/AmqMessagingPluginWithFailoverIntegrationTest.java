@@ -9,8 +9,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
 import org.jenkinsci.test.acceptance.docker.Docker;
@@ -66,8 +65,11 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     @Before public void setUp() throws Exception {
         Plugin plugin = jenkins.getPlugin("dumpling");
         assertNotNull(plugin);
+        // add a random number to the port without exceeding 65535
+        // so the port stays the same after container restart
+        int rand = ThreadLocalRandom.current().nextInt(1, 65535-61616);
+        amq1 = docker1.starter().withPortOffset(rand).start();
 
-        amq1 = docker1.get();
         jenkins.configure();
         elasticSleep(5000);
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
