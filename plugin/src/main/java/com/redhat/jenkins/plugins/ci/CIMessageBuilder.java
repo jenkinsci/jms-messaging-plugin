@@ -61,7 +61,8 @@ public class CIMessageBuilder extends Builder {
     private ProviderData providerData;
 
     @DataBoundConstructor
-    public CIMessageBuilder() {}
+    public CIMessageBuilder() {
+    }
 
     public CIMessageBuilder(ProviderData providerData) {
         super();
@@ -126,7 +127,7 @@ public class CIMessageBuilder extends Builder {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?,?> build, Launcher launcher, BuildListener listener) {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
         return MessageUtils.sendMessage(build, listener, providerData).isSucceeded();
     }
 
@@ -148,7 +149,7 @@ public class CIMessageBuilder extends Builder {
                 // is because the select is not named in dropdownList.jelly). Move that into the
                 // provider data structure and then continue on.
                 jo.getJSONObject("providerData").put("name", jo.remove(""));
-                return (CIMessageBuilder)super.newInstance(sr, jo);
+                return (CIMessageBuilder) super.newInstance(sr, jo);
             } catch (hudson.model.Descriptor.FormException e) {
                 log.log(Level.SEVERE, "Unable to create new instance.", e);
             }

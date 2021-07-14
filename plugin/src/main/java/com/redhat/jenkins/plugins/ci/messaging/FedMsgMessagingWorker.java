@@ -157,8 +157,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void receive(String jobname, ProviderData pdata) {
-        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData)pdata;
-        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData) pdata;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout(): FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
             return;
@@ -240,7 +240,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        FedMsgPublisherProviderData pd = (FedMsgPublisherProviderData)pdata;
+        FedMsgPublisherProviderData pd = (FedMsgPublisherProviderData) pdata;
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket sock = context.socket(ZMQ.PUB);
         sock.setLinger(0);
@@ -260,12 +260,12 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             env.putAll(build.getEnvironment(listener));
             env.put("CI_NAME", build.getParent().getName());
             if (!build.isBuilding()) {
-                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed" : "failed"));
+                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed": "failed"));
                 env.put("BUILD_STATUS", build.getResult().toString());
             }
 
             FedmsgMessage fm = new FedmsgMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
-                                                 PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
+                    PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
             fm.setTimestamp(System.currentTimeMillis());
 
@@ -305,14 +305,14 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData)pdata;
+        FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData) pdata;
         log.info("Waiting for message.");
         listener.getLogger().println("Waiting for message.");
-        for (MsgCheck msgCheck: pd.getChecks()) {
+        for (MsgCheck msgCheck : pd.getChecks()) {
             log.info(" with check: " + msgCheck.toString());
             listener.getLogger().println(" with check: " + msgCheck.toString());
         }
-        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
+        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout(): FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
         log.info(" with timeout: " + timeout);
         listener.getLogger().println(" with timeout: " + timeout);
 

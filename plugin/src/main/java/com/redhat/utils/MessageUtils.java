@@ -52,7 +52,7 @@ public class MessageUtils {
 
     public static ListBoxModel doFillProviderNameItems() {
         ListBoxModel items = new ListBoxModel();
-        for (JMSMessagingProvider provider: GlobalCIConfiguration.get().getConfigs()) {
+        for (JMSMessagingProvider provider : GlobalCIConfiguration.get().getConfigs()) {
             items.add(provider.getName());
         }
         return items;

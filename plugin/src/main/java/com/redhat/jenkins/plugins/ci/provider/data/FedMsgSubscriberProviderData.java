@@ -56,7 +56,8 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
-    public FedMsgSubscriberProviderData() {}
+    public FedMsgSubscriberProviderData() {
+    }
 
     public FedMsgSubscriberProviderData(String name) {
         this(name, null);
@@ -106,17 +107,17 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        FedMsgSubscriberProviderData thatp = (FedMsgSubscriberProviderData)that;
-        return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null) &&
-               (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null) &&
-               (this.checks != null ? this.checks.equals(thatp.checks) : thatp.checks == null) &&
-               (this.variable != null ? this.variable.equals(thatp.variable) : thatp.variable == null) &&
-               (this.timeout != null ? this.timeout.equals(thatp.timeout) : thatp.timeout == null);
+        FedMsgSubscriberProviderData thatp = (FedMsgSubscriberProviderData) that;
+        return (this.name != null ? this.name.equals(thatp.name): thatp.name == null) &&
+                (this.overrides != null ? this.overrides.equals(thatp.overrides): thatp.overrides == null) &&
+                (this.checks != null ? this.checks.equals(thatp.checks): thatp.checks == null) &&
+                (this.variable != null ? this.variable.equals(thatp.variable): thatp.variable == null) &&
+                (this.timeout != null ? this.timeout.equals(thatp.timeout): thatp.timeout == null);
     }
 
     @Extension

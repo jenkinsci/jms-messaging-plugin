@@ -46,7 +46,7 @@ import javax.jms.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod  {
+public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
     private static final long serialVersionUID = 452156745621333923L;
     private transient static final Logger log = Logger.getLogger(UsernameAuthenticationMethod.class.getName());
 

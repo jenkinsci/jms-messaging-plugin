@@ -38,7 +38,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 
-public abstract class ProviderData implements Describable<ProviderData>, Serializable  {
+public abstract class ProviderData implements Describable<ProviderData>, Serializable {
 
     private static final long serialVersionUID = -5475213587386619340L;
 
@@ -48,7 +48,8 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
 
     public static final MessageUtils.MESSAGE_TYPE DEFAULT_MESSAGE_TYPE = MessageUtils.MESSAGE_TYPE.Custom;
 
-    public ProviderData() {}
+    public ProviderData() {
+    }
 
     public ProviderData(String name) {
         this.name = name;
@@ -66,11 +67,13 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
     }
 
     public abstract boolean hasOverrides();
+
     public abstract String getSubscriberTopic();
+
     public abstract String getPublisherTopic();
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (this == that) {
             return true;
         }
@@ -79,7 +82,7 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
             return false;
         }
 
-        ProviderData thatp = (ProviderData)that;
+        ProviderData thatp = (ProviderData) that;
         return Objects.equals(this.name, thatp.name);
     }
 

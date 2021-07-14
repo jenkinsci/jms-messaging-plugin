@@ -141,7 +141,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     @Override
     public void receive(String jobname, ProviderData pdata) {
         RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData) pdata;
-        int timeout = (pd.getTimeout() != null ? pd.getTimeout() : RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        int timeout = (pd.getTimeout() != null ? pd.getTimeout(): RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
 
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
@@ -251,7 +251,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        RabbitMQPublisherProviderData pd = (RabbitMQPublisherProviderData)pdata;
+        RabbitMQPublisherProviderData pd = (RabbitMQPublisherProviderData) pdata;
         try {
             if (connection == null || !connection.isOpen()) {
                 connect();
@@ -280,12 +280,12 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             env.putAll(build.getEnvironment(listener));
             env.put("CI_NAME", build.getParent().getName());
             if (!build.isBuilding()) {
-                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed" : "failed"));
+                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed": "failed"));
                 env.put("BUILD_STATUS", build.getResult().toString());
             }
 
             RabbitMQMessage msg = new RabbitMQMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
-                                                     PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
+                    PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
             msg.setTimestamp(System.currentTimeMillis() / 1000L);
 
@@ -295,7 +295,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                 channel.exchangeDeclarePassive(exchangeName);
                 channel.basicPublish(exchangeName, msg.getTopic(),
                         new AMQP.BasicProperties.Builder().headers(headers)
-                        .messageId(msgId).build(), body.getBytes());
+                                .messageId(msgId).build(), body.getBytes());
             } catch (IOException e) {
                 if (pd.isFailOnError()) {
                     log.severe("Unhandled exception in perform: Failed to send message!");
@@ -337,7 +337,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData)pdata;
+        RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData) pdata;
 
         try {
             if (connection == null || !connection.isOpen()) {
@@ -358,11 +358,11 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
         log.info("Waiting for message.");
         listener.getLogger().println("Waiting for message.");
-        for (MsgCheck msgCheck: pd.getChecks()) {
+        for (MsgCheck msgCheck : pd.getChecks()) {
             log.info(" with check: " + msgCheck.toString());
             listener.getLogger().println(" with check: " + msgCheck.toString());
         }
-        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout() : RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
+        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout(): RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
         log.info(" with timeout: " + timeout + " minutes");
         listener.getLogger().println(" with timeout: " + timeout + " minutes");
 

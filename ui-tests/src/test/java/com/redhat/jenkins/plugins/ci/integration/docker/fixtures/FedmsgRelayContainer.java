@@ -29,7 +29,7 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id="fedmsg-relay", ports={4001,2003,22})
+@DockerFixture(id = "fedmsg-relay", ports = {4001, 2003, 22})
 public class FedmsgRelayContainer extends DockerContainer {
 
     public String getPublisher() throws IOException {
@@ -40,10 +40,11 @@ public class FedmsgRelayContainer extends DockerContainer {
             String hostPort = binding.get("HostPort").asText();
             ip = hostIP + ":" + hostPort;
             System.out.println(ip);
-            return "tcp://"+ip;
+            return "tcp://" + ip;
         }
-        return "tcp://"+getIpAddress()+":2003";
+        return "tcp://" + getIpAddress() + ":2003";
     }
+
     public String getHub() throws IOException {
         String ip = super.getIpAddress();
         if (ip == null || ip.equals("")) {
@@ -52,10 +53,11 @@ public class FedmsgRelayContainer extends DockerContainer {
             String hostPort = binding.get("HostPort").asText();
             ip = hostIP + ":" + hostPort;
             System.out.println(ip);
-            return "tcp://"+ip;
+            return "tcp://" + ip;
         }
-        return "tcp://"+getIpAddress()+":4001";
+        return "tcp://" + getIpAddress() + ":4001";
     }
+
     public String getSshIPAndPort() throws IOException {
         String ip = super.getIpAddress();
         if (ip == null || ip.equals("")) {
@@ -66,6 +68,6 @@ public class FedmsgRelayContainer extends DockerContainer {
             System.out.println(ip);
             return ip;
         }
-        return getIpAddress()+" -p 22";
+        return getIpAddress() + " -p 22";
     }
 }

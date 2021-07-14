@@ -24,6 +24,7 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
+
 import hudson.model.TaskListener;
 import hudson.model.Run;
 
@@ -37,7 +38,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.PluginUtils;
 
 public abstract class JMSMessagingWorker {
-    public static final String MESSAGECONTENTFIELD = "message-content" ;
+    public static final String MESSAGECONTENTFIELD = "message-content";
     public String jobname;
     private static final Logger log = Logger.getLogger(JMSMessagingWorker.class.getName());
     public static final Integer RETRY_MINUTES = 1;
@@ -48,9 +49,13 @@ public abstract class JMSMessagingWorker {
     public boolean subscribe(String jobname) {
         return subscribe(jobname, null);
     }
+
     public abstract boolean subscribe(String jobname, String selector);
+
     public abstract void unsubscribe(String jobname);
+
     public abstract void receive(String jobname, ProviderData pdata);
+
     public abstract boolean connect() throws Exception;
 
     public abstract void disconnect();
@@ -61,6 +66,7 @@ public abstract class JMSMessagingWorker {
     }
 
     public abstract SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
+
     public abstract String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
 
     public void trigger(String jobname, String messageSummary,

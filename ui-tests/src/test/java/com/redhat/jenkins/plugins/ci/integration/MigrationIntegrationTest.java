@@ -1,12 +1,6 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assume.assumeThat;
-
-import java.io.File;
-
-import javax.inject.Inject;
-
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.test.acceptance.controller.JenkinsController;
 import org.jenkinsci.test.acceptance.controller.LocalController;
@@ -15,7 +9,11 @@ import org.jenkinsci.test.acceptance.junit.WithPlugins;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.junit.Test;
 
-import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
+import javax.inject.Inject;
+import java.io.File;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assume.assumeThat;
 
 /*
  * The MIT License
@@ -48,7 +46,7 @@ public class MigrationIntegrationTest extends AbstractJUnitTest {
     @Test
     public void testMigrationWithSaveableListenersActive() throws Exception {
         assumeThat("TODO otherwise we would need to set up SSH access to push via Git, " +
-                        "which seems an awful hassle", controller, instanceOf(LocalController.class));
+                "which seems an awful hassle", controller, instanceOf(LocalController.class));
         File jHome = ((LocalController) controller).getJenkinsHome();
 
         FileUtils.write(new File(jHome, "com.redhat.jenkins.plugins.ci.GlobalCIConfiguration.xml"),

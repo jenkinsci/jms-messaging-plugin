@@ -49,7 +49,8 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
 
 
     @DataBoundConstructor
-    public FedMsgPublisherProviderData() {}
+    public FedMsgPublisherProviderData() {
+    }
 
     public FedMsgPublisherProviderData(String name) {
         this(name, null);
@@ -89,16 +90,16 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        FedMsgPublisherProviderData thatp = (FedMsgPublisherProviderData)that;
+        FedMsgPublisherProviderData thatp = (FedMsgPublisherProviderData) that;
         return Objects.equals(this.name, thatp.name) &&
-               Objects.equals(this.overrides, thatp.overrides) &&
-               Objects.equals(this.messageContent, thatp.messageContent) &&
-               Objects.equals(this.failOnError, thatp.failOnError);
+                Objects.equals(this.overrides, thatp.overrides) &&
+                Objects.equals(this.messageContent, thatp.messageContent) &&
+                Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Extension

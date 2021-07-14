@@ -13,7 +13,8 @@ public class DefaultTopicProvider extends TopicProvider {
     private static final long serialVersionUID = -8194184157003849025L;
 
     @DataBoundConstructor
-    public DefaultTopicProvider() {}
+    public DefaultTopicProvider() {
+    }
 
     @Override
     public Descriptor<TopicProvider> getDescriptor() {
@@ -30,10 +31,10 @@ public class DefaultTopicProvider extends TopicProvider {
 
         public String generatePublisherTopic() {
             return "";
-         }
+        }
 
         public String generateSubscriberTopic() {
             return "";
-         }
+        }
     }
 }

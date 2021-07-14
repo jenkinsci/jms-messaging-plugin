@@ -85,7 +85,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
                     consumer = session.createDurableSubscriber(destination, UUID.randomUUID().toString(), selector, false);
                 }
 
-                Message message = consumer.receive(timeout*60*1000);
+                Message message = consumer.receive(timeout * 60 * 1000);
                 if (message != null) {
                     String value = getMessageBody(message);
                     log.info("Received message with selector: " + selector + "\n" + formatMessage(message));

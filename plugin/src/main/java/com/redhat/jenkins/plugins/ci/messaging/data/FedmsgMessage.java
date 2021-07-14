@@ -61,7 +61,8 @@ public class FedmsgMessage {
     @JsonProperty("msg")
     private Map<String, Object> msg = null;
 
-    public FedmsgMessage() {}
+    public FedmsgMessage() {
+    }
 
     public FedmsgMessage(String topic) {
         this(topic, null);
@@ -74,7 +75,8 @@ public class FedmsgMessage {
         if (!StringUtils.isBlank(body)) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
+                TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
+                };
                 msg = mapper.readValue(body, typeRef);
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unable to deserialize message body.", e);

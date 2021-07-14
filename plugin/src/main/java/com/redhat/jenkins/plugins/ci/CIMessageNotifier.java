@@ -53,134 +53,135 @@ import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 import javax.annotation.Nonnull;
 
 public class CIMessageNotifier extends Notifier {
-     private static final Logger log = Logger.getLogger(CIMessageNotifier.class.getName());
+    private static final Logger log = Logger.getLogger(CIMessageNotifier.class.getName());
 
-     private static final String BUILDER_NAME = Messages.MessageNotifier();
+    private static final String BUILDER_NAME = Messages.MessageNotifier();
 
-     @Deprecated private transient String providerName;
-     @Deprecated private transient MessagingProviderOverrides overrides;
-     @Deprecated private transient MESSAGE_TYPE messageType;
-     @Deprecated private transient String messageProperties;
-     @Deprecated private transient String messageContent;
-     @Deprecated private transient boolean failOnError = false;
-     @Deprecated private ProviderData providerData;
+    @Deprecated private transient String providerName;
+    @Deprecated private transient MessagingProviderOverrides overrides;
+    @Deprecated private transient MESSAGE_TYPE messageType;
+    @Deprecated private transient String messageProperties;
+    @Deprecated private transient String messageContent;
+    @Deprecated private transient boolean failOnError = false;
+    @Deprecated private ProviderData providerData;
 
-     @DataBoundConstructor
-     public CIMessageNotifier() {}
+    @DataBoundConstructor
+    public CIMessageNotifier() {
+    }
 
-     public CIMessageNotifier(ProviderData providerData) {
-         super();
-         this.providerData = providerData;
-     }
+    public CIMessageNotifier(ProviderData providerData) {
+        super();
+        this.providerData = providerData;
+    }
 
-     @Deprecated public String getProviderName() {
-         return providerName;
-     }
+    @Deprecated public String getProviderName() {
+        return providerName;
+    }
 
-     @Deprecated public void setProviderName(String providerName) {
-         this.providerName = providerName;
-     }
+    @Deprecated public void setProviderName(String providerName) {
+        this.providerName = providerName;
+    }
 
-     @Deprecated public MessagingProviderOverrides getOverrides() {
-         return overrides;
-     }
+    @Deprecated public MessagingProviderOverrides getOverrides() {
+        return overrides;
+    }
 
-     @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
-         this.overrides = overrides;
-     }
+    @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
+        this.overrides = overrides;
+    }
 
-     @Deprecated public MESSAGE_TYPE getMessageType() {
-         return messageType;
-     }
+    @Deprecated public MESSAGE_TYPE getMessageType() {
+        return messageType;
+    }
 
-     @Deprecated public void setMessageType(MESSAGE_TYPE messageType) {
-         this.messageType = messageType;
-     }
+    @Deprecated public void setMessageType(MESSAGE_TYPE messageType) {
+        this.messageType = messageType;
+    }
 
-     @Deprecated public String getMessageProperties() {
-         return messageProperties;
-     }
+    @Deprecated public String getMessageProperties() {
+        return messageProperties;
+    }
 
-     @Deprecated public void setMessageProperties(String messageProperties) {
-         this.messageProperties = messageProperties;
-     }
+    @Deprecated public void setMessageProperties(String messageProperties) {
+        this.messageProperties = messageProperties;
+    }
 
-     @Deprecated public String getMessageContent() {
-         return messageContent;
-     }
+    @Deprecated public String getMessageContent() {
+        return messageContent;
+    }
 
-     @Deprecated public void setMessageContent(String messageContent) {
-         this.messageContent = messageContent;
-     }
+    @Deprecated public void setMessageContent(String messageContent) {
+        this.messageContent = messageContent;
+    }
 
-     @Deprecated public boolean isFailOnError() {
-         return failOnError;
-     }
+    @Deprecated public boolean isFailOnError() {
+        return failOnError;
+    }
 
-     @Deprecated public void setFailOnError(boolean failOnError) {
-         this.failOnError = failOnError;
-     }
+    @Deprecated public void setFailOnError(boolean failOnError) {
+        this.failOnError = failOnError;
+    }
 
-     public ProviderData getProviderData() {
-         return providerData;
-     }
+    public ProviderData getProviderData() {
+        return providerData;
+    }
 
-     @DataBoundSetter
-     public void setProviderData(ProviderData providerData) {
-         this.providerData = providerData;
-     }
+    @DataBoundSetter
+    public void setProviderData(ProviderData providerData) {
+        this.providerData = providerData;
+    }
 
-     @Override
-     public DescriptorImpl getDescriptor() {
-         return (DescriptorImpl) super.getDescriptor();
-     }
+    @Override
+    public DescriptorImpl getDescriptor() {
+        return (DescriptorImpl) super.getDescriptor();
+    }
 
-     public BuildStepMonitor getRequiredMonitorService() {
-         return BuildStepMonitor.NONE;
-     }
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
 
-     public boolean needsToRunAfterFinalized() {
-         return true;
-     }
+    public boolean needsToRunAfterFinalized() {
+        return true;
+    }
 
-     public SendResult doMessageNotifier(Run<?, ?> run, Launcher launcher, TaskListener listener) {
-         return MessageUtils.sendMessage(run, listener, providerData);
-     }
+    public SendResult doMessageNotifier(Run<?, ?> run, Launcher launcher, TaskListener listener) {
+        return MessageUtils.sendMessage(run, listener, providerData);
+    }
 
-     @Override
-     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
-         return doMessageNotifier(build, launcher, listener).isSucceeded();
-     }
+    @Override
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
+        return doMessageNotifier(build, launcher, listener).isSucceeded();
+    }
 
-     @Extension
-     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+    @Extension
+    public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-         public DescriptorImpl() {
-             load();
-         }
+        public DescriptorImpl() {
+            load();
+        }
 
-         @Override
-         public boolean isApplicable(Class<? extends AbstractProject> arg0) {
-             return true;
-         }
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> arg0) {
+            return true;
+        }
 
-         @Override
-         public CIMessageNotifier newInstance(StaplerRequest sr, JSONObject jo) {
-             try {
-                 // The provider name is at the root of the JSON object with a key of "" (this
-                 // is because the select is not named in dropdownList.jelly). Move that into the
-                 // provider data structure and then continue on.
-                 jo.getJSONObject("providerData").put("name", jo.remove(""));
-                 return (CIMessageNotifier)super.newInstance(sr, jo);
-             } catch (hudson.model.Descriptor.FormException e) {
-                 log.log(Level.SEVERE, "Unable to create new instance.", e);
-             }
-             return null;
-         }
+        @Override
+        public CIMessageNotifier newInstance(StaplerRequest sr, JSONObject jo) {
+            try {
+                // The provider name is at the root of the JSON object with a key of "" (this
+                // is because the select is not named in dropdownList.jelly). Move that into the
+                // provider data structure and then continue on.
+                jo.getJSONObject("providerData").put("name", jo.remove(""));
+                return (CIMessageNotifier) super.newInstance(sr, jo);
+            } catch (hudson.model.Descriptor.FormException e) {
+                log.log(Level.SEVERE, "Unable to create new instance.", e);
+            }
+            return null;
+        }
 
-         @Override
-         public @Nonnull String getDisplayName() {
-             return BUILDER_NAME;
-         }
-     }
- }
+        @Override
+        public @Nonnull String getDisplayName() {
+            return BUILDER_NAME;
+        }
+    }
+}

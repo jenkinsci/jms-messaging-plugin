@@ -103,36 +103,47 @@ public class CIMessageSenderStep extends Step {
     public String getProviderName() {
         return providerName;
     }
+
     public void setProviderName(String providerName) {
         this.providerName = providerName;
     }
+
     public MessagingProviderOverrides getOverrides() {
         return overrides;
     }
+
     public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
+
     public MESSAGE_TYPE getMessageType() {
         return messageType;
     }
+
     public void setMessageType(MESSAGE_TYPE messageType) {
         this.messageType = messageType;
     }
+
     public String getMessageProperties() {
         return messageProperties;
     }
+
     public void setMessageProperties(String messageProperties) {
         this.messageProperties = messageProperties;
     }
+
     public String getMessageContent() {
         return messageContent;
     }
+
     public void setMessageContent(String messageContent) {
         this.messageContent = messageContent;
     }
+
     public boolean getFailOnError() {
         return failOnError;
     }
+
     public void setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
     }

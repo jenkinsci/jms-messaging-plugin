@@ -14,7 +14,8 @@ public abstract class ActiveMQProviderData extends ProviderData {
 
     protected MessagingProviderOverrides overrides;
 
-    public ActiveMQProviderData() {}
+    public ActiveMQProviderData() {
+    }
 
     public ActiveMQProviderData(String name) {
         this(name, null);
@@ -35,16 +36,16 @@ public abstract class ActiveMQProviderData extends ProviderData {
     }
 
     public boolean hasOverrides() {
-        return !(((ActiveMqMessagingProvider)provider).getTopicProvider() instanceof DefaultTopicProvider);
+        return !(((ActiveMqMessagingProvider) provider).getTopicProvider() instanceof DefaultTopicProvider);
     }
 
     public String getSubscriberTopic() {
-        TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider)provider).getTopicProvider().getDescriptor();
+        TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider) provider).getTopicProvider().getDescriptor();
         return tpd.generateSubscriberTopic();
     }
 
     public String getPublisherTopic() {
-        TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider)provider).getTopicProvider().getDescriptor();
+        TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider) provider).getTopicProvider().getDescriptor();
         return tpd.generatePublisherTopic();
     }
 

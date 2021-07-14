@@ -45,7 +45,7 @@ public class CITriggerThread extends Thread {
     private final ProviderData providerData;
     protected final JMSMessagingWorker messagingWorker;
 
-    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData,String jobname, CIBuildTrigger cibt, int instance) {
+    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
         this.messagingProvider = messagingProvider;
         this.providerData = providerData;
         this.jobname = jobname;
@@ -66,7 +66,7 @@ public class CITriggerThread extends Thread {
     }
 
     public void run() {
-        try (ACLContext ignored = ACL.as(ACL.SYSTEM)){
+        try (ACLContext ignored = ACL.as(ACL.SYSTEM)) {
             cibt.clearJobActions();
             try {
                 while (!hasBeenInterrupted()) {
@@ -101,9 +101,9 @@ public class CITriggerThread extends Thread {
 
     @Override
     public int hashCode() {
-        int result = messagingWorker != null ? messagingWorker.hashCode() : 0;
-        result = 31 * result + (providerData != null ? providerData.hashCode() : 0);
-        result = 31 * result + (jobname != null ? jobname.hashCode() : 0);
+        int result = messagingWorker != null ? messagingWorker.hashCode(): 0;
+        result = 31 * result + (providerData != null ? providerData.hashCode(): 0);
+        result = 31 * result + (jobname != null ? jobname.hashCode(): 0);
         return result;
     }
 

@@ -3,6 +3,7 @@ package com.redhat.jenkins.plugins.ci;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import hudson.matrix.MatrixProject;
 import hudson.model.Item;
 import hudson.model.AbstractProject;
@@ -55,7 +56,7 @@ public class MigrationTest {
         Item matrixItem = j.getInstance().getItem
                 ("matrix");
         assertNotNull(matrixItem);
-        MatrixProject matrixJob = (MatrixProject)matrixItem;
+        MatrixProject matrixJob = (MatrixProject) matrixItem;
         CIMessageBuilder builder = matrixJob.getBuildersList().get(CIMessageBuilder.class);
         assertNotNull(builder);
         assertEquals("Message Provider name should be default",
@@ -73,7 +74,7 @@ public class MigrationTest {
         String topic = aconfig.getTopic();
         assertEquals("topic is not TOM", "TOM", topic);
 
-        AbstractProject<?, ?> triggerJob = (AbstractProject<?, ?>)j.getInstance().getItem("ci-trigger");
+        AbstractProject<?, ?> triggerJob = (AbstractProject<?, ?>) j.getInstance().getItem("ci-trigger");
 
         CIBuildTrigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
         assertNotNull(trigger);
@@ -82,7 +83,7 @@ public class MigrationTest {
         assertNotNull(cibt.getProviders().get(0).getName());
         assertNotNull(cibt.getSelector());
 
-        FreeStyleProject notifierJob = (FreeStyleProject)j.getInstance().getItem("ci-notifier");
+        FreeStyleProject notifierJob = (FreeStyleProject) j.getInstance().getItem("ci-notifier");
 
         CIMessageBuilder builder = notifierJob.getBuildersList().get(CIMessageBuilder.class);
         assertNotNull(builder);
@@ -92,7 +93,7 @@ public class MigrationTest {
         CIMessageNotifier notifierPublisher = notifierJob.getPublishersList().get(CIMessageNotifier.class);
         assertNotNull(notifierPublisher.getProviderName());
 
-        FreeStyleProject subscriberJob = (FreeStyleProject)j.getInstance().getItem("ci-message-subscriber");
+        FreeStyleProject subscriberJob = (FreeStyleProject) j.getInstance().getItem("ci-message-subscriber");
         CIMessageSubscriberBuilder subscriberBuilder =
                 subscriberJob.getBuildersList().get(CIMessageSubscriberBuilder.class);
         assertNotNull(subscriberBuilder);
@@ -119,13 +120,13 @@ public class MigrationTest {
 
         assertTrue(aconfig.getTopicProvider() instanceof DefaultTopicProvider);
 
-        AbstractProject<?, ?> triggerJob = (AbstractProject<?, ?>)j.getInstance().getItem("ci-trigger");
+        AbstractProject<?, ?> triggerJob = (AbstractProject<?, ?>) j.getInstance().getItem("ci-trigger");
 
         CIBuildTrigger trigger = triggerJob.getTrigger(CIBuildTrigger.class);
         assertNotNull(trigger);
         assertNotNull(triggerJob.getTrigger(CIBuildTrigger.class).getProviderName());
 
-        FreeStyleProject notifierJob = (FreeStyleProject)j.getInstance().getItem("ci-notifier");
+        FreeStyleProject notifierJob = (FreeStyleProject) j.getInstance().getItem("ci-notifier");
 
         CIMessageBuilder builder = notifierJob.getBuildersList().get(CIMessageBuilder.class);
         assertNotNull(builder);
@@ -135,7 +136,7 @@ public class MigrationTest {
         CIMessageNotifier notifierPublisher = notifierJob.getPublishersList().get(CIMessageNotifier.class);
         assertNotNull(notifierPublisher.getProviderName());
 
-        FreeStyleProject subscriberJob = (FreeStyleProject)j.getInstance().getItem("ci-message-subscriber");
+        FreeStyleProject subscriberJob = (FreeStyleProject) j.getInstance().getItem("ci-message-subscriber");
         CIMessageSubscriberBuilder subscriberBuilder =
                 subscriberJob.getBuildersList().get(CIMessageSubscriberBuilder.class);
         assertNotNull(subscriberBuilder);

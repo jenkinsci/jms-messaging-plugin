@@ -24,16 +24,18 @@ public abstract class TopicProvider implements Describable<TopicProvider>, Seria
     public abstract static class TopicProviderDescriptor extends Descriptor<TopicProvider> {
 
         public abstract String generatePublisherTopic();
+
         public abstract String generateSubscriberTopic();
 
         // Web methods.
         public void doGeneratePublisherTopic(StaplerRequest req, StaplerResponse resp) throws IOException {
             String topic = generatePublisherTopic();
-            resp.getWriter().write((topic != null ? topic : ""));
+            resp.getWriter().write((topic != null ? topic: ""));
         }
+
         public void doGenerateSubscriberTopic(StaplerRequest req, StaplerResponse resp) throws IOException {
             String topic = generateSubscriberTopic();
-            resp.getWriter().write((topic != null ? topic : ""));
+            resp.getWriter().write((topic != null ? topic: ""));
         }
 
         public static ExtensionList<TopicProviderDescriptor> all() {

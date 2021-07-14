@@ -30,10 +30,10 @@ import org.jenkinsci.test.acceptance.po.PageObject;
 @Describable("Active MQ")
 public class ActiveMqMessagingProvider extends MessagingProvider {
 
-    public final Control name       = control("name");
-    public final Control broker     = control("broker");
-    public final Control useQueues  = control("useQueues");
-    public final Control topic      = control("topic");
+    public final Control name = control("name");
+    public final Control broker = control("broker");
+    public final Control useQueues = control("useQueues");
+    public final Control topic = control("topic");
 
     public ActiveMqMessagingProvider(PageObject parent, String path) {
         super(parent, path);
@@ -47,14 +47,17 @@ public class ActiveMqMessagingProvider extends MessagingProvider {
         name.set(nameVal);
         return this;
     }
+
     public ActiveMqMessagingProvider broker(String brokerVal) {
         broker.set(brokerVal);
         return this;
     }
+
     public ActiveMqMessagingProvider useQueues(boolean value) {
         useQueues.check(value);
         return this;
     }
+
     public ActiveMqMessagingProvider topic(String topicVal) {
         topic.set(topicVal);
         return this;

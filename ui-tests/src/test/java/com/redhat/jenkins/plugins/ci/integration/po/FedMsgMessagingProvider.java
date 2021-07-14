@@ -30,10 +30,10 @@ import org.jenkinsci.test.acceptance.po.PageObject;
 @Describable("FedMsg")
 public class FedMsgMessagingProvider extends MessagingProvider {
 
-    public final Control name     = control("name");
-    public final Control hubAddr  = control("hubAddr");
-    public final Control pubAddr  = control("pubAddr");
-    public final Control topic    = control("topic");
+    public final Control name = control("name");
+    public final Control hubAddr = control("hubAddr");
+    public final Control pubAddr = control("pubAddr");
+    public final Control topic = control("topic");
 
     public FedMsgMessagingProvider(PageObject parent, String path) {
         super(parent, path);
@@ -47,18 +47,22 @@ public class FedMsgMessagingProvider extends MessagingProvider {
         name.set(nameVal);
         return this;
     }
+
     public FedMsgMessagingProvider hubAddr(String hubAddrVal) {
         hubAddr.set(hubAddrVal);
         return this;
     }
+
     public FedMsgMessagingProvider pubAddr(String pubAddrVal) {
         pubAddr.set(pubAddrVal);
         return this;
     }
+
     public FedMsgMessagingProvider topic(String topicVal) {
         topic.set(topicVal);
         return this;
     }
+
     public void testConnection() {
         clickButton("Test Connection");
     }

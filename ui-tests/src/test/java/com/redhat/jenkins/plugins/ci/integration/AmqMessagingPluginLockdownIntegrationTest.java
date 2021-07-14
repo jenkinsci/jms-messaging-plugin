@@ -63,12 +63,11 @@ import static org.jenkinsci.test.acceptance.plugins.matrix_auth.MatrixRow.OVERAL
 @WithPlugins({"jms-messaging", "mock-security-realm", "matrix-auth@2.3"})
 @WithDocker
 public class AmqMessagingPluginLockdownIntegrationTest extends AbstractJUnitTest {
-    @Inject private DockerContainerHolder<ActiveMQContainer> docker;
+    private static final int INIT_WAIT = 360;
     final private String adminUser = "admin";
     final private String user = "user";
-
+    @Inject private DockerContainerHolder<ActiveMQContainer> docker;
     private ActiveMQContainer amq = null;
-    private static final int INIT_WAIT = 360;
 
     private void loginAsUser() {
         jenkins.login().doLogin(user);
@@ -141,6 +140,7 @@ public class AmqMessagingPluginLockdownIntegrationTest extends AbstractJUnitTest
      * and ensures that a test connection is successful.
      * Then we login in a regular user and attempt to probe the testConnection actions
      * to make sure we are blocked.
+     *
      * @throws Exception
      */
     @Test

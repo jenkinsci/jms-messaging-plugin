@@ -27,7 +27,7 @@ import java.io.Serializable;
 
 import jenkins.model.Jenkins;
 
-public abstract class AuthenticationMethod implements Serializable  {
+public abstract class AuthenticationMethod implements Serializable {
 
     private static final long serialVersionUID = -6077120270692721571L;
 

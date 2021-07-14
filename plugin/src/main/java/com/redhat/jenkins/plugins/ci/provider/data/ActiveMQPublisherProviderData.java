@@ -51,7 +51,8 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     private Boolean failOnError = false;
 
     @DataBoundConstructor
-    public ActiveMQPublisherProviderData() {}
+    public ActiveMQPublisherProviderData() {
+    }
 
     public ActiveMQPublisherProviderData(String name) {
         this(name, null);
@@ -111,18 +112,18 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        ActiveMQPublisherProviderData thatp = (ActiveMQPublisherProviderData)that;
+        ActiveMQPublisherProviderData thatp = (ActiveMQPublisherProviderData) that;
         return Objects.equals(this.name, thatp.name) &&
-               Objects.equals(this.overrides, thatp.overrides) &&
-               Objects.equals(this.messageType, thatp.messageType) &&
-               Objects.equals(this.messageProperties, thatp.messageProperties) &&
-               Objects.equals(this.messageContent, thatp.messageContent) &&
-               Objects.equals(this.failOnError, thatp.failOnError);
+                Objects.equals(this.overrides, thatp.overrides) &&
+                Objects.equals(this.messageType, thatp.messageType) &&
+                Objects.equals(this.messageProperties, thatp.messageProperties) &&
+                Objects.equals(this.messageContent, thatp.messageContent) &&
+                Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Extension

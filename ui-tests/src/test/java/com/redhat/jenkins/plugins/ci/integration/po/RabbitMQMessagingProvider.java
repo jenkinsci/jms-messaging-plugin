@@ -30,13 +30,13 @@ import org.jenkinsci.test.acceptance.po.PageObject;
 @Describable("RabbitMQ")
 public class RabbitMQMessagingProvider extends MessagingProvider {
 
-    public final Control name           = control("name");
-    public final Control hostname       = control("hostname");
-    public final Control portNumber     = control("portNumber");
-    public final Control virtualHost    = control("virtualHost");
-    public final Control topic          = control("topic");
-    public final Control exchange       = control("exchange");
-    public final Control queue          = control("queue");
+    public final Control name = control("name");
+    public final Control hostname = control("hostname");
+    public final Control portNumber = control("portNumber");
+    public final Control virtualHost = control("virtualHost");
+    public final Control topic = control("topic");
+    public final Control exchange = control("exchange");
+    public final Control queue = control("queue");
 
     public RabbitMQMessagingProvider(PageObject parent, String path) {
         super(parent, path);
@@ -50,26 +50,32 @@ public class RabbitMQMessagingProvider extends MessagingProvider {
         name.set(nameVal);
         return this;
     }
+
     public RabbitMQMessagingProvider hostname(String hostnameVal) {
         hostname.set(hostnameVal);
         return this;
     }
+
     public RabbitMQMessagingProvider portNumber(String portNumberVal) {
         portNumber.set(portNumberVal);
         return this;
     }
+
     public RabbitMQMessagingProvider virtualHost(String virtualHostVal) {
         virtualHost.set(virtualHostVal);
         return this;
     }
+
     public RabbitMQMessagingProvider topic(String topicVal) {
         topic.set(topicVal);
         return this;
     }
+
     public RabbitMQMessagingProvider exchange(String exchangeVal) {
         exchange.set(exchangeVal);
         return this;
     }
+
     public RabbitMQMessagingProvider queue(String queueVal) {
         queue.set(queueVal);
         return this;

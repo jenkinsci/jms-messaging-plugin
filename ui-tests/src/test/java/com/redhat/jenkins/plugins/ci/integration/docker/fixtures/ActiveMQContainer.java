@@ -29,7 +29,7 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id="activeamq", ports={61616,8161})
+@DockerFixture(id = "activeamq", ports = {61616, 8161})
 public class ActiveMQContainer extends DockerContainer {
 
     public String getBroker() throws IOException {
@@ -39,9 +39,9 @@ public class ActiveMQContainer extends DockerContainer {
             String hostIP = binding.get("HostIp").asText();
             String hostPort = binding.get("HostPort").asText();
             ip = hostIP + ":" + hostPort;
-            return "tcp://"+ip;
+            return "tcp://" + ip;
         } else {
-            return "tcp://"+ip+":61616";
+            return "tcp://" + ip + ":61616";
         }
 
     }

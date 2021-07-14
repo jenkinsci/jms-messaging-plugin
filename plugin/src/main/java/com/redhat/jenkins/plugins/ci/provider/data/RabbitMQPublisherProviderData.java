@@ -133,18 +133,18 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        RabbitMQPublisherProviderData thatp = (RabbitMQPublisherProviderData)that;
+        RabbitMQPublisherProviderData thatp = (RabbitMQPublisherProviderData) that;
         return Objects.equals(this.name, thatp.name) &&
-               Objects.equals(this.overrides, thatp.overrides) &&
-               Objects.equals(this.messageContent, thatp.messageContent) &&
-               Objects.equals(this.failOnError, thatp.failOnError) &&
-               Objects.equals(this.fedoraMessaging, thatp.fedoraMessaging) &&
-               Objects.equals(this.schema, thatp.schema);
+                Objects.equals(this.overrides, thatp.overrides) &&
+                Objects.equals(this.messageContent, thatp.messageContent) &&
+                Objects.equals(this.failOnError, thatp.failOnError) &&
+                Objects.equals(this.fedoraMessaging, thatp.fedoraMessaging) &&
+                Objects.equals(this.schema, thatp.schema);
     }
 
     @Extension

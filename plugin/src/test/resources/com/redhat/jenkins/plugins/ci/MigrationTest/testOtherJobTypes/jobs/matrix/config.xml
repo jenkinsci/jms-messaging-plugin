@@ -1,27 +1,27 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <matrix-project plugin="matrix-project@1.4.1">
-  <actions/>
-  <description></description>
-  <keepDependencies>false</keepDependencies>
-  <properties/>
-  <scm class="hudson.scm.NullSCM"/>
-  <canRoam>true</canRoam>
-  <disabled>false</disabled>
-  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
-  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers/>
-  <concurrentBuild>false</concurrentBuild>
-  <axes/>
-  <builders>
-    <com.redhat.jenkins.plugins.ci.CIMessageBuilder plugin="jms-messaging@1.0.1-SNAPSHOT">
-      <messageType>CodeQualityChecksDone</messageType>
-      <messageProperties></messageProperties>
-      <messageContent></messageContent>
-    </com.redhat.jenkins.plugins.ci.CIMessageBuilder>
-  </builders>
-  <publishers/>
-  <buildWrappers/>
-  <executionStrategy class="hudson.matrix.DefaultMatrixExecutionStrategyImpl">
-    <runSequentially>false</runSequentially>
-  </executionStrategy>
+    <actions/>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.scm.NullSCM"/>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <axes/>
+    <builders>
+        <com.redhat.jenkins.plugins.ci.CIMessageBuilder plugin="jms-messaging@1.0.1-SNAPSHOT">
+            <messageType>CodeQualityChecksDone</messageType>
+            <messageProperties></messageProperties>
+            <messageContent></messageContent>
+        </com.redhat.jenkins.plugins.ci.CIMessageBuilder>
+    </builders>
+    <publishers/>
+    <buildWrappers/>
+    <executionStrategy class="hudson.matrix.DefaultMatrixExecutionStrategyImpl">
+        <runSequentially>false</runSequentially>
+    </executionStrategy>
 </matrix-project>

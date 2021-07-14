@@ -134,7 +134,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest sr, JSONObject jo) {
             return new SSLCertificateAuthenticationMethod(jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
-                                                          jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
+                    jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
         }
 
         public String getConfigPage() {

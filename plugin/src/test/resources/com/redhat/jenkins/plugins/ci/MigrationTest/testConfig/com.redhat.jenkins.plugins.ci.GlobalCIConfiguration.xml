@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <com.redhat.jenkins.plugins.ci.GlobalCIConfiguration plugin="activemq-messaging@1.0.0-SNAPSHOT">
-        <broker>tcp://ci-bus.lab.eng.rdu2.redhat.com:61616</broker>
-        <topic>TOM</topic>
-        <user>dummy</user>
-        <password>dummy</password>
+    <broker>tcp://ci-bus.lab.eng.rdu2.redhat.com:61616</broker>
+    <topic>TOM</topic>
+    <user>dummy</user>
+    <password>dummy</password>
 </com.redhat.jenkins.plugins.ci.GlobalCIConfiguration>

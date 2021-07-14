@@ -24,15 +24,15 @@ config = dict(
     endpoints={
         # These are here so your local box can listen to the upstream
         # infrastructure's bus.  Cool, right?  :)
-        #"fedora-infrastructure": [
+        # "fedora-infrastructure": [
         #    "tcp://hub.fedoraproject.org:9940",
         #    #"tcp://stg.fedoraproject.org:9940",
-        #],
-        #"debian-infrastructure": [
+        # ],
+        # "debian-infrastructure": [
         #    "tcp://fedmsg.olasd.eu:9940",
-        #],
-        #"anitya-public-relay": [
+        # ],
+        # "anitya-public-relay": [
         #    "tcp://release-monitoring.org:9940",
-        #],
+        # ],
     },
 )

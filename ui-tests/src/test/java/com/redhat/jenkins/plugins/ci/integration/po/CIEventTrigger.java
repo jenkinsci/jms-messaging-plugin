@@ -52,7 +52,7 @@ public class CIEventTrigger extends PageAreaImpl {
             if (numProviders > 0) {
                 providers.click();
             }
-            return new ProviderData(this, "providers" + (numProviders > 0 ? "[" + numProviders + "]" : "") + "/providerData");
+            return new ProviderData(this, "providers" + (numProviders > 0 ? "[" + numProviders + "]": "") + "/providerData");
         } finally {
             numProviders++;
         }

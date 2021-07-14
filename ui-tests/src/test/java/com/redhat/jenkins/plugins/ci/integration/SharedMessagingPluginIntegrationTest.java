@@ -1,22 +1,10 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
-
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.jenkins.plugins.ci.integration.po.BooleanParameter;
 import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.MsgCheck;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
 import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
@@ -37,9 +25,20 @@ import org.jenkinsci.test.acceptance.po.StringParameter;
 import org.jenkinsci.test.acceptance.po.TextParameter;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.MsgCheck;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
 
 /**
  * Created by shebert on 06/06/17.
@@ -713,6 +712,7 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
             }
         };
     }
+
     public boolean isTriggerThreadRunning(String name) {
         String script = "Set<Integer> ids = new TreeSet<Integer>();\n" +
                 "for (thread in D.runtime.threads.grep { it.name =~ /^CIBuildTrigger-" + name + "/ }) {\n" +
@@ -1467,8 +1467,7 @@ public class SharedMessagingPluginIntegrationTest extends AbstractJUnitTest {
         try {
             container.assertRunning();
             running = false;
-        }
-        catch (Error e) {
+        } catch (Error e) {
             //This is ok
         }
         if (running) {

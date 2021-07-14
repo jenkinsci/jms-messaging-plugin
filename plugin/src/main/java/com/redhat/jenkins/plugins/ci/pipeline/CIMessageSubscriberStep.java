@@ -78,7 +78,7 @@ public class CIMessageSubscriberStep extends Step {
         this.overrides = overrides;
         this.selector = selector;
         this.timeout = timeout;
-        this.checks = checks == null ? Collections.emptyList() : checks;
+        this.checks = checks == null ? Collections.emptyList(): checks;
     }
 
     public String getProviderName() {
@@ -168,7 +168,7 @@ public class CIMessageSubscriberStep extends Step {
                         rpd.setTimeout(step.getTimeout());
                         pd = rpd;
                     }
-                CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
+                    CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
                     StepContext c = getContext();
                     String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
                     if (result != null) {

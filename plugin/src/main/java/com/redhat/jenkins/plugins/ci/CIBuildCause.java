@@ -29,9 +29,9 @@ import org.kohsuke.stapler.export.Exported;
 
 public class CIBuildCause extends Cause {
 
-	@Override
-	@Exported(visibility = 3)
-	public String getShortDescription() {
-		return "Triggered by CI message.";
-	}
+    @Override
+    @Exported(visibility = 3)
+    public String getShortDescription() {
+        return "Triggered by CI message.";
+    }
 }

@@ -46,7 +46,7 @@ import java.util.logging.Logger;
 
 import com.redhat.jenkins.plugins.ci.Messages;
 
-public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod  {
+public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod {
     private static final long serialVersionUID = 452156745621333923L;
     private transient static final Logger log = Logger.getLogger(UsernameAuthenticationMethod.class.getName());
 

@@ -59,12 +59,14 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
     public String getName() {
         return name;
     }
+
     public String getTopic() {
         return topic;
     }
 
     public abstract JMSMessagingWorker createWorker(ProviderData pdata, String jobname);
-    public abstract JMSMessageWatcher  createWatcher(String jobname);
+
+    public abstract JMSMessageWatcher createWatcher(String jobname);
 
     public boolean verify(String json, List<MsgCheck> checks, String jobname) {
         if (checks == null || checks.size() == 0) {
@@ -77,12 +79,12 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
         try {
             DocumentContext context = null;
             try {
-            context = JsonPath.parse(json);
+                context = JsonPath.parse(json);
             } catch (InvalidJsonException ije) {
                 log.severe(jobname + ": Unable to parse JSON.\n" + ExceptionUtils.getStackTrace(ije));
             }
             if (context != null) {
-                for (MsgCheck check: checks) {
+                for (MsgCheck check : checks) {
                     if (!verify(context, check, jobname)) {
                         log.fine(jobname + ": msg check: " + check.toString() + " failed against JSON:\n" + json);
                         return false;

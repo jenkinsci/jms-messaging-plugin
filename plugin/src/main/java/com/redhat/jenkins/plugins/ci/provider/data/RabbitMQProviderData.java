@@ -9,7 +9,8 @@ public abstract class RabbitMQProviderData extends ProviderData {
 
     protected MessagingProviderOverrides overrides;
 
-    public RabbitMQProviderData() {}
+    public RabbitMQProviderData() {
+    }
 
     public RabbitMQProviderData(String name, MessagingProviderOverrides overrides) {
         super(name);

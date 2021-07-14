@@ -8,12 +8,11 @@ import java.util.Vector;
  * <a href="OrderedProperties.java.html"><b><i>View Source</i></b></a>
  *
  * @author Brian Wing Shun Chan
- *
  */
 public class OrderedProperties extends Properties {
 
     public OrderedProperties() {
-        super ();
+        super();
 
         _names = new Vector();
     }
@@ -29,13 +28,13 @@ public class OrderedProperties extends Properties {
 
         _names.add(key);
 
-        return super .put(key, value);
+        return super.put(key, value);
     }
 
     public Object remove(Object key) {
         _names.remove(key);
 
-        return super .remove(key);
+        return super.remove(key);
     }
 
     private Vector _names;

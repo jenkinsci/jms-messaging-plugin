@@ -53,7 +53,8 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
-    public RabbitMQSubscriberProviderData() {}
+    public RabbitMQSubscriberProviderData() {
+    }
 
     public RabbitMQSubscriberProviderData(String name) {
         this(name, null);
@@ -116,17 +117,17 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        RabbitMQSubscriberProviderData thatp = (RabbitMQSubscriberProviderData)that;
+        RabbitMQSubscriberProviderData thatp = (RabbitMQSubscriberProviderData) that;
         return Objects.equals(this.name, thatp.name) &&
-               Objects.equals(this.overrides, thatp.overrides) &&
-               Objects.equals(this.checks, thatp.checks) &&
-               Objects.equals(this.variable, thatp.variable) &&
-               Objects.equals(this.timeout, thatp.timeout);
+                Objects.equals(this.overrides, thatp.overrides) &&
+                Objects.equals(this.checks, thatp.checks) &&
+                Objects.equals(this.variable, thatp.variable) &&
+                Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Extension

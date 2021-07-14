@@ -30,7 +30,7 @@ public class CIShouldScheduleQueueAction implements QueueAction {
 
     @Override
     public boolean shouldSchedule(List<Action> actions) {
-         return schedule;
+        return schedule;
     }
 
 }

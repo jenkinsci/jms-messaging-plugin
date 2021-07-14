@@ -56,7 +56,8 @@ public class RabbitMQMessage {
     @JsonProperty("msg")
     private Map<String, Object> msg = null;
 
-    public RabbitMQMessage() {}
+    public RabbitMQMessage() {
+    }
 
     public RabbitMQMessage(String topic) {
         this(topic, null, null);
@@ -78,7 +79,8 @@ public class RabbitMQMessage {
             try {
                 log.fine("Message to deserialize: '" + body + "'");
                 ObjectMapper mapper = new ObjectMapper();
-                TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
+                TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
+                };
                 msg = mapper.readValue(body, typeRef);
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unable to deserialize message body.", e);
@@ -102,9 +104,13 @@ public class RabbitMQMessage {
         this.timestamp = timestamp;
     }
 
-    public long getDeliveryTag() { return deliveryTag; }
+    public long getDeliveryTag() {
+        return deliveryTag;
+    }
 
-    public void setDeliveryTag(long deliveryTag) { this.deliveryTag = deliveryTag; }
+    public void setDeliveryTag(long deliveryTag) {
+        this.deliveryTag = deliveryTag;
+    }
 
     @JsonProperty("msg_id")
     public final String getMsgId() {

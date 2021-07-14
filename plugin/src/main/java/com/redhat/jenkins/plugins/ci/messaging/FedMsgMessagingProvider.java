@@ -71,7 +71,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
-        return new FedMsgMessagingWorker(this, ((FedMsgProviderData)pdata).getOverrides(), jobname);
+        return new FedMsgMessagingWorker(this, ((FedMsgProviderData) pdata).getOverrides(), jobname);
     }
 
     @Override

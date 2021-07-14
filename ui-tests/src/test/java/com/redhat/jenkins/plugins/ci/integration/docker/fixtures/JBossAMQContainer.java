@@ -1,10 +1,11 @@
 package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
 
-import java.io.IOException;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.docker.DockerFixture;
+
+import java.io.IOException;
+
 /*
  * The MIT License
  *
@@ -28,7 +29,7 @@ import org.jenkinsci.test.acceptance.docker.DockerFixture;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id="jbossamq", ports=61616)
+@DockerFixture(id = "jbossamq", ports = 61616)
 public class JBossAMQContainer extends DockerContainer {
 
     public String getBroker() throws IOException {
@@ -38,9 +39,9 @@ public class JBossAMQContainer extends DockerContainer {
             String hostIP = binding.get("HostIp").asText();
             String hostPort = binding.get("HostPort").asText();
             ip = hostIP + ":" + hostPort;
-            return "tcp://"+ip;
+            return "tcp://" + ip;
         } else {
-            return "tcp://"+ip+":61616";
+            return "tcp://" + ip + ":61616";
         }
 
     }

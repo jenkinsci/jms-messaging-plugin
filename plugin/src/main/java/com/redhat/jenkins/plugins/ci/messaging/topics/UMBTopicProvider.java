@@ -16,7 +16,8 @@ public class UMBTopicProvider extends TopicProvider {
     private static final long serialVersionUID = -8194184157003849026L;
 
     @DataBoundConstructor
-    public UMBTopicProvider() {}
+    public UMBTopicProvider() {
+    }
 
     @Override
     public Descriptor<TopicProvider> getDescriptor() {
@@ -33,10 +34,10 @@ public class UMBTopicProvider extends TopicProvider {
 
         public String generatePublisherTopic() {
             return "VirtualTopic.qe.ci.jenkins";
-         }
+        }
 
         public String generateSubscriberTopic() {
             return "Consumer.rh-jenkins-ci-plugin." + UUID.randomUUID() + ".VirtualTopic.qe.ci.>";
-         }
+        }
     }
 }

@@ -58,7 +58,8 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
-    public ActiveMQSubscriberProviderData() {}
+    public ActiveMQSubscriberProviderData() {
+    }
 
     public ActiveMQSubscriberProviderData(String name) {
         this(name, null);
@@ -118,18 +119,18 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        ActiveMQSubscriberProviderData thatp = (ActiveMQSubscriberProviderData)that;
+        ActiveMQSubscriberProviderData thatp = (ActiveMQSubscriberProviderData) that;
         return Objects.equals(this.name, thatp.name) &&
-               Objects.equals(this.selector, thatp.selector) &&
-               Objects.equals(this.overrides, thatp.overrides) &&
-               Objects.equals(this.checks, thatp.checks) &&
-               Objects.equals(this.variable, thatp.variable) &&
-               Objects.equals(this.timeout, thatp.timeout);
+                Objects.equals(this.selector, thatp.selector) &&
+                Objects.equals(this.overrides, thatp.overrides) &&
+                Objects.equals(this.checks, thatp.checks) &&
+                Objects.equals(this.variable, thatp.variable) &&
+                Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Extension

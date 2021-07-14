@@ -1,18 +1,13 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import static java.lang.StrictMath.abs;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
+import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 import org.jenkinsci.test.acceptance.docker.Docker;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.AbstractJUnitTest;
@@ -24,13 +19,15 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import java.util.ArrayList;
+
+import static java.lang.StrictMath.abs;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /*
  * The MIT License
@@ -58,10 +55,9 @@ import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 @WithPlugins({"jms-messaging", "dumpling", "monitoring"})
 @WithDocker
 public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnitTest {
-    @Inject private DockerContainerHolder<ActiveMQContainer> docker1;
-
-    private ActiveMQContainer amq1 = null;
     private static final int INIT_WAIT = 360;
+    @Inject private DockerContainerHolder<ActiveMQContainer> docker1;
+    private ActiveMQContainer amq1 = null;
 
     @Before public void setUp() throws Exception {
         Plugin plugin = jenkins.getPlugin("dumpling");
@@ -73,9 +69,9 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
         ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
         msgConfig.name("test")
-            .broker(createFailoverUrl(amq1.getBroker()))
-            .topic("CI")
-            .userNameAuthentication("admin", "redhat");
+                .broker(createFailoverUrl(amq1.getBroker()))
+                .topic("CI")
+                .userNameAuthentication("admin", "redhat");
 
         int counter = 0;
         boolean connected = false;
@@ -109,7 +105,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
     public void testSimpleCIEventTrigger() throws Exception {
         ArrayList<FreeStyleJob> jobs = new ArrayList<FreeStyleJob>();
 
-        for (int i = 0 ; i < 10 ; i++) {
+        for (int i = 0; i < 10; i++) {
             FreeStyleJob jobA = jenkins.jobs.create(FreeStyleJob.class, "receiver" + i);
             jobA.configure();
             jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
@@ -138,7 +134,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         jobB.startBuild().shouldSucceed();
 
         elasticSleep(1000);
-        for (FreeStyleJob job: jobs) {
+        for (FreeStyleJob job : jobs) {
             job.getLastBuild().shouldSucceed().shouldExist();
             assertThat(job.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
             job.getLastBuild().delete();
@@ -168,7 +164,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         jobB.startBuild().shouldSucceed();
 
         elasticSleep(1000);
-        for (FreeStyleJob job: jobs) {
+        for (FreeStyleJob job : jobs) {
             job.getLastBuild().shouldSucceed().shouldExist();
             assertThat(job.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
         }
@@ -215,23 +211,23 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         WorkflowJob pipe = jenkins.jobs.create(WorkflowJob.class, "pipeline");
         pipe.script.set(
                 "pipeline {\n" +
-                "    agent { label 'master' }\n" +
-                "    triggers {\n" +
-                "        ciBuildTrigger(noSquash: true,\n" +
-                "                       providerData: activeMQSubscriber(name: 'test',\n" +
-                "                                                        overrides: [topic: \"CI\"],\n" +
-                "                                                        selector: \"CI_TYPE 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n" +
-                "                                                       )\n" +
-                "                      )\n" +
-                "    }\n" +
-                "    stages {\n" +
-                "        stage('foo') {\n" +
-                "            steps {\n" +
-                "                echo 'Hello world!'\n" +
-                "            }\n" +
-                "        }\n" +
-                "    }\n" +
-                "}\n"
+                        "    agent { label 'master' }\n" +
+                        "    triggers {\n" +
+                        "        ciBuildTrigger(noSquash: true,\n" +
+                        "                       providerData: activeMQSubscriber(name: 'test',\n" +
+                        "                                                        overrides: [topic: \"CI\"],\n" +
+                        "                                                        selector: \"CI_TYPE 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n" +
+                        "                                                       )\n" +
+                        "                      )\n" +
+                        "    }\n" +
+                        "    stages {\n" +
+                        "        stage('foo') {\n" +
+                        "            steps {\n" +
+                        "                echo 'Hello world!'\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}\n"
         );
         pipe.save();
         elasticSleep(5000);
@@ -254,23 +250,23 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         pipe.configure();
         pipe.script.set(
                 "pipeline {\n" +
-                "    agent { label 'master' }\n" +
-                "    triggers {\n" +
-                "        ciBuildTrigger(noSquash: true,\n" +
-                "                       providerData: activeMQSubscriber(name: 'test',\n" +
-                "                                                        overrides: [topic: \"CI\"],\n" +
-                "                                                        selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n" +
-                "                                                       )\n" +
-                "                       )\n" +
-                "    }\n" +
-                "    stages {\n" +
-                "        stage('foo') {\n" +
-                "            steps {\n" +
-                "                echo 'Hello world!'\n" +
-                "            }\n" +
-                "        }\n" +
-                "    }\n" +
-                "}\n"
+                        "    agent { label 'master' }\n" +
+                        "    triggers {\n" +
+                        "        ciBuildTrigger(noSquash: true,\n" +
+                        "                       providerData: activeMQSubscriber(name: 'test',\n" +
+                        "                                                        overrides: [topic: \"CI\"],\n" +
+                        "                                                        selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n" +
+                        "                                                       )\n" +
+                        "                       )\n" +
+                        "    }\n" +
+                        "    stages {\n" +
+                        "        stage('foo') {\n" +
+                        "            steps {\n" +
+                        "                echo 'Hello world!'\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}\n"
         );
         pipe.save();
         elasticSleep(5000);
@@ -358,7 +354,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         int currentThreadCount = Integer.parseInt(threadCount.trim());
         int counter = 0;
         int MAXWAITTIME = 60;
-        while (currentThreadCount != 0 && counter < MAXWAITTIME ) {
+        while (currentThreadCount != 0 && counter < MAXWAITTIME) {
             System.out.println("currentThreadCount != 0");
             System.out.println(currentThreadCount + " != " + 0);
             elasticSleep(1000);
@@ -384,13 +380,14 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         String threads = jenkins.runScript(script);
         return threads;
     }
+
     private void ensureNoLeakingThreads(int previousThreadCount, String previousThreads) {
         int currentThreadCount = getCurrentAMQThreadCount();
         System.out.println("Current AMQ Thread Count: " + currentThreadCount);
         int counter = 0;
         int MAXWAITTIME = 60;
-        while (abs(currentThreadCount- previousThreadCount) > 2 &&
-                counter < MAXWAITTIME ) {
+        while (abs(currentThreadCount - previousThreadCount) > 2 &&
+                counter < MAXWAITTIME) {
             System.out.println("abs(currentThreadCount [" + currentThreadCount
                     + "] - previousThreadCount [" + previousThreadCount + "] ) > 2");
             System.out.println(abs(currentThreadCount - previousThreadCount));
@@ -420,8 +417,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends AbstractJUnit
         try {
             amq1.assertRunning();
             running = false;
-        }
-        catch (Error e) {
+        } catch (Error e) {
             //This is ok
         }
         if (running) {

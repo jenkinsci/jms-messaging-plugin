@@ -15,7 +15,7 @@ public class FedMsgTriggerThread extends CITriggerThread {
 
     protected FedMsgTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
         super(messagingProvider, providerData, jobname, cibt, instance);
-        fworker = (FedMsgMessagingWorker)messagingWorker;
+        fworker = (FedMsgMessagingWorker) messagingWorker;
     }
 
     @Override

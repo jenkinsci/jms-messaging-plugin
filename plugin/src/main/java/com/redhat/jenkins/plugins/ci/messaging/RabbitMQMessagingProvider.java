@@ -48,23 +48,41 @@ public class RabbitMQMessagingProvider extends JMSMessagingProvider {
         this.authenticationMethod = authenticationMethod;
     }
 
-    public String getVirtualHost() { return virtualHost; }
+    public String getVirtualHost() {
+        return virtualHost;
+    }
 
-    public String getHostname() { return hostname; }
+    public String getHostname() {
+        return hostname;
+    }
 
-    public Integer getPortNumber() { return portNumber; }
+    public Integer getPortNumber() {
+        return portNumber;
+    }
 
-    public String getTopic() { return topic; }
+    public String getTopic() {
+        return topic;
+    }
 
-    public String getExchange() { return exchange; }
+    public String getExchange() {
+        return exchange;
+    }
 
-    public String getQueue() { return queue; }
+    public String getQueue() {
+        return queue;
+    }
 
-    public Connection getConnection() { return connection; }
+    public Connection getConnection() {
+        return connection;
+    }
 
-    public void setConnection(Connection connection) { this.connection = connection; }
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+    }
 
-    public RabbitMQAuthenticationMethod getAuthenticationMethod() { return authenticationMethod; }
+    public RabbitMQAuthenticationMethod getAuthenticationMethod() {
+        return authenticationMethod;
+    }
 
     public ConnectionFactory getConnectionFactory() {
         return authenticationMethod.getConnectionFactory(getHostname(), getPortNumber(), getVirtualHost());
@@ -72,7 +90,7 @@ public class RabbitMQMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
-        return new RabbitMQMessagingWorker(this, ((RabbitMQProviderData)pdata).getOverrides(), jobname);
+        return new RabbitMQMessagingWorker(this, ((RabbitMQProviderData) pdata).getOverrides(), jobname);
     }
 
     @Override

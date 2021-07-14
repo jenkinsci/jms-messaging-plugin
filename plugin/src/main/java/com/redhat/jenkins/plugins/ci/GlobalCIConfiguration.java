@@ -144,7 +144,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     public JMSMessagingProvider getProvider(String name) {
-        for (JMSMessagingProvider provider: getConfigs()) {
+        for (JMSMessagingProvider provider : getConfigs()) {
             if (provider.getName().equals(name)) {
                 return provider;
             }

@@ -187,8 +187,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             try {
                 subscriber.close();
             } catch (Exception se) {
-            }
-            finally {
+            } finally {
                 subscriber = null;
             }
 
@@ -264,7 +263,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return "";
     }
 
-    private void process (String jobname, Message message) {
+    private void process(String jobname, Message message) {
         try {
             Map<String, String> params = new HashMap<>();
             params.put("CI_MESSAGE", getMessageBody(message));
@@ -278,7 +277,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     params.put(s, message.getObjectProperty(s).toString());
                 }
             }
-           super.trigger(jobname, formatMessage(message), params);
+            super.trigger(jobname, formatMessage(message), params);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception processing message:\n" + formatMessage(message), e);
         }
@@ -286,8 +285,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void receive(String jobname, ProviderData pdata) {
-        ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData)pdata;
-        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData) pdata;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout(): ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
         while (!subscribe(jobname, pd.getSelector()) && !Thread.currentThread().isInterrupted()) {
             try {
                 int WAIT_SECONDS = 2;
@@ -355,7 +354,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        ActiveMQPublisherProviderData pd = (ActiveMQPublisherProviderData)pdata;
+        ActiveMQPublisherProviderData pd = (ActiveMQPublisherProviderData) pdata;
         Connection connection = null;
         Session session = null;
         MessageProducer publisher = null;
@@ -388,7 +387,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 }
                 if (!build.isBuilding()) {
                     String ciStatus = (build.getResult()
-                            == Result.SUCCESS ? "passed" : "failed");
+                            == Result.SUCCESS ? "passed": "failed");
                     message.setStringProperty("CI_STATUS", ciStatus);
                     envVarParts.put("CI_STATUS", ciStatus);
 
@@ -483,7 +482,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData)pdata;
+        ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData) pdata;
         String ip = null;
         try {
             ip = Inet4Address.getLocalHost().getHostAddress();
@@ -499,69 +498,69 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         }
 
         if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
-                log.info("Waiting for message with selector: " + pd.getSelector());
-                listener.getLogger().println("Waiting for message with selector: " + pd.getSelector());
-                Connection connection = null;
-                MessageConsumer consumer = null;
-                try {
-                    ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
-                    connection = connectionFactory.createConnection();
-                    connection.setClientID(ip + "_" + UUID.randomUUID().toString());
-                    connection.start();
-                    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    if (provider.getUseQueues()) {
-                        Queue destination = session.createQueue(ltopic);
-                        consumer = session.createConsumer(destination, pd.getSelector(), false);
-                    } else {
-                        Topic destination = session.createTopic(ltopic);
-                        consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
-                    }
+            log.info("Waiting for message with selector: " + pd.getSelector());
+            listener.getLogger().println("Waiting for message with selector: " + pd.getSelector());
+            Connection connection = null;
+            MessageConsumer consumer = null;
+            try {
+                ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+                connection = connectionFactory.createConnection();
+                connection.setClientID(ip + "_" + UUID.randomUUID().toString());
+                connection.start();
+                Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                if (provider.getUseQueues()) {
+                    Queue destination = session.createQueue(ltopic);
+                    consumer = session.createConsumer(destination, pd.getSelector(), false);
+                } else {
+                    Topic destination = session.createTopic(ltopic);
+                    consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
+                }
 
-                    long startTime = new Date().getTime();
-                    int timeout = (pd.getTimeout() != null ? pd.getTimeout() : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES)*60*1000;
-                    Message message;
-                    do {
-                        message = consumer.receive(timeout);
-                        if (message != null) {
-                            String value = getMessageBody(message);
-                            if (provider.verify(value, pd.getChecks(), jobname)) {
-                                if (StringUtils.isNotEmpty(pd.getVariable())) {
-                                    EnvVars vars = new EnvVars();
-                                    vars.put(pd.getVariable(), value);
-                                    build.addAction(new CIEnvironmentContributingAction(vars));
-                                }
-                                log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
-                                listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
-                                return value;
+                long startTime = new Date().getTime();
+                int timeout = (pd.getTimeout() != null ? pd.getTimeout(): ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+                Message message;
+                do {
+                    message = consumer.receive(timeout);
+                    if (message != null) {
+                        String value = getMessageBody(message);
+                        if (provider.verify(value, pd.getChecks(), jobname)) {
+                            if (StringUtils.isNotEmpty(pd.getVariable())) {
+                                EnvVars vars = new EnvVars();
+                                vars.put(pd.getVariable(), value);
+                                build.addAction(new CIEnvironmentContributingAction(vars));
                             }
-                        }
-                    } while ((new Date().getTime() - startTime) < timeout && message != null);
-                    log.info("Timed out waiting for message!");
-                    listener.getLogger().println("Timed out waiting for message!");
-                } catch (Exception e) {
-                    log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
-                } finally {
-                    if (consumer != null) {
-                        try {
-                            consumer.close();
-                        } catch (Exception e) {
+                            log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
+                            listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
+                            return value;
                         }
                     }
-                    if (connection != null) {
-                        try {
-                            connection.close();
-                        } catch (Exception e) {
-                        }
+                } while ((new Date().getTime() - startTime) < timeout && message != null);
+                log.info("Timed out waiting for message!");
+                listener.getLogger().println("Timed out waiting for message!");
+            } catch (Exception e) {
+                log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
+            } finally {
+                if (consumer != null) {
+                    try {
+                        consumer.close();
+                    } catch (Exception e) {
                     }
                 }
-            } else {
-                log.severe("One or more of the following is invalid (null): ip, user, password, topic, broker.");
+                if (connection != null) {
+                    try {
+                        connection.close();
+                    } catch (Exception e) {
+                    }
+                }
             }
+        } else {
+            log.severe("One or more of the following is invalid (null): ip, user, password, topic, broker.");
+        }
         return null;
     }
 
-    private static String formatHeaders (Message message) {
-        Destination  dest;
+    private static String formatHeaders(Message message) {
+        Destination dest;
         int delMode;
         long expiration;
         Time expTime;
@@ -687,7 +686,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return sb.toString();
     }
 
-    public static String formatMessage (Message message) {
+    public static String formatMessage(Message message) {
         StringBuilder sb = new StringBuilder();
 
         try {
@@ -701,12 +700,12 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             @SuppressWarnings("unchecked")
             Enumeration<String> propNames = message.getPropertyNames();
             while (propNames.hasMoreElements()) {
-                String propertyName = propNames.nextElement ();
+                String propertyName = propNames.nextElement();
                 sb.append("  ");
                 sb.append(propertyName);
                 sb.append(": ");
                 if (message.getObjectProperty(propertyName) != null) {
-                    sb.append(message.getObjectProperty (propertyName).toString());
+                    sb.append(message.getObjectProperty(propertyName).toString());
                 }
                 sb.append("\n");
             }
@@ -723,18 +722,18 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private boolean setMessageHeader(Message m, String key, String value, Session session) {
         try {
             switch (key.toLowerCase()) {
-            case "jmscorrelationid":
-                m.setJMSCorrelationID(value);
-                return true;
-            case "jmsreplyto":
-                Destination destination = session.createTopic(value);
-                m.setJMSReplyTo(destination);
-                return true;
-            case "jmstype":
-                m.setJMSType(value);
-                return true;
-            default:
-                log.log(Level.WARNING, "Unable to set message header '" + key + "'.");
+                case "jmscorrelationid":
+                    m.setJMSCorrelationID(value);
+                    return true;
+                case "jmsreplyto":
+                    Destination destination = session.createTopic(value);
+                    m.setJMSReplyTo(destination);
+                    return true;
+                case "jmstype":
+                    m.setJMSType(value);
+                    return true;
+                default:
+                    log.log(Level.WARNING, "Unable to set message header '" + key + "'.");
             }
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception setting message header '" + key + "'.", e);

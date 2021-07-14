@@ -10,7 +10,8 @@ public abstract class FedMsgProviderData extends ProviderData {
 
     protected MessagingProviderOverrides overrides;
 
-    public FedMsgProviderData() {}
+    public FedMsgProviderData() {
+    }
 
     public FedMsgProviderData(String name) {
         this(name, null);

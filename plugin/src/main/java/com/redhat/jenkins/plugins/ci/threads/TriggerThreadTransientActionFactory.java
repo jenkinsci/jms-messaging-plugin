@@ -24,7 +24,7 @@ public class TriggerThreadTransientActionFactory extends TransientActionFactory<
 
     @Override
     public @Nonnull Collection<TriggerThreadProblemAction> createFor(@Nonnull Job target) {
-        CIBuildTrigger cibt = ParameterizedJobMixIn.getTrigger((Job<?,?>) target, CIBuildTrigger.class);
+        CIBuildTrigger cibt = ParameterizedJobMixIn.getTrigger((Job<?, ?>) target, CIBuildTrigger.class);
         if (cibt != null) {
             return cibt.getJobActions();
         }

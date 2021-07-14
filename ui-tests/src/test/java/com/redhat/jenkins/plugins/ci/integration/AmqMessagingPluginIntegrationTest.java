@@ -1,14 +1,13 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-
+import com.google.inject.Inject;
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
+import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
@@ -18,13 +17,13 @@ import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
+import java.io.IOException;
+
+import static java.util.Collections.singletonMap;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.jenkinsci.test.acceptance.Matchers.hasContent;
+import static org.junit.Assert.assertTrue;
 
 /*
  * The MIT License
@@ -52,10 +51,9 @@ import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
 @WithPlugins({"jms-messaging", "dumpling"})
 @WithDocker
 public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
-    @Inject private DockerContainerHolder<ActiveMQContainer> docker;
-
-    private ActiveMQContainer amq = null;
     private static final int INIT_WAIT = 360;
+    @Inject private DockerContainerHolder<ActiveMQContainer> docker;
+    private ActiveMQContainer amq = null;
 
     @Test
     public void testGlobalConfigTestConnection() throws Exception {
@@ -439,7 +437,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         //checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
         String randomNumber = "123456789";
-        for (int i = 0 ; i < 3 ; i++) {
+        for (int i = 0; i < 3; i++) {
             send.startBuild(singletonMap("CI_STATUS2", randomNumber)).shouldSucceed();
         }
 
@@ -473,7 +471,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         workflowJob.startBuild();
         elasticSleep(5000);
 
-        for (int i = 0 ; i < 3 ; i++) {
+        for (int i = 0; i < 3; i++) {
             send.startBuild(singletonMap("CI_STATUS2", randomNumber)).shouldSucceed();
             elasticSleep(1000);
         }
@@ -481,8 +479,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         elasticSleep(2000);
         assertTrue("there are not 9 builds", workflowJob.getLastBuild().getNumber() == 9);
 
-        for (int i = 0 ; i < 7 ; i++) {
-            Build b1 = new Build(workflowJob, i+1);
+        for (int i = 0; i < 7; i++) {
+            Build b1 = new Build(workflowJob, i + 1);
             assertTrue(b1.isSuccess());
         }
         printThreadsWithName("ActiveMQ.*Task-");

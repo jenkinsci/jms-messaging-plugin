@@ -44,8 +44,8 @@ public class MsgCheck {
 
     @Override
     public int hashCode() {
-        int result = field != null ? field.hashCode() : 0;
-        result = 31 * result + (expectedValue != null ? expectedValue.hashCode() : 0);
+        int result = field != null ? field.hashCode(): 0;
+        result = 31 * result + (expectedValue != null ? expectedValue.hashCode(): 0);
         return result;
     }
 

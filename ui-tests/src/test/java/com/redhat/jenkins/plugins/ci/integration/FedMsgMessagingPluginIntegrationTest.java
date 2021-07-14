@@ -1,16 +1,11 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
-import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.util.Collections.singleton;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.HashSet;
-
+import com.google.inject.Inject;
+import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.FedmsgRelayContainer;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
+import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
+import com.redhat.jenkins.plugins.ci.integration.po.FedMsgMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
@@ -22,12 +17,16 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.FedmsgRelayContainer;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
-import com.redhat.jenkins.plugins.ci.integration.po.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.HashSet;
+
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.util.Collections.singleton;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /*
  * The MIT License
@@ -310,7 +309,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
 
         WorkflowJob wait = jenkins.jobs.create(WorkflowJob.class);
         wait.script.set("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
-                " checks: [[expectedValue: '" + packages +"', field: '$.commit.repo']]," +
+                " checks: [[expectedValue: '" + packages + "', field: '$.commit.repo']]," +
                 " topic: 'org.fedoraproject.dev.logger.log'" +
                 "\necho \"scott = \" + scott}");
         wait.save();
@@ -411,7 +410,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 " providerName: 'test', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
-                " messageType: 'CodeQualityChecksDone'\n"  +
+                " messageType: 'CodeQualityChecksDone'\n" +
                 " echo message.getMessageId()\necho message.getMessageContent()\n}");
         job.sandbox.check(true);
         job.save();

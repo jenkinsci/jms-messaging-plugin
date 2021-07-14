@@ -1,35 +1,25 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
 import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.FedmsgRelayContainer;
 import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.RabbitMQRelayContainer;
-import com.redhat.jenkins.plugins.ci.integration.po.*;
-import org.apache.commons.io.FileUtils;
+import com.redhat.jenkins.plugins.ci.integration.po.CINotifierPostBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.CISubscriberBuildStep;
+import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.integration.po.RabbitMQMessagingProvider;
 import org.hamcrest.Matchers;
 import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
 import org.jenkinsci.test.acceptance.junit.WithDocker;
 import org.jenkinsci.test.acceptance.junit.WithPlugins;
-import org.jenkinsci.test.acceptance.po.Build;
 import org.jenkinsci.test.acceptance.po.FreeStyleJob;
 import org.jenkinsci.test.acceptance.po.WorkflowJob;
 import org.junit.Before;
 import org.junit.Test;
-import org.openqa.selenium.By;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.HashSet;
 
-import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.jenkinsci.test.acceptance.Matchers.hasContent;
-import static org.junit.Assert.assertTrue;
 
 /*
  * The MIT License
@@ -57,10 +47,9 @@ import static org.junit.Assert.assertTrue;
 @WithPlugins({"jms-messaging", "dumpling"})
 @WithDocker
 public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
-    @Inject private DockerContainerHolder<RabbitMQRelayContainer> docker;
-
-    private RabbitMQRelayContainer rabbitmq = null;
     private static final int INIT_WAIT = 360;
+    @Inject private DockerContainerHolder<RabbitMQRelayContainer> docker;
+    private RabbitMQRelayContainer rabbitmq = null;
 
     @Test
     public void testGlobalConfigTestConnection() throws Exception {
@@ -291,7 +280,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
                 " providerName: 'test', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
-                " messageType: 'CodeQualityChecksDone'\n"  +
+                " messageType: 'CodeQualityChecksDone'\n" +
                 " echo message.getMessageId()\necho message.getMessageContent()\n}");
         job.sandbox.check(true);
         job.save();

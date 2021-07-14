@@ -68,9 +68,13 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
         this.setTrustpwd(trustpwd);
     }
 
-    public String getUsername() { return username; }
+    public String getUsername() {
+        return username;
+    }
 
-    public void setUsername(String username) { this.username = username; }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
     public String getKeystore() {
         return keystore;
@@ -154,8 +158,8 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("username"),jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
-                                                          jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
+            return new SSLCertificateAuthenticationMethod(jo.getString("username"), jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
+                    jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
         }
 
         public String getConfigPage() {

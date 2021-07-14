@@ -15,7 +15,7 @@ public class RabbitMqTriggerThread extends CITriggerThread {
 
     public RabbitMqTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
         super(messagingProvider, providerData, jobname, cibt, instance);
-        worker = (RabbitMQMessagingWorker)messagingWorker;
+        worker = (RabbitMQMessagingWorker) messagingWorker;
     }
 
     @Override

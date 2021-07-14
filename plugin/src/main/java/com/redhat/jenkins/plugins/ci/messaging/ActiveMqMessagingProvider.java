@@ -58,7 +58,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     private transient @Deprecated String user;
     private transient @Deprecated Secret password;
     private transient boolean migrationInProgress = false;
-    private TopicProvider topicProvider= new DefaultTopicProvider();
+    private TopicProvider topicProvider = new DefaultTopicProvider();
     private ActiveMQAuthenticationMethod authenticationMethod;
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
 
@@ -86,8 +86,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         return this;
     }
 
-    public void setName(String name)
-    {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -126,7 +125,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     public Boolean getUseQueues() {
-        return (useQueues != null ? useQueues : false);
+        return (useQueues != null ? useQueues: false);
     }
 
     public String getTopic() {
@@ -151,7 +150,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
-        return new ActiveMqMessagingWorker(this, ((ActiveMQProviderData)pdata).getOverrides(), jobname);
+        return new ActiveMqMessagingWorker(this, ((ActiveMQProviderData) pdata).getOverrides(), jobname);
     }
 
     @Override

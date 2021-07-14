@@ -57,14 +57,14 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
     @Override
     public String watch() {
 
-        fedMsgMessagingProvider = (FedMsgMessagingProvider)provider;
+        fedMsgMessagingProvider = (FedMsgMessagingProvider) provider;
 
         log.info("Waiting for message with selector: " + selector);
-        for (MsgCheck msgCheck: checks) {
+        for (MsgCheck msgCheck : checks) {
             log.info(" with check: " + msgCheck.toString());
         }
         taskListener.getLogger().println("Waiting for message with selector: " + selector);
-        for (MsgCheck msgCheck: checks) {
+        for (MsgCheck msgCheck : checks) {
             taskListener.getLogger().println(" with check: " + msgCheck.toString());
         }
         log.info(" with timeout: " + timeout);
