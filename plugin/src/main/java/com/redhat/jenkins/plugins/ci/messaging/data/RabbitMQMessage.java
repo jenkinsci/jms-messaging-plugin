@@ -70,9 +70,8 @@ public class RabbitMQMessage {
         this.topic = topic;
         if (msgId != null) {
             this.msgId = msgId;
-        }
-        else {
-            this.msgId = Calendar.getInstance().get(1) + "-" + UUID.randomUUID().toString();
+        } else {
+            this.msgId = UUID.randomUUID().toString();
         }
 
         if (!StringUtils.isBlank(body)) {
