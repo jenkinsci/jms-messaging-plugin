@@ -23,21 +23,24 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import static com.redhat.utils.MessageUtils.JSON_TYPE;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.sql.Time;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.OrderedProperties;
+import com.redhat.utils.PluginUtils;
+import hudson.EnvVars;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -54,28 +57,21 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.sql.Time;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.OrderedProperties;
-import com.redhat.utils.PluginUtils;
-
-import hudson.EnvVars;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
+import static com.redhat.utils.MessageUtils.JSON_TYPE;
 
 public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
@@ -178,6 +174,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
+        new Error("FLARE unsubscribe").printStackTrace();
         log.info("Unsubscribing job '" + jobname + "' from the '" + this.topic + "' topic.");
         disconnect();
         if (subscriber != null) {
@@ -505,7 +502,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             try {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
-                connection.setClientID(ip + "_" + UUID.randomUUID().toString());
+                connection.setClientID(ip + "_" + UUID.randomUUID());
                 connection.start();
                 Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 if (provider.getUseQueues()) {

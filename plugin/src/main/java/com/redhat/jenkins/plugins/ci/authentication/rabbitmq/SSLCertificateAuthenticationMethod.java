@@ -23,6 +23,11 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultSaslConfig;
+import com.redhat.jenkins.plugins.ci.Messages;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
@@ -35,19 +40,14 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultSaslConfig;
-
 import javax.annotation.Nonnull;
-import javax.net.ssl.*;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.redhat.jenkins.plugins.ci.Messages;
 
 public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMethod {
     private static final long serialVersionUID = -5934219869726669459L;

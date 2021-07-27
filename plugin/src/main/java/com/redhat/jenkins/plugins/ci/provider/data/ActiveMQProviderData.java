@@ -1,11 +1,10 @@
 package com.redhat.jenkins.plugins.ci.provider.data;
 
-import org.kohsuke.stapler.DataBoundSetter;
-
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 
 public abstract class ActiveMQProviderData extends ProviderData {

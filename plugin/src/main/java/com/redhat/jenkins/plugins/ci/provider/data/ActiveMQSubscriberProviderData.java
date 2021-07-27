@@ -23,17 +23,13 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -41,10 +37,10 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
@@ -131,6 +127,24 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
                 Objects.equals(this.checks, thatp.checks) &&
                 Objects.equals(this.variable, thatp.variable) &&
                 Objects.equals(this.timeout, thatp.timeout);
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, selector, overrides, checks, variable, timeout);
+    }
+
+    @Override
+    public String toString() {
+        return "ActiveMQSubscriberProviderData{" +
+                "overrides=" + overrides +
+                ", selector='" + selector + '\'' +
+                ", checks=" + checks +
+                ", variable='" + variable + '\'' +
+                ", timeout=" + timeout +
+                ", name='" + name + '\'' +
+                '}';
     }
 
     @Extension

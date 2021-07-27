@@ -1,11 +1,3 @@
-package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import org.jenkinsci.test.acceptance.docker.DockerContainer;
-import org.jenkinsci.test.acceptance.docker.DockerFixture;
-
-import java.io.IOException;
-
 /*
  * The MIT License
  *
@@ -29,20 +21,34 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id = "jbossamq", ports = 61616)
-public class JBossAMQContainer extends DockerContainer {
+package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-    public String getBroker() throws IOException {
+import com.fasterxml.jackson.databind.JsonNode;
+import org.jenkinsci.test.acceptance.docker.DockerContainer;
+import org.jenkinsci.test.acceptance.docker.DockerFixture;
+
+import java.io.IOException;
+
+@DockerFixture(id = "rabbitmq-relay", ports = 5672)
+public class RabbitMQRelayContainer extends DockerContainer {
+
+    public String getHost() throws IOException {
         String ip = getIpAddress();
         if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("61616/tcp").get(0);
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
             String hostIP = binding.get("HostIp").asText();
-            String hostPort = binding.get("HostPort").asText();
-            ip = hostIP + ":" + hostPort;
-            return "tcp://" + ip;
-        } else {
-            return "tcp://" + ip + ":61616";
+            ip = hostIP;
         }
+        return ip;
+    }
 
+    public int getPort() throws IOException {
+        String hostPort = "5672";
+        String ip = super.getIpAddress();
+        if (ip == null || ip.equals("")) {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
+            hostPort = binding.get("HostPort").asText();
+        }
+        return Integer.parseInt(hostPort);
     }
 }

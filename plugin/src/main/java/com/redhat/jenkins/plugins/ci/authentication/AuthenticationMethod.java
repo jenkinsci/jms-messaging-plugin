@@ -23,9 +23,9 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication;
 
-import java.io.Serializable;
-
 import jenkins.model.Jenkins;
+
+import java.io.Serializable;
 
 public abstract class AuthenticationMethod implements Serializable {
 

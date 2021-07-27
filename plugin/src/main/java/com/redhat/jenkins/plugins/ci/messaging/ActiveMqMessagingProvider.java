@@ -23,31 +23,27 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import hudson.Extension;
-import hudson.ExtensionList;
-import hudson.model.Descriptor;
-import hudson.util.Secret;
-
-import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang3.StringUtils;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod.AuthenticationMethodDescriptor;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod.AuthenticationMethodDescriptor;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import hudson.Extension;
+import hudson.ExtensionList;
+import hudson.model.Descriptor;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
+import java.util.logging.Logger;
 
 public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 

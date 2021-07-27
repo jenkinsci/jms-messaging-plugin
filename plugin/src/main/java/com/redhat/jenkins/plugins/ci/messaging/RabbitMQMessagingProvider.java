@@ -1,5 +1,11 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.RabbitMQAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.RabbitMQAuthenticationMethod.AuthenticationMethodDescriptor;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQProviderData;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Descriptor;
@@ -7,17 +13,8 @@ import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.util.logging.Logger;
-
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-
-import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.RabbitMQAuthenticationMethod.AuthenticationMethodDescriptor;
-import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.RabbitMQAuthenticationMethod;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQProviderData;
-
 import javax.annotation.Nonnull;
+import java.util.logging.Logger;
 
 public class RabbitMQMessagingProvider extends JMSMessagingProvider {
 

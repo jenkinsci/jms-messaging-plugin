@@ -22,9 +22,7 @@ public class OrderedProperties extends Properties {
     }
 
     public Object put(Object key, Object value) {
-        if (_names.contains(key)) {
-            _names.remove(key);
-        }
+        _names.remove(key);
 
         _names.add(key);
 
@@ -37,6 +35,6 @@ public class OrderedProperties extends Properties {
         return super.remove(key);
     }
 
-    private Vector _names;
+    private final Vector _names;
 
 }

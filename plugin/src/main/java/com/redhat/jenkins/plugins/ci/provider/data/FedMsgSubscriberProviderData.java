@@ -23,16 +23,13 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -40,10 +37,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     private static final long serialVersionUID = -2179136605130421113L;

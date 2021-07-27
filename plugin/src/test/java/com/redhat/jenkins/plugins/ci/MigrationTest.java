@@ -103,8 +103,6 @@ public class MigrationTest {
         JMSMessagingProvider config2 = newGlobalConfig.getConfigs().get(0);
         ActiveMqMessagingProvider aconfig2 = (ActiveMqMessagingProvider) config2;
         assertNotNull(aconfig2.getAuthenticationMethod());
-
-        //assertFalse(GlobalCIConfiguration.get().isMigrationInProgress());
     }
 
     @LocalData

@@ -2,14 +2,11 @@ package com.redhat.jenkins.plugins.ci.messaging.topics;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
-
-import java.util.UUID;
-
 import jenkins.model.Jenkins;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import java.util.UUID;
 
 public class UMBTopicProvider extends TopicProvider {
 

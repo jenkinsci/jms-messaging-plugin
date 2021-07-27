@@ -1,4 +1,4 @@
-package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
+package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;

@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <com.redhat.jenkins.plugins.ci.GlobalCIConfiguration plugin="jms-messaging@1.0.1-SNAPSHOT">
-        <configs>
-                <com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
-                        <name>default</name>
-                        <broker>tcp://somehost.example.com:61616</broker>
-                        <topic>CI</topic>
-                        <user>dummy</user>
-                        <password>dummy</password>
-                </com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
-        </configs>
+    <configs>
+        <com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
+            <name>default</name>
+            <broker>tcp://somehost.example.com:61616</broker>
+            <topic>CI</topic>
+            <user>dummy</user>
+            <password>dummy</password>
+        </com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
+    </configs>
 </com.redhat.jenkins.plugins.ci.GlobalCIConfiguration>

@@ -23,21 +23,19 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
+import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
+import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
+import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.BooleanParameterDefinition;
 import hudson.model.BooleanParameterValue;
@@ -54,31 +52,30 @@ import hudson.model.StringParameterValue;
 import hudson.model.TextParameterDefinition;
 import hudson.model.TextParameterValue;
 import hudson.triggers.Trigger;
+import hudson.triggers.TriggerDescriptor;
+import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import jenkins.model.ParameterizedJobMixIn;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
-import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
-import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
-
-import hudson.Extension;
-import hudson.Util;
-import hudson.triggers.TriggerDescriptor;
-import hudson.util.FormValidation;
-import jenkins.model.Jenkins;
-import jenkins.model.ParameterizedJobMixIn;
-
 import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     public static final Logger RESOURCE_LOGGER = Logger.getLogger(CIBuildTrigger.class.getName());
@@ -161,6 +158,24 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     public List<? extends ProviderData> getProviders() {
         return providers;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CIBuildTrigger that = (CIBuildTrigger) o;
+        return Objects.equals(noSquash, that.noSquash) && Objects.equals(providers, that.providers);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(noSquash, providers);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{providers: " + providers + ", noSquash: " + noSquash + "}";
     }
 
     @DataBoundSetter
@@ -257,6 +272,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     @Override
     public void stop() {
+        new Error("FLARE stop").printStackTrace();
         super.stop();
         if (job != null) {
             stopTriggerThreads(job.getFullName());
@@ -275,6 +291,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private void startTriggerThreads() {
+        new Error("FLARE startTriggerThreads").printStackTrace();
         if (providerUpdated) {
             log.info("Saving job since messaging provider was migrated...");
             try {
@@ -320,6 +337,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
+        new Error("FLARE stopTriggerThreads").printStackTrace();
         synchronized (locks.computeIfAbsent(fullName, o -> new ArrayList<>())) {
             List<CITriggerThread> threads = locks.get(fullName);
             // If threads are the same we have start/stop sequence, so don't bother stopping.
@@ -338,13 +356,10 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 }
             }
 
-            Iterator<CITriggerThread> i = threads.iterator();
-            while (i.hasNext()) {
+            for (CITriggerThread thread : threads) {
                 try {
-                    CITriggerThread thread = i.next();
                     log.info("Stopping thread (" + thread.getId() + ") for '" + fullName + "'.");
                     thread.shutdown();
-                    i.remove();
                 } catch (Exception e) {
                     log.log(Level.SEVERE, "Unhandled exception in trigger stop.", e);
                 }
@@ -352,7 +367,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
             // Just in case.
             threads.clear();
-            log.info("Removed thread lock for '" + fullName + "'.");
+            log.fine("Removed thread lock for '" + fullName + "'.");
         }
         return null;
     }
@@ -366,6 +381,9 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 // We create a new thread here only to be able to
                 // use .equals() to compare.
                 // The thread is never started.
+                if (provider == null) throw new NullPointerException(
+                        "No such provider configured for name: '" + pd.getName() + "' on job named '" + job.getFullName() + "'"
+                );
                 CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), null, instance);
                 threads.add(thread);
                 instance++;
@@ -376,7 +394,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     public void addJobAction(Exception e) {
-
         getJobActions().add(new TriggerThreadProblemAction(e));
     }
 
@@ -599,7 +616,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     @Override
     public CIBuildTriggerDescriptor getDescriptor() {
-        return (CIBuildTriggerDescriptor) Jenkins.get().getDescriptor(getClass());
+        return (CIBuildTriggerDescriptor) Jenkins.get().getDescriptorOrDie(getClass());
     }
 
     @Extension
@@ -612,10 +629,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 return FormValidation.error("Field cannot be empty");
             }
             return FormValidation.ok();
-        }
-
-        public CIBuildTriggerDescriptor() {
-            super(CIBuildTrigger.class);
         }
 
         @Override
@@ -632,6 +645,5 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         public String getHelpFile() {
             return "/plugin/jms-messaging/help-trigger.html";
         }
-
     }
 }

@@ -23,15 +23,8 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.DEFAULT_TOPIC;
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
-import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
-
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.redhat.utils.PluginUtils;
+import org.apache.activemq.ActiveMQConnectionFactory;
 
 import javax.jms.Connection;
 import javax.jms.Message;
@@ -39,10 +32,15 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
-
-import com.redhat.utils.PluginUtils;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.DEFAULT_TOPIC;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.formatMessage;
+import static com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker.getMessageBody;
 
 public class ActiveMqMessageWatcher extends JMSMessageWatcher {
 
@@ -74,7 +72,7 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
             try {
                 ActiveMQConnectionFactory connectionFactory = activeMqMessagingProvider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
-                connection.setClientID(ip + "_" + UUID.randomUUID().toString());
+                connection.setClientID(ip + "_" + UUID.randomUUID());
                 connection.start();
                 Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 if (activeMqMessagingProvider.getUseQueues()) {

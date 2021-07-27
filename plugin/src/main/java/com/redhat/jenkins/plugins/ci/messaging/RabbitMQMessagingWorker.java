@@ -1,6 +1,11 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.rabbitmq.client.*;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.CancelCallback;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DeliverCallback;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.RabbitMQMessage;
@@ -13,7 +18,6 @@ import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -21,7 +25,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -360,7 +367,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         listener.getLogger().println("Waiting for message.");
         for (MsgCheck msgCheck : pd.getChecks()) {
             log.info(" with check: " + msgCheck.toString());
-            listener.getLogger().println(" with check: " + msgCheck.toString());
+            listener.getLogger().println(" with check: " + msgCheck);
         }
         Integer timeout = (pd.getTimeout() != null ? pd.getTimeout(): RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
         log.info(" with timeout: " + timeout + " minutes");

@@ -24,10 +24,10 @@
 package com.redhat.jenkins.plugins.ci;
 
 import hudson.EnvVars;
+import hudson.model.AbstractBuild;
 import hudson.model.EnvironmentContributingAction;
 import hudson.model.ParameterValue;
 import hudson.model.Run;
-import hudson.model.AbstractBuild;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;

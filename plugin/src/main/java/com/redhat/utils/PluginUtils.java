@@ -24,15 +24,13 @@
 package com.redhat.utils;
 
 import hudson.EnvVars;
-import hudson.slaves.NodeProperty;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+import hudson.slaves.NodeProperty;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.text.StrSubstitutor;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import jenkins.model.Jenkins;
-
-import org.apache.commons.lang.text.StrSubstitutor;
 
 public class PluginUtils {
 

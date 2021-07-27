@@ -1,30 +1,3 @@
-package com.redhat.jenkins.plugins.ci.integration;
-
-import com.google.inject.Inject;
-import com.redhat.jenkins.plugins.ci.integration.docker.fixtures.ActiveMQContainer;
-import com.redhat.jenkins.plugins.ci.integration.po.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger;
-import com.redhat.jenkins.plugins.ci.integration.po.CIEventTrigger.ProviderData;
-import com.redhat.jenkins.plugins.ci.integration.po.CINotifierBuildStep;
-import com.redhat.jenkins.plugins.ci.integration.po.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.integration.po.TextParameter;
-import org.jenkinsci.test.acceptance.docker.DockerContainerHolder;
-import org.jenkinsci.test.acceptance.junit.WithDocker;
-import org.jenkinsci.test.acceptance.junit.WithPlugins;
-import org.jenkinsci.test.acceptance.po.Build;
-import org.jenkinsci.test.acceptance.po.FreeStyleJob;
-import org.jenkinsci.test.acceptance.po.WorkflowJob;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.IOException;
-
-import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.jenkinsci.test.acceptance.Matchers.hasContent;
-import static org.junit.Assert.assertTrue;
-
 /*
  * The MIT License
  *
@@ -48,66 +21,111 @@ import static org.junit.Assert.assertTrue;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@WithPlugins({"jms-messaging", "dumpling"})
-@WithDocker
-public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
-    private static final int INIT_WAIT = 360;
-    @Inject private DockerContainerHolder<ActiveMQContainer> docker;
-    private ActiveMQContainer amq = null;
+package com.redhat.jenkins.plugins.ci.integration;
 
-    @Test
-    public void testGlobalConfigTestConnection() throws Exception {
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.MessageUtils;
+import hudson.Util;
+import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
+import hudson.model.ParametersAction;
+import hudson.model.ParametersDefinitionProperty;
+import hudson.model.TextParameterDefinition;
+import hudson.model.TextParameterValue;
+import hudson.model.queue.QueueTaskFuture;
+import hudson.tasks.Shell;
+import hudson.util.Secret;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.test.acceptance.docker.DockerClassRule;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+
+import static org.junit.Assert.assertEquals;
+
+public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
+
+    @ClassRule
+    public static DockerClassRule<ActiveMQContainer> docker = new DockerClassRule<>(ActiveMQContainer.class);
+    private static ActiveMQContainer amq = null;
+
+    @BeforeClass
+    public static void startBroker() throws Exception {
+        amq = docker.create();
     }
 
-    @WithPlugins("workflow-aggregator")
+    @Before
+    public void setUp() throws Exception {
+
+        GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
+        gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(
+                DEFAULT_PROVIDER_NAME,
+                amq.getBroker(),
+                true,
+                DEFAULT_TOPIC_NAME,
+                null,
+                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat"))
+        )));
+
+        // TODO test connection
+    }
+
+    @Override
+    public ProviderData getSubscriberProviderData(String topic, String variableName, String selector, MsgCheck... msgChecks) {
+        return new ActiveMQSubscriberProviderData(
+                DEFAULT_PROVIDER_NAME,
+                overrideTopic(topic),
+                selector,//Util.fixNull(selector),
+                Arrays.asList(msgChecks),
+                variableName,
+                60
+        );
+    }
+
+    @Override
+    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content) {
+        return new ActiveMQPublisherProviderData(
+                DEFAULT_PROVIDER_NAME, overrideTopic(topic), type, properties, content, true
+        );
+    }
+
     @Test
     public void testVerifyModelUIPersistence() throws Exception {
         _testVerifyModelUIPersistence();
     }
 
     @Test
-    public void testSimpleCIEventTriggerWithTextArea() {
+    public void testSimpleCIEventTriggerWithTextArea() throws Exception {
         _testSimpleCIEventTriggerWithTextArea("scott=123\ntom=456",
                 "scott=123\ntom=456");
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
-    public void testSimpleCIEventTriggerWithBooleanParam() {
+    public void testSimpleCIEventTriggerWithBooleanParam() throws Exception {
         _testSimpleCIEventTriggerWithBoolParam("scott=123\ntom=456\ndryrun=true", "{ \"scott\": \"123\", \"tom\": \"456\", \"dryrun\": true }",
                 "dryrun is true, scott is 123");
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
-    public void testSimpleCIEventTriggerWithChoiceParam() {
+    public void testSimpleCIEventTriggerWithChoiceParam() throws Exception {
         _testSimpleCIEventTriggerWithChoiceParam("scott=123", "{}",
                 "mychoice is scott");
-    }
-
-    @Test
-    public void testAddDuplicateMessageProvider() throws IOException {
-        jenkins.configure();
-        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
-        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
-        msgConfig.name("test")
-                .broker(amq.getBroker())
-                .topic("CI")
-                .userNameAuthentication("admin", "redhat");
-        _testAddDuplicateMessageProvider();
-    }
-
-    @Test
-    public void testAddQueueMessageProvider() throws IOException {
-        jenkins.configure();
-        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
-        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
-        msgConfig.name("queue")
-                .broker(amq.getBroker())
-                .useQueues(true)
-                .topic("CI")
-                .userNameAuthentication("admin", "redhat");
-        _testAddQueueMessageProvider();
     }
 
     @Test
@@ -145,13 +163,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testSimpleCIEventSubscribeWithCheckWithTopicOverrideAndVariableTopic();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
         _testSimpleCIEventTriggerWithPipelineSendMsg();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithCheckWithPipelineSendMsg() throws Exception {
         _testSimpleCIEventTriggerWithCheckWithPipelineSendMsg();
@@ -214,11 +230,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @Test
     public void testSimpleCIEventTriggerHeadersInEnv() throws Exception, InterruptedException {
-        FreeStyleJob jobB = jenkins.jobs.create();
-        String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"";
-        expected += jobB.name;
-        expected += "\",\"CI_TYPE\":\"code-quality-checks-done\"";
-
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"" + jobB.getName() + "\",\"CI_TYPE\":\"code-quality-checks-done\"";
         _testSimpleCIEventTriggerHeadersInEnv(jobB, expected);
     }
 
@@ -227,48 +240,41 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testSimpleCIEventSubscribeWithNoParamOverride();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerOnPipelineJob() throws Exception {
         _testSimpleCIEventTriggerOnPipelineJob();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithCheckOnPipelineJob() throws Exception {
         _testSimpleCIEventTriggerWithCheckOnPipelineJob();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
         _testSimpleCIEventTriggerWithPipelineWaitForMsg();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
         _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
         _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
-        WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
+        WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "foo");
         String expected = "scott = abcdefg";
         _testSimpleCIEventSendAndWaitPipeline(send, expected);
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventSendAndWaitPipelineWithVariableTopic() throws Exception {
-        WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
+        WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "foo");
         String expected = "scott = abcdefg";
         String selector = "JMSDestination = 'topic://";
         _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(send, selector, expected);
@@ -294,7 +300,6 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testDisabledJobDoesNotGetTriggeredWithCheck();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testDisabledWorkflowJobDoesNotGetTriggered() throws Exception {
         _testDisabledWorkflowJobDoesNotGetTriggered();
@@ -304,232 +309,188 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public void testEnsureFailedSendingOfMessageFailsBuild() throws Exception {
         stopContainer(amq);
         System.out.println("Waiting 30 secs");
-        elasticSleep(30000);
+        Thread.sleep(30000);
         _testEnsureFailedSendingOfMessageFailsBuild();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
         stopContainer(amq);
         System.out.println("Waiting 30 secs");
-        elasticSleep(30000);
+        Thread.sleep(30000);
         _testEnsureFailedSendingOfMessageFailsPipelineBuild();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testAbortWaitingForMessageWithPipelineBuild() throws Exception {
         _testAbortWaitingForMessageWithPipelineBuild();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
         _testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic();
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
         _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic();
     }
 
-    @Test
-    public void testSimpleCIEventTriggerWithCheckWithTopicOverrideAndRestart() throws Exception {
-        _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndRestart();
-    }
 
-    @Before
-    public void setUp() throws Exception {
-        amq = docker.get();
-        jenkins.configure();
-        elasticSleep(5000);
-        GlobalCIConfiguration ciPluginConfig = new GlobalCIConfiguration(jenkins.getConfigPage());
-        ActiveMqMessagingProvider msgConfig = new ActiveMqMessagingProvider(ciPluginConfig).addMessagingProvider();
-        msgConfig.name("test")
-                .broker(amq.getBroker())
-                .topic("CI")
-                .userNameAuthentication("admin", "redhat");
 
-        int counter = 0;
-        boolean connected = false;
-        while (counter < INIT_WAIT) {
-            try {
-                msgConfig.testConnection();
-                waitFor(driver, hasContent("Successfully connected to " + amq.getBroker()), 5);
-                connected = true;
-                break;
-            } catch (Exception e) {
-                counter++;
-                elasticSleep(1000);
-            }
-        }
-        if (!connected) {
-            throw new Exception("Did not get connection successful message in " + INIT_WAIT + " secs.");
-        }
-        elasticSleep(1000);
-        jenkins.save();
-    }
-
-    @WithPlugins({"workflow-aggregator", "monitoring", "dumpling"})
     @Test
     public void testPipelineJobPropertiesSingleProvider() throws Exception {
         // For backward compatibility, uses "providerData".
         _testPipelineJobProperties(true);
     }
 
-    @WithPlugins({"workflow-aggregator", "monitoring", "dumpling"})
+
     @Test
     public void testPipelineJobPropertiesMultipleProviders() throws Exception {
         _testPipelineJobProperties(false);
     }
 
     public void _testPipelineJobProperties(boolean backwardCompatible) throws Exception {
-        WorkflowJob send = jenkins.jobs.create(WorkflowJob.class);
-        send.configure();
-        send.script.set("node('master') {\n sendCIMessage" +
+        WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
+        send.setDefinition(new CpsFlowDefinition(
+                "node('master') {\n sendCIMessage" +
                 " providerName: 'test', " +
                 " failOnError: true, " +
                 " messageContent: '" + MESSAGE_CHECK_CONTENT + "', " +
                 " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}', " +
-                " messageType: 'CodeQualityChecksDone'}");
-        send.save();
+                " messageType: 'CodeQualityChecksDone'}", true));
 
         //[expectedValue: number + '0.0234', field: 'CI_STATUS2']
-        String pd = "[$class: 'ActiveMQSubscriberProviderData', name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']";
+        String pd = "[$class: 'ActiveMQSubscriberProviderData', name: 'test', selector: 'CI_NAME = \\'" + send.getName() + "\\'']";
         if (backwardCompatible) {
             pd = "providerData: " + pd;
         } else {
             pd = "providerList: [" + pd + "]";
         }
-        WorkflowJob workflowJob = jenkins.jobs.create(WorkflowJob.class);
-        TextParameter ciStatusParam = workflowJob.addParameter(TextParameter.class);
-        ciStatusParam.setName("CI_MESSAGE");
-        ciStatusParam.setDefault("");
-        workflowJob.script.set("def number = currentBuild.getNumber().toString()\n" +
+        WorkflowJob workflowJob = j.jenkins.createProject(WorkflowJob.class, "receive");
+        workflowJob.addProperty(new ParametersDefinitionProperty(
+                new TextParameterDefinition("CI_MESSAGE", "", "")
+        ));
+        workflowJob.setDefinition(new CpsFlowDefinition(
+                "def number = currentBuild.getNumber().toString()\n" +
                 "properties(\n" +
                 "    [\n" +
                 "        pipelineTriggers(\n" +
                 "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
                 "        )\n" +
                 "    ]\n" +
-                ")\nnode('master') {\n sleep 1\n}");
+                ")\nnode('master') {\n sleep 1\n}", true));
         workflowJob.save();
 
-        workflowJob.startBuild().shouldSucceed();
+        j.buildAndAssertSuccess(workflowJob);
         // Allow some time for trigger thread stop/start.
-        elasticSleep(2000);
+        Thread.sleep(2000);
         int ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
         int triggers = getCurrentThreadCountForName("CIBuildTrigger");
-        assertTrue("CIBuildTrigger count is 1", triggers == 1);
-        workflowJob.configure();
-        workflowJob.save();
-        workflowJob.startBuild().shouldSucceed();
-        elasticSleep(2000);
+        assertEquals("CIBuildTrigger count is 1", 1, triggers);
+
+        j.configRoundtrip(workflowJob);
+
+        j.buildAndAssertSuccess(workflowJob);
+        Thread.sleep(2000);
         printThreadsWithName("ActiveMQ.*Task-");
         printThreadsWithName("CIBuildTrigger");
         ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
-        assertTrue("CIBuildTrigger count is 1", triggers == 1);
+        assertEquals("CIBuildTrigger count is 1", 1, triggers);
 
         //checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
         String randomNumber = "123456789";
         for (int i = 0; i < 3; i++) {
-            send.startBuild(singletonMap("CI_STATUS2", randomNumber)).shouldSucceed();
+            QueueTaskFuture<WorkflowRun> build = send.scheduleBuild2(0, new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));
+            j.assertBuildStatusSuccess(build);
         }
 
-        elasticSleep(5000);
-        assertTrue("there are not 5 builds", workflowJob.getLastBuild().getNumber() == 5);
+        Thread.sleep(5000);
+        assertEquals("there are not 5 builds", 5, workflowJob.getLastBuild().getNumber());
 
         printThreadsWithName("ActiveMQ.*Task-");
         printThreadsWithName("CIBuildTrigger");
         ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
-        assertTrue("CIBuildTrigger count is not 1", triggers == 1);
+        assertEquals("CIBuildTrigger count is not 1", 1, triggers);
 
-        pd = "[$class: 'ActiveMQSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test', selector: 'CI_NAME = \\'" + send.name + "\\'']";
+        pd = "[$class: 'ActiveMQSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD
+                + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test', selector: 'CI_NAME = \\'"
+                + send.getName() + "\\'']";
         if (backwardCompatible) {
             pd = "providerData: " + pd;
         } else {
             pd = "providerList: [" + pd + "]";
         }
-        workflowJob.configure();
-        workflowJob.script.set("def number = currentBuild.getNumber().toString()\n" +
+        workflowJob.setDefinition(new CpsFlowDefinition(
+                "def number = currentBuild.getNumber().toString()\n" +
                 "properties(\n" +
                 "    [\n" +
                 "        pipelineTriggers(\n" +
                 "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
                 "        )\n" +
                 "    ]\n" +
-                ")\nnode('master') {\n sleep 1\n}");
-        workflowJob.sandbox.check(false);
+                ")\nnode('master') {\n sleep 1\n}", false));
         workflowJob.save();
-        workflowJob.startBuild();
-        elasticSleep(5000);
+        workflowJob.scheduleBuild2(0);
+        Thread.sleep(5000);
 
         for (int i = 0; i < 3; i++) {
-            send.startBuild(singletonMap("CI_STATUS2", randomNumber)).shouldSucceed();
-            elasticSleep(1000);
+            QueueTaskFuture<WorkflowRun> build = send.scheduleBuild2(0, new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));
+            j.assertBuildStatusSuccess(build);
+            Thread.sleep(1000);
         }
 
-        elasticSleep(2000);
-        assertTrue("there are not 9 builds", workflowJob.getLastBuild().getNumber() == 9);
+        Thread.sleep(2000);
+        assertEquals("there are not 9 builds", 9, workflowJob.getLastBuild().getNumber());
 
         for (int i = 0; i < 7; i++) {
-            Build b1 = new Build(workflowJob, i + 1);
-            assertTrue(b1.isSuccess());
+            j.assertBuildStatusSuccess(workflowJob.getBuildByNumber(i));
         }
         printThreadsWithName("ActiveMQ.*Task-");
         printThreadsWithName("CIBuildTrigger");
         ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
-        assertTrue("ActiveMQ.*Task- count is not 1", ioCount == 1);
+        assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
         triggers = getCurrentThreadCountForName("CIBuildTrigger");
-        assertTrue("CIBuildTrigger count is not 1", triggers == 1);
+        assertEquals("CIBuildTrigger count is not 1", 1, triggers);
     }
 
-    @WithPlugins("workflow-aggregator")
     @Test
     public void testPipelineInvalidProvider() throws Exception {
         _testPipelineInvalidProvider();
     }
 
     @Test
-    public void testSimpleCIEventWithMessagePropertiesAsVariable() {
-        FreeStyleJob jobA = jenkins.jobs.create();
-        jobA.configure();
-        jobA.addShellStep("echo CI_TYPE = $CI_TYPE");
-        jobA.addShellStep("echo TEST_PROP1 = $TEST_PROP1");
-        jobA.addShellStep("echo TEST_PROP2 = $TEST_PROP2");
-        CIEventTrigger ciEvent = new CIEventTrigger(jobA);
-        ProviderData pd = ciEvent.addProviderData();
-        pd.selector.set("CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'");
-        pd.overrides.check();
-        pd.topic.set("otopic");
-        jobA.save();
-        // Allow for connection
-        elasticSleep(1000);
+    public void testSimpleCIEventWithMessagePropertiesAsVariable() throws Exception {
+        FreeStyleProject jobA = j.createFreeStyleProject();
+        jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
+        jobA.getBuildersList().add(new Shell("echo TEST_PROP1 = $TEST_PROP1"));
+        jobA.getBuildersList().add(new Shell("echo TEST_PROP2 = $TEST_PROP2"));
+        jobA.addTrigger(new CIBuildTrigger(true, Collections.singletonList(
+                getSubscriberProviderData("otopic", "CI_MESSAGE", "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'")
+        )));
+        jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
+        Thread.sleep(1000);
 
-        FreeStyleJob jobB = jenkins.jobs.create();
-        jobB.configure();
-        TextParameter param = jobB.addParameter(TextParameter.class);
-        param.setName("MESSAGE_PROPERTIES");
-        param.setDefault("CI_STATUS = failed\nTEST_PROP1 = GOT 1\nTEST_PROP2 = GOT 2");
-        CINotifierBuildStep notifier = jobB.addBuildStep(CINotifierBuildStep.class);
-        notifier.overrides.check();
-        notifier.topic.set("otopic");
-        notifier.messageType.select("CodeQualityChecksDone");
-        notifier.messageProperties.sendKeys("${MESSAGE_PROPERTIES}");
-        jobB.save();
-        jobB.startBuild().shouldSucceed();
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.addProperty(new ParametersDefinitionProperty(
+                new TextParameterDefinition("MESSAGE_PROPERTIES", "CI_STATUS = failed\nTEST_PROP1 = GOT 1\nTEST_PROP2 = GOT 2", "")
+        ));
+        jobB.getBuildersList().add(new CIMessageBuilder(
+                getPublisherProviderData("otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "${MESSAGE_PROPERTIES}", "")
+        ));
+        j.buildAndAssertSuccess(jobB);
 
-        elasticSleep(1000);
-        jobA.getLastBuild().shouldSucceed().shouldExist();
-        assertThat(jobA.getLastBuild().getConsole(), containsString("echo CI_TYPE = code-quality-checks-done"));
-        assertThat(jobA.getLastBuild().getConsole(), containsString("echo TEST_PROP1 = GOT 1"));
-        assertThat(jobA.getLastBuild().getConsole(), containsString("echo TEST_PROP2 = GOT 2"));
+        Thread.sleep(1000);
+        FreeStyleBuild lastBuild = jobA.getLastBuild();
+        j.assertBuildStatusSuccess(lastBuild);
+
+        j.assertLogContains("echo CI_TYPE = code-quality-checks-done", lastBuild);
+        j.assertLogContains("echo TEST_PROP1 = GOT 1", lastBuild);
+        j.assertLogContains("echo TEST_PROP2 = GOT 2", lastBuild);
     }
 }
