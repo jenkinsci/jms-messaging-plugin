@@ -342,7 +342,7 @@ Thread.sleep(5000);
 
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
         job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
-                " providerName: 'test', " +
+                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}\n", true));
@@ -361,7 +361,7 @@ Thread.sleep(5000);
 
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
         job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
-                " providerName: 'test', " +
+                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n", true));
 
         j.buildAndAssertSuccess(job);
@@ -742,7 +742,7 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
+        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
         
@@ -762,7 +762,7 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
+        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
         
@@ -782,7 +782,7 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: 'test'," +
+        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
                 " selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"," +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
@@ -811,7 +811,7 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob send, String expected) throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
+        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
                 "selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
                 " topic: 'org.fedoraproject.otopic'" +
@@ -821,7 +821,7 @@ Thread.sleep(5000);
 
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
-                " providerName: 'test', " +
+                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " topic: 'org.fedoraproject.otopic'," +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
@@ -839,7 +839,7 @@ Thread.sleep(5000);
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n" +
                 "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
-                "    def scott = waitForCIMessage providerName: \"test\", selector:  \"" +
+                "    def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', selector:  \"" +
                 selector + "${env.MY_TOPIC}'\",        overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
@@ -849,7 +849,7 @@ Thread.sleep(5000);
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n" +
                 " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
-                " sendCIMessage providerName: \"test\", overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: 'abcdefg', messageProperties: 'CI_STATUS = failed', messageType: 'CodeQualityChecksDone'\n" +
+                " sendCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: 'abcdefg', messageProperties: 'CI_STATUS = failed', messageType: 'CodeQualityChecksDone'\n" +
                 "}", true));
 
         j.buildAndAssertSuccess(send);
@@ -985,7 +985,7 @@ Thread.sleep(5000);
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
-                " providerName: 'test', " +
+                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " failOnError: true, " +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
@@ -996,7 +996,7 @@ Thread.sleep(5000);
 
     public void _testAbortWaitingForMessageWithPipelineBuild() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: 'test', " +
+        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \n}", true));
 

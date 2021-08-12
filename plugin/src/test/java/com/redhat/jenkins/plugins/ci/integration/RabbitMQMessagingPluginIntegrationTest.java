@@ -158,15 +158,15 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Test
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
+        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
                 " topic: 'org.fedoraproject.otopic'" +
                 "\necho \"scott = \" + scott}", true));
         wait.scheduleBuild2(0);
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
         send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
-                " providerName: 'test', " +
-                " topic: 'org.fedoraproject.otopic'," +
+                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+                " overrides: [topic: 'org.fedoraproject.otopic']," +
                 " messageContent: '{\"content\":\"abcdefg\"}'}", true));
         j.buildAndAssertSuccess(send);
 
@@ -181,7 +181,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n" +
                 "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
-                "    def scott = waitForCIMessage providerName: \"test\", overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
+                "    def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
         wait.scheduleBuild2(0);
@@ -189,7 +189,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
         send.setDefinition(new CpsFlowDefinition("node('master') {\n" +
                 " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
-                " sendCIMessage providerName: \"test\", overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: '{ \"content\" : \"abcdef\" }'\n" +
+                " sendCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: '{ \"content\" : \"abcdef\" }'\n" +
                 "}", true));
         send.save();
         j.buildAndAssertSuccess(send);
@@ -230,7 +230,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     public void testPipelineSendMsgReturnMessage() throws Exception {
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
         job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
-                " providerName: 'test', " +
+                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'\n" +
