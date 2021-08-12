@@ -1025,14 +1025,14 @@ Thread.sleep(5000);
                 " messageType: 'CodeQualityChecksDone'}\n", true));
 
         j.buildAndAssertStatus(Result.FAILURE, send);
-        j.assertLogContains("java.lang.Exception: Unrecognized provider name.", send.getLastBuild());
+        j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", send.getLastBuild());
 
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: 'bogus', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
         j.buildAndAssertStatus(Result.FAILURE, wait);
-        j.assertLogContains("java.lang.Exception: Unrecognized provider name.", wait.getLastBuild());
+        j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", wait.getLastBuild());
     }
 
     protected String stringFrom(Process proc) throws InterruptedException, IOException {
