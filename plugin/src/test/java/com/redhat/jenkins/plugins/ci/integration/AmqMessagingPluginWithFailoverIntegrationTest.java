@@ -32,6 +32,7 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
+import hudson.Functions;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.tasks.Shell;
@@ -59,6 +60,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class AmqMessagingPluginWithFailoverIntegrationTest {
     @ClassRule
@@ -70,6 +72,8 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
 
     @Before
     public void setUp() throws Exception {
+        assumeFalse(Functions.isWindows());
+
         amq = docker.create();
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();

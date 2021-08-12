@@ -33,6 +33,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
+import hudson.Functions;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.tasks.Shell;
@@ -54,6 +55,7 @@ import java.util.HashSet;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.util.Collections.singleton;
+import static org.junit.Assume.assumeFalse;
 
 public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
     @ClassRule
@@ -62,6 +64,8 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
 
     @BeforeClass
     public static void startBroker() throws Exception {
+        assumeFalse(Functions.isWindows());
+
         fedmsgRelay = docker.create();
     }
 

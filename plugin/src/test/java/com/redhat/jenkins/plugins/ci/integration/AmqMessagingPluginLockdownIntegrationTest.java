@@ -27,6 +27,7 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import hudson.Functions;
 import hudson.security.Permission;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
@@ -58,6 +59,7 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assume.assumeFalse;
 
 public class AmqMessagingPluginLockdownIntegrationTest {
 
@@ -77,6 +79,8 @@ public class AmqMessagingPluginLockdownIntegrationTest {
 
     @Before
     public void setUp() throws Exception {
+        assumeFalse(Functions.isWindows());
+
         ActiveMQContainer amq = docker.create();
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
