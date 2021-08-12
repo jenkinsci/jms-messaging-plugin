@@ -98,8 +98,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     if (connection == null && !connect()) {
                         return false;
                     }
+                    String kind = provider.getUseQueues() ? "queue" : "topic";
                     if (subscriber == null) {
-                        log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' topic.");
+                        log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' " + kind + ".");
                         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                         if (provider.getUseQueues()) {
                             Queue destination = session.createQueue(this.topic);
@@ -108,9 +109,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                             Topic destination = session.createTopic(this.topic);
                             subscriber = session.createDurableSubscriber(destination, jobname, selector, false);
                         }
-                        log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' topic with selector: " + selector);
+                        log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' " + kind + " with selector: " + selector);
                     } else {
-                        log.fine("Already subscribed to '" + this.topic + "' topic with selector: " + selector + " for job '" + jobname);
+                        log.fine("Already subscribed to '" + this.topic + "' " + kind + " with selector: " + selector + " for job '" + jobname);
                     }
                     return true;
                 } catch (JMSSecurityException | InvalidSelectorException exc) {
