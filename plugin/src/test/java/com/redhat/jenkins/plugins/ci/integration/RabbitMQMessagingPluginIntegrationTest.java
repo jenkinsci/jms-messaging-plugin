@@ -64,7 +64,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Before
     public void setUp() throws Exception {
         GlobalCIConfiguration.get().setConfigs(Collections.singletonList(new RabbitMQMessagingProvider(
-                DEFAULT_TOPIC_NAME, "/", rabbitmq.getHost(), rabbitmq.getPort(), "CI", "amq.fanout", "",
+                DEFAULT_PROVIDER_NAME, "/", rabbitmq.getHost(), rabbitmq.getPort(), "CI", "amq.fanout", "",
                 new UsernameAuthenticationMethod("quest", Secret.fromString("quest"))
         )));
 
@@ -74,7 +74,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Override
     public ProviderData getSubscriberProviderData(String topic, String variableName, String selector, MsgCheck... msgChecks) {
         return new RabbitMQSubscriberProviderData(
-                "test",
+                DEFAULT_PROVIDER_NAME,
                 overrideTopic(topic),
                 Arrays.asList(msgChecks),
                 variableName,
@@ -85,7 +85,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Override
     public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content) {
         return new RabbitMQPublisherProviderData(
-                "test", overrideTopic(topic), content, true, true, 20, "scheme"
+                DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true, true, 20, "scheme"
         );
     }
 
@@ -159,7 +159,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
-                " topic: 'org.fedoraproject.otopic'" +
+                " overrides: [topic: 'org.fedoraproject.otopic']" +
                 "\necho \"scott = \" + scott}", true));
         wait.scheduleBuild2(0);
 

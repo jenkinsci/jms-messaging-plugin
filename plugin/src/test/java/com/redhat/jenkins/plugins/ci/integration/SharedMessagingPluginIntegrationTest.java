@@ -814,7 +814,7 @@ Thread.sleep(5000);
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
                 "selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
-                " topic: 'org.fedoraproject.otopic'" +
+                " overrides: [topic: 'org.fedoraproject.otopic']" +
                 "\necho \"scott = \" + scott}", true));
         
         wait.scheduleBuild2(0);
