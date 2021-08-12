@@ -35,7 +35,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
-import hudson.Functions;
 import hudson.Util;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -59,7 +58,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
 
 public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
 
@@ -69,7 +67,6 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @BeforeClass
     public static void startBroker() throws Exception {
-        assumeFalse(Functions.isWindows());
         amq = docker.create();
     }
 

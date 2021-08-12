@@ -40,7 +40,6 @@ public class LoadTest {
         WorkflowJob foo = j.jenkins.getItemByFullName("foo", WorkflowJob.class);
         CIBuildTrigger next = ((CIBuildTrigger) foo.getTriggers().values().iterator().next());
 
-        // TODO finish
         //Thread.getAllStackTraces().keySet().fin
 //        j.interactiveBreak();
     }

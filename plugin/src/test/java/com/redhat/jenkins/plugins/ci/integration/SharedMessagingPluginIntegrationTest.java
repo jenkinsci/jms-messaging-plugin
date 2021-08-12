@@ -108,7 +108,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         jobA.scheduleBuild2(0).waitForStart();
 
-        Thread.sleep(5000);
+Thread.sleep(5000);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -116,7 +116,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
 
         j.buildAndAssertSuccess(jobB);
-
+//j.interactiveBreak();
         Thread.sleep(1000);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("Hello World", jobA.getLastBuild());

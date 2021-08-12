@@ -35,7 +35,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
-import hudson.Functions;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
@@ -52,8 +51,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assume.assumeFalse;
-
 public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
     @ClassRule
     public static DockerClassRule<RabbitMQRelayContainer> docker = new DockerClassRule<>(RabbitMQRelayContainer.class);
@@ -61,8 +58,6 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
 
     @BeforeClass
     public static void startBroker() throws Exception {
-        assumeFalse(Functions.isWindows());
-
         rabbitmq = docker.create();
     }
 
