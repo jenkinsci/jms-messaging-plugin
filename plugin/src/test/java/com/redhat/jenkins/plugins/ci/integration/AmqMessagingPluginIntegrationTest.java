@@ -30,13 +30,12 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
-import hudson.Util;
+import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.ParametersAction;
@@ -57,7 +56,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -74,11 +72,20 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @Before
     public void setUp() throws Exception {
+        String brokerUrl;
+        try {
+            brokerUrl = amq.getBroker();
+        } catch (Error ex) {
+            String containerLog = new FilePath(amq.getLogfile()).readToString();
+            System.err.println("Container not running. Log:");
+            System.err.println(containerLog);
+            throw ex;
+        }
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
         gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(
                 DEFAULT_PROVIDER_NAME,
-                amq.getBroker(),
+                brokerUrl,
                 false,
                 DEFAULT_TOPIC_NAME,
                 null,
