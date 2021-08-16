@@ -217,7 +217,7 @@ Thread.sleep(5000);
     public void _testSimpleCIEventSubscribeWithCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
-                null, "HELLP", null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                null, "HELLP", "", new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         )));
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));

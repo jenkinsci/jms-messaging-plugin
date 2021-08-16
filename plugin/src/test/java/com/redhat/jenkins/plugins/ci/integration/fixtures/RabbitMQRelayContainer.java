@@ -23,32 +23,18 @@
  */
 package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-import java.io.IOException;
-
-@DockerFixture(id = "rabbitmq-relay", ports = 5672)
+@DockerFixture(id = "rabbitmq-relay", ports = RabbitMQRelayContainer.INNER_PORT_NUMBER)
 public class RabbitMQRelayContainer extends DockerContainer {
+    public static final int INNER_PORT_NUMBER = 5672;
 
-    public String getHost() throws IOException {
-        String ip = getIpAddress();
-        if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
-            String hostIP = binding.get("HostIp").asText();
-            ip = hostIP;
-        }
-        return ip;
+    @Override public String getIpAddress() {
+        return ipBound(INNER_PORT_NUMBER);
     }
 
-    public int getPort() throws IOException {
-        String hostPort = "5672";
-        String ip = super.getIpAddress();
-        if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
-            hostPort = binding.get("HostPort").asText();
-        }
-        return Integer.parseInt(hostPort);
+    public int getPort() {
+        return port(INNER_PORT_NUMBER);
     }
 }
