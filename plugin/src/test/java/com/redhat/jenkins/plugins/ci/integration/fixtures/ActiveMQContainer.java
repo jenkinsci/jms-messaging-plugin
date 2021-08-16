@@ -23,25 +23,16 @@
  */
 package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-import java.io.IOException;
-
-@DockerFixture(id = "activeamq", ports = {61616, 8161})
+@DockerFixture(id = "activeamq", ports = {ActiveMQContainer.TCP_PORT, ActiveMQContainer.CONSOLE_PORT})
 public class ActiveMQContainer extends DockerContainer {
 
-    public String getBroker() throws IOException {
-        String ip = getIpAddress();
-        if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("61616/tcp").get(0);
-            String hostIP = binding.get("HostIp").asText();
-            String hostPort = binding.get("HostPort").asText();
-            ip = hostIP + ":" + hostPort;
-            return "tcp://" + ip;
-        } else {
-            return "tcp://" + ip + ":61616";
-        }
+    public static final int TCP_PORT = 61616;
+    public static final int CONSOLE_PORT = 8161;
+
+    public String getBroker() {
+        return String.format("tcp://%s:%d", ipBound(TCP_PORT), port(TCP_PORT));
     }
 }
