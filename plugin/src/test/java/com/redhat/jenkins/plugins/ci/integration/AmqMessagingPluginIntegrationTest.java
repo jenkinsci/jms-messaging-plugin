@@ -338,14 +338,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic();
     }
 
-
-
     @Test
     public void testPipelineJobPropertiesSingleProvider() throws Exception {
         // For backward compatibility, uses "providerData".
         _testPipelineJobProperties(true);
     }
-
 
     @Test
     public void testPipelineJobPropertiesMultipleProviders() throws Exception {
@@ -387,20 +384,20 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         j.buildAndAssertSuccess(receive);
         // Allow some time for trigger thread stop/start.
         Thread.sleep(2000);
-        int ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        int ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-.*");
         assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
-        int triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        int triggers = getCurrentThreadCountForName("CIBuildTrigger.*");
         assertEquals("CIBuildTrigger count is 1", 1, triggers);
 
         j.configRoundtrip(receive);
 
         j.buildAndAssertSuccess(receive);
         Thread.sleep(2000);
-        printThreadsWithName("ActiveMQ.*Task-");
-        printThreadsWithName("CIBuildTrigger");
-        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        printThreadsWithName("ActiveMQ.*Task-.*");
+        printThreadsWithName("CIBuildTrigger.*");
+        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-.*");
         assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
-        triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        triggers = getCurrentThreadCountForName("CIBuildTrigger.*");
         assertEquals("CIBuildTrigger count is 1", 1, triggers);
 
         //checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
@@ -413,11 +410,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         Thread.sleep(5000);
         assertEquals("there are not 5 builds", 5, receive.getLastBuild().getNumber());
 
-        printThreadsWithName("ActiveMQ.*Task-");
-        printThreadsWithName("CIBuildTrigger");
-        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        printThreadsWithName("ActiveMQ.*Task-.*");
+        printThreadsWithName("CIBuildTrigger.*");
+        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-.*");
         assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
-        triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        triggers = getCurrentThreadCountForName("CIBuildTrigger.*");
         assertEquals("CIBuildTrigger count is not 1", 1, triggers);
 
         pd = "[$class: 'ActiveMQSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD
@@ -449,14 +446,14 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         Thread.sleep(2000);
         assertEquals("there are not 9 builds", 9, receive.getLastBuild().getNumber());
 
-        for (int i = 0; i < 7; i++) {
+        for (int i = 1; i < 8; i++) {
             j.assertBuildStatusSuccess(receive.getBuildByNumber(i));
         }
-        printThreadsWithName("ActiveMQ.*Task-");
-        printThreadsWithName("CIBuildTrigger");
-        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-");
+        printThreadsWithName("ActiveMQ.*Task-.*");
+        printThreadsWithName("CIBuildTrigger.*");
+        ioCount = getCurrentThreadCountForName("ActiveMQ.*Task-.*");
         assertEquals("ActiveMQ.*Task- count is not 1", 1, ioCount);
-        triggers = getCurrentThreadCountForName("CIBuildTrigger");
+        triggers = getCurrentThreadCountForName("CIBuildTrigger.*");
         assertEquals("CIBuildTrigger count is not 1", 1, triggers);
     }
 
