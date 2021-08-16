@@ -8,6 +8,7 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
+import hudson.model.AbstractProject;
 import hudson.model.BooleanParameterDefinition;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -18,7 +19,6 @@ import hudson.model.StringParameterDefinition;
 import hudson.model.StringParameterValue;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tasks.Shell;
-import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -66,13 +66,25 @@ public abstract class SharedMessagingPluginIntegrationTest {
         return topic == null ? null : new MessagingProviderOverrides(topic);
     }
 
+    protected CIBuildTrigger attachTrigger(CIBuildTrigger trigger, AbstractProject<?, ?> job) throws IOException {
+        job.addTrigger(trigger);
+        trigger.start(job, true); // Simulate config submit that always starts the trigger threads
+        return trigger;
+    }
+
+    protected CIBuildTrigger attachTrigger(CIBuildTrigger trigger, WorkflowJob job) throws IOException {
+        job.addTrigger(trigger);
+        trigger.start(job, true); // Simulate config submit that always starts the trigger threads
+        return trigger;
+    }
+
     public void _testVerifyModelUIPersistence() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('master') {\n echo 'hello world' \n} ", true));
         CIBuildTrigger trigger = new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
                 "otopic", "HELLO", null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         )));
-        jobA.addTrigger(trigger);
+        attachTrigger(trigger, jobA);
 
         j.configRoundtrip(jobA);
 
@@ -130,7 +142,7 @@ Thread.sleep(5000);
                 new StringParameterDefinition("CI_MESSAGE", "", ""),
                 new StringParameterDefinition("DEFAULTPARAM", "world", "")
         ));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))));
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -155,7 +167,7 @@ Thread.sleep(5000);
         jobA.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition(
                 "CI_MESSAGE", "", ""
         )));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))));
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -176,7 +188,7 @@ Thread.sleep(5000);
                 new StringParameterDefinition("CI_MESSAGE", "", ""),
                 new StringParameterDefinition("mychoice", "scott\ntom", "")
         ));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))));
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -199,7 +211,7 @@ Thread.sleep(5000);
                 new BooleanParameterDefinition("dryrun", false, ""),
                 new StringParameterDefinition("scott", "", "")
         ));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))));
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
@@ -336,9 +348,9 @@ Thread.sleep(5000);
         FreeStyleProject jobA = j.createFreeStyleProject();
         
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
 
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
         job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
@@ -355,9 +367,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithCheckWithPipelineSendMsg() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
 
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
         job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
@@ -372,7 +384,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTrigger() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"))));
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -390,9 +404,10 @@ Thread.sleep(5000);
         FreeStyleProject jobA = j.createFreeStyleProject();
         
         jobA.getBuildersList().add(new Shell("echo job ran"));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
+        jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         
@@ -411,9 +426,9 @@ Thread.sleep(5000);
         FreeStyleProject jobA = j.createFreeStyleProject();
         
         jobA.getBuildersList().add(new Shell("sleep 3;"));
-        jobA.addTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         
@@ -432,9 +447,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithWildcardInSelector() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "compose LIKE '%compose_id\": \"Fedora-Atomic%'")
-        )));
+        )), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -451,9 +466,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithRegExpCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck("$.compose.compose_id", "Fedora-Atomic.+")
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo job ran"));
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = $CI_MESSAGE"));
 
@@ -471,9 +486,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithTopicOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "otopic", null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -490,9 +505,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithCheckWithTopicOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "otopic", null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo job ran"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -511,10 +526,10 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithMultipleTopics() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Arrays.asList(
+        attachTrigger(new CIBuildTrigger(false, Arrays.asList(
                 getSubscriberProviderData("topic1", null, null, new MsgCheck("my-topic", "topic1")),
                 getSubscriberProviderData("topic2", null, null, new MsgCheck("my-topic", "topic2"))
-        )));
+        )), jobA);
         jobA.getBuildersList().add(new Shell("echo $CI_MESSAGE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -541,9 +556,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "org.fedoraproject.my-topic", null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -563,9 +578,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "org.fedoraproject.my-topic", null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo job ran"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -585,9 +600,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerWithParamOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done'"
-        ))));
+        ))), jobA);
 
         jobA.addProperty(new ParametersDefinitionProperty(
                 new StringParameterDefinition("PARAMETER", "bad parameter value", ""),
@@ -613,9 +628,9 @@ Thread.sleep(5000);
 
     public void _testSimpleCIEventTriggerHeadersInEnv(FreeStyleProject jobB, String expected) throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done'"
-        ))));
+        ))), jobA);
 
         // We are only checking that this shows up in the console output.
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_HEADERS"));
@@ -662,9 +677,9 @@ Thread.sleep(5000);
     public void _testSimpleCIEventTriggerOnPipelineJob() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -680,9 +695,9 @@ Thread.sleep(5000);
     public void _testSimpleCIEventTriggerWithCheckOnPipelineJob() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         
@@ -704,9 +719,9 @@ Thread.sleep(5000);
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "$MY_TOPIC_ID", null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -727,9 +742,9 @@ Thread.sleep(5000);
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "$MY_TOPIC_ID", null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -874,9 +889,9 @@ Thread.sleep(5000);
 
     public void _testJobRename() throws IOException, InterruptedException {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
 
         Thread.sleep(1000);
@@ -888,9 +903,9 @@ Thread.sleep(5000);
 
     public void _testJobRenameWithCheck() throws IOException, InterruptedException {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
         
         Thread.sleep(1000);
@@ -902,9 +917,9 @@ Thread.sleep(5000);
 
     public void _testDisabledJobDoesNotGetTriggered() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
         jobA.disable();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -923,9 +938,9 @@ Thread.sleep(5000);
 
     public void _testDisabledJobDoesNotGetTriggeredWithCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
-        ))));
+        ))), jobA);
         jobA.getBuildersList().add(new Shell("echo job ran"));
         jobA.disable();
 
@@ -949,9 +964,9 @@ Thread.sleep(5000);
     public void _testDisabledWorkflowJobDoesNotGetTriggered() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("echo \"CI_TYPE = ${env.CI_TYPE}\"", true));
-        jobA.addTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
+        ))), jobA);
         jobA.doDisable();
 
         FreeStyleProject jobB = j.createFreeStyleProject();

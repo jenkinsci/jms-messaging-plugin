@@ -226,9 +226,9 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
 
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = $CI_MESSAGE"));
-        jobA.addTrigger(new CIBuildTrigger(true, Collections.singletonList(
+        attachTrigger(new CIBuildTrigger(true, Collections.singletonList(
                 getSubscriberProviderData("org.fedoraproject.dev.logger.log", null, null, new MsgCheck("$.commit.repo", packages))
-        )));
+        )), jobA);
         // Allow for connection
         Thread.sleep(5000);
 
@@ -320,13 +320,13 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
     public void testTriggeringUsingFedMsgLogger() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = $CI_MESSAGE"));
-        jobA.addTrigger(new CIBuildTrigger(true, Collections.singletonList(new FedMsgSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(true, Collections.singletonList(new FedMsgSubscriberProviderData(
                 "test",
                 new MessagingProviderOverrides("org.fedoraproject.dev.logger.log"),
                 Collections.singletonList(new MsgCheck("compose", "+compose_id.+message.+")),
                 "CI_MESSAGE",
                 60
-        ))));
+        ))), jobA);
         // Allow for connection
         Thread.sleep(5000);
 

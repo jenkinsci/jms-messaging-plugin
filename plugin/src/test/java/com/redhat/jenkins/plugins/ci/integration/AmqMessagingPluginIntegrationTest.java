@@ -472,10 +472,9 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
         jobA.getBuildersList().add(new Shell("echo TEST_PROP1 = $TEST_PROP1"));
         jobA.getBuildersList().add(new Shell("echo TEST_PROP2 = $TEST_PROP2"));
-        jobA.addTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
+        attachTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
                 "otopic", "CI_MESSAGE", "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))));
-        jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
+        ))), jobA);
         Thread.sleep(1000);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
