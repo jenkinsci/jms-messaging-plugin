@@ -23,6 +23,7 @@
  */
 package com.redhat.jenkins.plugins.ci.integration;
 
+import com.google.common.base.Objects;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
@@ -77,7 +78,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
                 DEFAULT_PROVIDER_NAME,
                 overrideTopic(topic),
                 Arrays.asList(msgChecks),
-                variableName,
+                Objects.firstNonNull(variableName, "CI_MESSAGE"),
                 60
         );
     }
