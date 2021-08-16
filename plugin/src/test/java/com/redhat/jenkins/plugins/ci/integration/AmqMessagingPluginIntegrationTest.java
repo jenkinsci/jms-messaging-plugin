@@ -437,8 +437,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "        )\n" +
                 "    ]\n" +
                 ")\nnode('master') {\n sleep 1\n}", false));
-        receive.save();
-        receive.scheduleBuild2(0);
+        receive.scheduleBuild2(0).waitForStart();
         Thread.sleep(5000);
 
         for (int i = 0; i < 3; i++) {

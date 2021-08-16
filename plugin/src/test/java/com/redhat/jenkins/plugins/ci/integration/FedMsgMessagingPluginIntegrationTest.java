@@ -160,7 +160,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
                 " topic: 'org.fedoraproject.otopic'" +
                 "\necho \"scott = \" + scott}", true));
-        wait.scheduleBuild2(0);
+        wait.scheduleBuild2(0).waitForStart();
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
         send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
@@ -182,7 +182,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 "    def scott = waitForCIMessage providerName: \"test\", overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
-        wait.scheduleBuild2(0);
+        wait.scheduleBuild2(0).waitForStart();
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
         send.setDefinition(new CpsFlowDefinition("node('master') {\n" +
@@ -277,7 +277,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 " checks: [[expectedValue: '" + packages + "', field: '$.commit.repo']]," +
                 " topic: 'org.fedoraproject.dev.logger.log'" +
                 "\necho \"scott = \" + scott}", true));
-        wait.scheduleBuild2(0);
+        wait.scheduleBuild2(0).waitForStart();
 
         // Allow for connection
         Thread.sleep(5000);

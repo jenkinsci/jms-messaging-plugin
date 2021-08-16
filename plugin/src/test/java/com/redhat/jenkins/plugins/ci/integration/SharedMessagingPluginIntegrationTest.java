@@ -234,7 +234,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
         
-        jobA.scheduleBuild2(0);
+        jobA.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
@@ -258,7 +258,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_CONTENT"));
 
-        jobA.scheduleBuild2(0);
+        jobA.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
@@ -306,7 +306,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
         
-        jobA.scheduleBuild2(0);
+        jobA.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -330,7 +330,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
         
-        jobA.scheduleBuild2(0);
+        jobA.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -407,7 +407,6 @@ Thread.sleep(5000);
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
-        jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         
@@ -660,7 +659,7 @@ Thread.sleep(5000);
         jobA.getBuildersList().add(new Shell("echo $PARAMETER"));
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_CONTENT"));
 
-        jobA.scheduleBuild2(0);
+        jobA.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -761,7 +760,7 @@ Thread.sleep(5000);
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
         
-        wait.scheduleBuild2(0);
+        wait.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -781,7 +780,7 @@ Thread.sleep(5000);
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
         
-        wait.scheduleBuild2(0);
+        wait.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         
@@ -801,7 +800,7 @@ Thread.sleep(5000);
                 " selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"," +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
-        wait.scheduleBuild2(0);
+        wait.scheduleBuild2(0).waitForStart();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -832,8 +831,7 @@ Thread.sleep(5000);
                 " overrides: [topic: 'org.fedoraproject.otopic']" +
                 "\necho \"scott = \" + scott}", true));
         
-        wait.scheduleBuild2(0);
-
+        wait.scheduleBuild2(0).waitForStart();
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
@@ -859,8 +857,7 @@ Thread.sleep(5000);
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
         
-        wait.scheduleBuild2(0);
-
+        wait.scheduleBuild2(0).waitForStart();
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n" +
                 " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +

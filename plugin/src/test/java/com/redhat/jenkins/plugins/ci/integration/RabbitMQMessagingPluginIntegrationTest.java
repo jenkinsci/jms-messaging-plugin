@@ -185,7 +185,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
                 "    def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
-        wait.scheduleBuild2(0);
+        wait.scheduleBuild2(0).waitForStart();
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
         send.setDefinition(new CpsFlowDefinition("node('master') {\n" +
