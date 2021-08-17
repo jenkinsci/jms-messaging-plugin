@@ -54,6 +54,16 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(topic, queue);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("MessagingProviderOverrides{topic='%s', queue='%s'}", topic, queue);
+    }
+
+    @Override
     public Descriptor<MessagingProviderOverrides> getDescriptor() {
         return Jenkins.get().getDescriptorByType(MessagingProviderOverridesDescriptor.class);
     }
