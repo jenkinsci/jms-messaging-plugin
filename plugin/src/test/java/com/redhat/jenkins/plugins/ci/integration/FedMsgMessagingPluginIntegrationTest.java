@@ -158,15 +158,15 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
-                " topic: 'org.fedoraproject.otopic'" +
-                "\necho \"scott = \" + scott}", true));
+                "overrides: [topic: 'org.fedoraproject.otopic']\n" +
+                "echo \"scott = \" + scott}", true));
         scheduleAwaitStep(wait);
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
-        send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
-                " providerName: 'test', " +
-                " topic: 'org.fedoraproject.otopic'," +
-                " messageContent: '{\"content\":\"abcdefg\"}'}", true));
+        send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage " +
+                "providerName: 'test', " +
+                "overrides: [topic: 'org.fedoraproject.otopic']," +
+                "messageContent: '{\"content\":\"abcdefg\"}'}", true));
         j.buildAndAssertSuccess(send);
 
         j.assertBuildStatusSuccess(wait.getLastBuild());
@@ -275,7 +275,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: 'test'," +
                 " checks: [[expectedValue: '" + packages + "', field: '$.commit.repo']]," +
-                " topic: 'org.fedoraproject.dev.logger.log'" +
+                " overrides: [topic: 'org.fedoraproject.dev.logger.log']" +
                 "\necho \"scott = \" + scott}", true));
         scheduleAwaitStep(wait);
 
