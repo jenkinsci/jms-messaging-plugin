@@ -70,6 +70,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public void setUp() throws IOException, InterruptedException {
         amq = docker.create(); // Can be moved to @BeforeClass, BUT there are tests that stops the container on purpose - breaks subsequent tests.
         String brokerUrl = amq.getBroker();
+        Thread.sleep(3000);
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
         gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(
@@ -147,12 +148,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
-    public void testSimpleCIEventSubscribeWithTopicOverride() throws Exception, InterruptedException {
+    public void testSimpleCIEventSubscribeWithTopicOverride() throws Exception {
         _testSimpleCIEventSubscribeWithTopicOverride();
     }
 
     @Test
-    public void testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception, InterruptedException {
+    public void testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception {
         _testSimpleCIEventSubscribeWithCheckWithTopicOverride();
     }
 
@@ -435,8 +436,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "        )\n" +
                 "    ]\n" +
                 ")\nnode('master') {\n sleep 1\n}", false));
-        receive.scheduleBuild2(0).waitForStart();
-        Thread.sleep(5000);
+        scheduleAwaitStep(receive);
 
         for (int i = 0; i < 3; i++) {
             QueueTaskFuture<WorkflowRun> build = send.scheduleBuild2(0, new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));

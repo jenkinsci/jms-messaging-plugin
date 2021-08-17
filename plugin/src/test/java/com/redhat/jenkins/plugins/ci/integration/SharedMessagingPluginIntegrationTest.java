@@ -39,6 +39,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -86,6 +87,16 @@ public abstract class SharedMessagingPluginIntegrationTest {
         return trigger;
     }
 
+    protected void scheduleAwaitStep(WorkflowJob job) throws Exception {
+        job.scheduleBuild2(0).waitForStart();
+        Thread.sleep(3000);
+    }
+
+    protected void scheduleAwaitStep(AbstractProject<?, ?> job) throws Exception {
+        job.scheduleBuild2(0).waitForStart();
+        Thread.sleep(3000);
+    }
+    
     public void _testVerifyModelUIPersistence() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('master') {\n echo 'hello world' \n} ", true));
@@ -126,9 +137,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
 
-        jobA.scheduleBuild2(0).waitForStart();
-
-Thread.sleep(5000);
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -136,7 +145,7 @@ Thread.sleep(5000);
         )));
 
         j.buildAndAssertSuccess(jobB);
-//j.interactiveBreak();
+
         Thread.sleep(1000);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("Hello World", jobA.getLastBuild());
@@ -242,7 +251,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
         
-        jobA.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
@@ -266,7 +275,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_CONTENT"));
 
-        jobA.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
@@ -289,7 +298,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_CONTENT"));
 
-        jobA.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -314,7 +323,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
         
-        jobA.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -338,7 +347,7 @@ Thread.sleep(5000);
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
         
-        jobA.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -667,7 +676,7 @@ Thread.sleep(5000);
         jobA.getBuildersList().add(new Shell("echo $PARAMETER"));
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_CONTENT"));
 
-        jobA.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -768,7 +777,7 @@ Thread.sleep(5000);
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
         
-        wait.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(wait);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
@@ -788,7 +797,7 @@ Thread.sleep(5000);
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
         
-        wait.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(wait);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         
@@ -808,11 +817,11 @@ Thread.sleep(5000);
                 " selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"," +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
-        wait.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(wait);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, MESSAGE_CHECK_CONTENT
+                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", MESSAGE_CHECK_CONTENT
         )));
         
         j.buildAndAssertSuccess(jobB);
@@ -839,7 +848,7 @@ Thread.sleep(5000);
                 " overrides: [topic: 'org.fedoraproject.otopic']" +
                 "\necho \"scott = \" + scott}", true));
         
-        wait.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(wait);
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
@@ -865,7 +874,7 @@ Thread.sleep(5000);
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
         
-        wait.scheduleBuild2(0).waitForStart();
+        scheduleAwaitStep(wait);
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n" +
                 " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
