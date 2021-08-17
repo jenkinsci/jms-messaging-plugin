@@ -43,6 +43,9 @@ import javax.annotation.Nonnull;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Send message build step.
+ */
 public class CIMessageBuilder extends Builder {
     private static final Logger log = Logger.getLogger(CIMessageBuilder.class.getName());
 
