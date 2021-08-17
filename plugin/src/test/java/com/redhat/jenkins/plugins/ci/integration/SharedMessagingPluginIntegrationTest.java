@@ -21,10 +21,6 @@ import hudson.model.StringParameterValue;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tasks.Shell;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -39,7 +35,6 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -936,6 +931,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testDisabledJobDoesNotGetTriggered() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
+        jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
@@ -1040,20 +1036,12 @@ public abstract class SharedMessagingPluginIntegrationTest {
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \n}", true));
+        scheduleAwaitStep(wait);
+        WorkflowRun waitingBuild = wait.getLastBuild();
 
-        WorkflowRun waitingBuild = wait.scheduleBuild2(0).get();
-        Thread.sleep(3000);
+        waitingBuild.getExecutor().interrupt();
 
-        HttpClient httpclient = HttpClientBuilder.create().build();
-        HttpPost post = new HttpPost(waitingBuild.getAbsoluteUrl() + "stop");
-        HttpResponse response = httpclient.execute(post);
-        if (response.getStatusLine().getStatusCode() >= 400) {
-            throw new IOException("Failed to stop build: " + response.getStatusLine() + "\n" +
-                    IOUtils.toString(response.getEntity().getContent()));
-        } else {
-            System.out.println("Build stopped! (status code: " + response.getStatusLine().getStatusCode() + ")");
-        }
-
+        j.waitUntilNoActivity();
         j.assertBuildStatus(Result.ABORTED, waitingBuild);
     }
 
