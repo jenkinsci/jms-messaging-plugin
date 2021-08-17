@@ -35,7 +35,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
-import hudson.FilePath;
+import hudson.Util;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.ParametersAction;
@@ -51,7 +51,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.test.acceptance.docker.DockerClassRule;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -95,7 +94,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         return new ActiveMQSubscriberProviderData(
                 DEFAULT_PROVIDER_NAME,
                 overrideTopic(topic),
-                selector,//Util.fixNull(selector),
+                Util.fixNull(selector),
                 Arrays.asList(msgChecks),
                 Objects.firstNonNull(variableName, "CI_MESSAGE"),
                 60
@@ -233,14 +232,14 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
-    public void testSimpleCIEventTriggerHeadersInEnv() throws Exception, InterruptedException {
+    public void testSimpleCIEventTriggerHeadersInEnv() throws Exception {
         FreeStyleProject jobB = j.createFreeStyleProject();
         String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"" + jobB.getName() + "\",\"CI_TYPE\":\"code-quality-checks-done\"";
         _testSimpleCIEventTriggerHeadersInEnv(jobB, expected);
     }
 
     @Test
-    public void testSimpleCIEventSubscribeWithNoParamOverride() throws Exception, InterruptedException {
+    public void testSimpleCIEventSubscribeWithNoParamOverride() throws Exception {
         _testSimpleCIEventSubscribeWithNoParamOverride();
     }
 

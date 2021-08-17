@@ -12,6 +12,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BooleanParameterDefinition;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.Job;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.Result;
@@ -66,15 +67,22 @@ public abstract class SharedMessagingPluginIntegrationTest {
         return topic == null ? null : new MessagingProviderOverrides(topic);
     }
 
-    protected CIBuildTrigger attachTrigger(CIBuildTrigger trigger, AbstractProject<?, ?> job) throws IOException {
+    protected CIBuildTrigger attachTrigger(CIBuildTrigger trigger, AbstractProject<?, ?> job) throws Exception {
         job.addTrigger(trigger);
-        trigger.start(job, true); // Simulate config submit that always starts the trigger threads
+        startTrigger(trigger, job);
         return trigger;
     }
 
-    protected CIBuildTrigger attachTrigger(CIBuildTrigger trigger, WorkflowJob job) throws IOException {
-        job.addTrigger(trigger);
+    private void startTrigger(CIBuildTrigger trigger, Job<?, ?> job) throws InterruptedException {
         trigger.start(job, true); // Simulate config submit that always starts the trigger threads
+        // It needs a bit for the client to actually get subscribed.
+        // Consider checking the http://127.0.0.1:49613/admin/xml/subscribers.jsp for actual subscription
+        Thread.sleep(3000);
+    }
+
+    protected CIBuildTrigger attachTrigger(CIBuildTrigger trigger, WorkflowJob job) throws Exception {
+        job.addTrigger(trigger);
+        startTrigger(trigger, job);
         return trigger;
     }
 
@@ -652,7 +660,7 @@ Thread.sleep(5000);
                 "PARAMETER", "original parameter value", ""
         )));
 
-        jobA.getBuildersList().add(new CIMessageBuilder(getSubscriberProviderData(
+        jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
                 null, "MESSAGE_CONTENT", "CI_TYPE = 'code-quality-checks-done'"
         )));
 
@@ -835,7 +843,7 @@ Thread.sleep(5000);
         
         send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
-                " topic: 'org.fedoraproject.otopic'," +
+                " overrides: [topic: 'org.fedoraproject.otopic']," +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}", true));
@@ -884,7 +892,7 @@ Thread.sleep(5000);
 //        }
     }
 
-    public void _testJobRename() throws IOException, InterruptedException {
+    public void _testJobRename() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
@@ -898,7 +906,7 @@ Thread.sleep(5000);
         assertThat("Trigger not subscribed", isSubscribed("ABC"));
     }
 
-    public void _testJobRenameWithCheck() throws IOException, InterruptedException {
+    public void _testJobRenameWithCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
@@ -927,6 +935,7 @@ Thread.sleep(5000);
         j.buildAndAssertSuccess(jobB);
 
         jobA.enable();
+        Thread.sleep(3000); // Wait for trigger to kick in
 
         j.buildAndAssertSuccess(jobB);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
@@ -1016,7 +1025,7 @@ Thread.sleep(5000);
         Thread.sleep(3000);
 
         HttpClient httpclient = HttpClientBuilder.create().build();
-        HttpPost post = new HttpPost(waitingBuild.getUrl() + "stop");
+        HttpPost post = new HttpPost(waitingBuild.getAbsoluteUrl() + "stop");
         HttpResponse response = httpclient.execute(post);
         if (response.getStatusLine().getStatusCode() >= 400) {
             throw new IOException("Failed to stop build: " + response.getStatusLine() + "\n" +
