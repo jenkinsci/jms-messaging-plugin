@@ -26,6 +26,7 @@ package com.redhat.jenkins.plugins.ci.messaging;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Objects;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
@@ -42,6 +43,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -228,7 +230,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return "";
     }
 
-    public static String getMessageBody(Message message) {
+    public static @Nonnull String getMessageBody(Message message) {
         try {
             if (message instanceof MapMessage) {
                 MapMessage mm = (MapMessage) message;
@@ -241,10 +243,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     String field = e.nextElement();
                     root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                 }
-                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+                String value = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+                return Objects.firstNonNull(value, "");
             } else if (message instanceof TextMessage) {
                 TextMessage tm = (TextMessage) message;
-                return tm.getText();
+                return Objects.firstNonNull(tm.getText(), "");
             } else if (message instanceof BytesMessage) {
                 BytesMessage bm = (BytesMessage) message;
                 bm.reset();
