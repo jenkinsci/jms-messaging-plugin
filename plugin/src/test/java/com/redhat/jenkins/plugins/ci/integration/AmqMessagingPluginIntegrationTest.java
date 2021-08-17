@@ -49,11 +49,13 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.test.acceptance.docker.DockerClassRule;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -65,22 +67,10 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public static DockerClassRule<ActiveMQContainer> docker = new DockerClassRule<>(ActiveMQContainer.class);
     private static ActiveMQContainer amq = null;
 
-    @BeforeClass
-    public static void startBroker() throws Exception {
-        amq = docker.create();
-    }
-
     @Before
-    public void setUp() throws Exception {
-        String brokerUrl;
-        try {
-            brokerUrl = amq.getBroker();
-        } catch (Error ex) {
-            String containerLog = new FilePath(amq.getLogfile()).readToString();
-            System.err.println("Container not running. Log:");
-            System.err.println(containerLog);
-            throw ex;
-        }
+    public void setUp() throws IOException, InterruptedException {
+        amq = docker.create(); // Can be moved to @BeforeClass, BUT there are tests that stops the container on purpose - breaks subsequent tests.
+        String brokerUrl = amq.getBroker();
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
         gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(
@@ -93,6 +83,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         )));
 
         // TODO test connection
+    }
+
+    @After
+    public void after() {
+        amq.close();
     }
 
     @Override
