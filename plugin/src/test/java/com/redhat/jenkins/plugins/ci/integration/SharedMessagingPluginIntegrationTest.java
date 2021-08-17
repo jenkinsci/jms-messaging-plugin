@@ -813,7 +813,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(wait.getLastBuild());
-        j.assertLogContains("Hello World", wait.getLastBuild());
+        j.assertLogContains("catch me", wait.getLastBuild());
     }
 
     public void _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
