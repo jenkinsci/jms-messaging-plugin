@@ -309,6 +309,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         String output = stringFrom(logProcessBuilderIssues(gitLog1Pb, "ssh"));
         System.out.println(output);
 
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(wait.getLastBuild());
         j.assertLogContains("erlang", wait.getLastBuild());
     }
@@ -355,6 +356,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 "ssh"));
         System.out.println(output);
 
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("This is a message", jobA.getLastBuild());
     }

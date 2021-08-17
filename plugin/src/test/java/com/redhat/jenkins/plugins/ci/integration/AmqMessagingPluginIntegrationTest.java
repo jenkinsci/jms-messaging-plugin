@@ -483,7 +483,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         ));
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         FreeStyleBuild lastBuild = jobA.getLastBuild();
         j.assertBuildStatusSuccess(lastBuild);
 

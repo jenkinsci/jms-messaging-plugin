@@ -146,7 +146,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("Hello World", jobA.getLastBuild());
     }
@@ -168,7 +168,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("hello world", jobA.getLastBuild());
 
@@ -193,7 +193,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains(matchString, jobA.getLastBuild());
     }
@@ -214,7 +214,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         
         j.assertLogContains(matchString, jobA.getLastBuild());
@@ -238,7 +238,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains(matchString, jobA.getLastBuild());
     }
@@ -261,7 +261,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("catch me", jobA.getLastBuild());
 
@@ -285,7 +285,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("This is my content", jobA.getLastBuild());
     }
@@ -307,7 +307,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("catch me", jobA.getLastBuild());
     }
@@ -331,7 +331,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("Hello World", jobA.getLastBuild());
     }
@@ -356,7 +356,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("catch me", jobA.getLastBuild());
     }
@@ -378,7 +378,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(job);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
     }
 
@@ -395,7 +395,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(job);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
     }
 
@@ -412,7 +412,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_TYPE = code-quality-checks-done", jobA.getLastBuild());
     }
@@ -433,7 +433,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
     }
@@ -458,6 +458,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         j.buildAndAssertSuccess(jobB);
         j.buildAndAssertSuccess(jobB);
 
+        j.waitUntilNoActivity();
         assertThat(jobA.getLastBuild().getNumber(), is(equalTo(5)));
     }
 
@@ -475,7 +476,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_TYPE = code-quality-checks-done", jobA.getLastBuild());
     }
@@ -495,7 +496,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
     }
@@ -514,7 +515,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_TYPE = code-quality-checks-done", jobA.getLastBuild());
     }
@@ -533,7 +534,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
     }
@@ -555,7 +556,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("topic1", jobA.getLastBuild());
 
@@ -565,7 +566,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
         j.buildAndAssertSuccess(jobC);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("topic2", jobA.getLastBuild());
     }
@@ -587,7 +588,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_TYPE = code-quality-checks-done", jobA.getLastBuild());
     }
@@ -609,7 +610,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
     }
@@ -635,6 +636,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
+        j.waitUntilNoActivity();
         FreeStyleBuild lastBuild = jobA.getLastBuild();
         j.assertBuildStatusSuccess(lastBuild);
         j.assertLogContains("status::SUCCESS", lastBuild);
@@ -656,7 +658,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains(expected, jobA.getLastBuild());
     }
@@ -685,6 +687,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("original parameter value", jobA.getLastBuild());
         j.assertLogContains("This is my content", jobA.getLastBuild());
@@ -704,7 +707,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
     }
 
@@ -723,7 +726,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
     }
 
@@ -746,7 +749,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
     }
 
@@ -768,6 +771,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
         
         j.buildAndAssertSuccess(jobB);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
     }
 
@@ -786,7 +790,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(wait.getLastBuild());
         j.assertLogContains("Hello World", wait.getLastBuild());
     }
@@ -807,6 +811,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(wait.getLastBuild());
         j.assertLogContains("Hello World", wait.getLastBuild());
     }
@@ -826,7 +831,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(wait.getLastBuild());
         j.assertLogContains("catch me", wait.getLastBuild());
 
@@ -836,7 +841,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
         j.buildAndAssertSuccess(jobC);
 
-        Thread.sleep(3000);
+        Thread.sleep(3000); // Wait fixed ammount of time to make sure the build does NOT get scheduled
         assertThat(wait.getLastBuild().getNumber(), is(equalTo(1)));
     }
 
@@ -859,7 +864,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(send);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(wait.getLastBuild());
         j.assertLogContains(expected, wait.getLastBuild());
     }
@@ -883,7 +888,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(send);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(wait.getLastBuild());
         j.assertLogContains(expected, wait.getLastBuild());
     }
@@ -947,6 +952,8 @@ public abstract class SharedMessagingPluginIntegrationTest {
         Thread.sleep(3000); // Wait for trigger to kick in
 
         j.buildAndAssertSuccess(jobB);
+
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_TYPE = code-quality-checks-done", jobA.getLastBuild());
     }
@@ -969,9 +976,11 @@ public abstract class SharedMessagingPluginIntegrationTest {
         assertThat(jobA.getBuilds(), Matchers.iterableWithSize(0));
 
         jobA.enable();
-        
-        Thread.sleep(5000);
+        Thread.sleep(3000);
+
         j.buildAndAssertSuccess(jobB);
+
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
     }
@@ -995,9 +1004,11 @@ public abstract class SharedMessagingPluginIntegrationTest {
         assertThat(jobA.getBuilds(), Matchers.iterableWithSize(0));
         
         jobA.doEnable();
-        
-        Thread.sleep(5000);
+        Thread.sleep(3000);
+
         j.buildAndAssertSuccess(jobB);
+
+        j.waitUntilNoActivity();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("CI_TYPE = code-quality-checks-done", jobA.getLastBuild());
     }
@@ -1007,8 +1018,8 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getBuildersList().add(new CIMessageBuilder(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
-        j.buildAndAssertStatus(Result.FAILURE, jobB);
-        j.assertLogContains("Unhandled exception in perform: ", jobB.getLastBuild());
+        FreeStyleBuild build = j.buildAndAssertStatus(Result.FAILURE, jobB);
+        j.assertLogContains("Unhandled exception in perform: ", build);
     }
 
     public void _testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
@@ -1020,8 +1031,8 @@ public abstract class SharedMessagingPluginIntegrationTest {
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}", true));
-        j.buildAndAssertStatus(Result.FAILURE, send);
-        j.assertLogContains("Unhandled exception in perform: ", send.getLastBuild());
+        WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, send);
+        j.assertLogContains("Unhandled exception in perform: ", build);
     }
 
     public void _testAbortWaitingForMessageWithPipelineBuild() throws Exception {
@@ -1054,15 +1065,15 @@ public abstract class SharedMessagingPluginIntegrationTest {
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}\n", true));
 
-        j.buildAndAssertStatus(Result.FAILURE, send);
-        j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", send.getLastBuild());
+        WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, send);
+        j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
 
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
         wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: 'bogus', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
-        j.buildAndAssertStatus(Result.FAILURE, wait);
-        j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", wait.getLastBuild());
+        build = j.buildAndAssertStatus(Result.FAILURE, wait);
+        j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
     }
 
     protected String stringFrom(Process proc) throws InterruptedException, IOException {

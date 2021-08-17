@@ -102,7 +102,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     }
 
     @Test
-    public void testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception, InterruptedException {
+    public void testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception {
         _testSimpleCIEventSubscribeWithCheckWithTopicOverride();
     }
 
@@ -171,7 +171,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
                 " messageContent: '{\"content\":\"abcdefg\"}'}", true));
         j.buildAndAssertSuccess(send);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         WorkflowRun lastBuild = wait.getLastBuild();
         j.assertBuildStatusSuccess(lastBuild);
         j.assertLogContains("scott = {\"content\":\"abcdefg\"}", lastBuild);
@@ -195,7 +195,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         send.save();
         j.buildAndAssertSuccess(send);
 
-        Thread.sleep(1000);
+        j.waitUntilNoActivity();
         WorkflowRun lastBuild = wait.getLastBuild();
         j.assertBuildStatusSuccess(lastBuild);
         j.assertLogContains("scott = {\"content\":\"abcdef\"}", lastBuild);
@@ -243,7 +243,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     }
 
     @Test
-    public void testSimpleCIEventSubscribeWithQueueOverride() throws Exception, InterruptedException {
+    public void testSimpleCIEventSubscribeWithQueueOverride() throws Exception {
         FreeStyleProject job = j.createFreeStyleProject();
 
         job.getBuildersList().add(new CIMessageSubscriberBuilder(new RabbitMQSubscriberProviderData(
