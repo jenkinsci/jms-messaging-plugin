@@ -169,9 +169,9 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 "messageContent: '{\"content\":\"abcdefg\"}'}", true));
         j.buildAndAssertSuccess(send);
 
+        waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(wait.getLastBuild());
-        String expected = "scott = {\"content\":\"abcdefg\"}";
-        j.assertLogContains(expected, wait.getLastBuild());
+        j.assertLogContains("scott = {\"content\":\"abcdefg\"}", wait.getLastBuild());
     }
 
     @Test
@@ -192,10 +192,9 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         send.save();
         j.buildAndAssertSuccess(send);
 
-        String expected = "scott = {\"content\":\"abcdef\"}";
-        Thread.sleep(1000);
+        waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(wait.getLastBuild());
-        j.assertLogContains(expected, wait.getLastBuild());
+        j.assertLogContains("scott = {\"content\":\"abcdef\"}", wait.getLastBuild());
     }
 
     @Test
@@ -309,7 +308,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         String output = stringFrom(logProcessBuilderIssues(gitLog1Pb, "ssh"));
         System.out.println(output);
 
-        j.waitUntilNoActivity();
+        waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(wait.getLastBuild());
         j.assertLogContains("erlang", wait.getLastBuild());
     }
@@ -356,7 +355,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
                 "ssh"));
         System.out.println(output);
 
-        j.waitUntilNoActivity();
+        waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("This is a message", jobA.getLastBuild());
     }
