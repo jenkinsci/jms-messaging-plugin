@@ -228,8 +228,6 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         attachTrigger(new CIBuildTrigger(true, Collections.singletonList(
                 getSubscriberProviderData("org.fedoraproject.dev.logger.log", null, null, new MsgCheck("$.commit.repo", packages))
         )), jobA);
-        // Allow for connection
-        Thread.sleep(5000);
 
         File privateKey = File.createTempFile("ssh", "key");
         FileUtils.copyURLToFile(
@@ -261,6 +259,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         String output = stringFrom(logProcessBuilderIssues(gitLog1Pb, "ssh"));
         System.out.println(output);
 
+        waitUntilScheduledBuildCompletes();
         FreeStyleBuild lastBuild = jobA.getLastBuild();
         j.assertBuildStatusSuccess(lastBuild);
         j.assertLogContains("erlang", lastBuild);
@@ -307,6 +306,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         );
         String output = stringFrom(logProcessBuilderIssues(gitLog1Pb, "ssh"));
         System.out.println(output);
+        Thread.sleep(2000);
 
         waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(wait.getLastBuild());
@@ -354,6 +354,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         String output = stringFrom(logProcessBuilderIssues(gitLog1Pb,
                 "ssh"));
         System.out.println(output);
+        Thread.sleep(2000);
 
         waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
