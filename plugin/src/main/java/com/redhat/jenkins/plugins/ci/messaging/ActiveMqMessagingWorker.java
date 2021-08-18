@@ -23,22 +23,27 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import static com.redhat.utils.MessageUtils.JSON_TYPE;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Objects;
+import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.OrderedProperties;
+import com.redhat.utils.PluginUtils;
+import hudson.EnvVars;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.sql.Time;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import javax.annotation.Nonnull;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -54,28 +59,21 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.sql.Time;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.OrderedProperties;
-import com.redhat.utils.PluginUtils;
-
-import hudson.EnvVars;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
+import static com.redhat.utils.MessageUtils.JSON_TYPE;
 
 public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
@@ -102,8 +100,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     if (connection == null && !connect()) {
                         return false;
                     }
+                    String kind = provider.getUseQueues() ? "queue" : "topic";
                     if (subscriber == null) {
-                        log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' topic.");
+                        log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' " + kind + ".");
                         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                         if (provider.getUseQueues()) {
                             Queue destination = session.createQueue(this.topic);
@@ -112,9 +111,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                             Topic destination = session.createTopic(this.topic);
                             subscriber = session.createDurableSubscriber(destination, jobname, selector, false);
                         }
-                        log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' topic with selector: " + selector);
+                        log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' " + kind + " with selector: " + selector);
                     } else {
-                        log.fine("Already subscribed to '" + this.topic + "' topic with selector: " + selector + " for job '" + jobname);
+                        log.fine("Already subscribed to '" + this.topic + "' " + kind + " with selector: " + selector + " for job '" + jobname);
                     }
                     return true;
                 } catch (JMSSecurityException | InvalidSelectorException exc) {
@@ -178,6 +177,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
+        new Error("FLARE unsubscribe").printStackTrace();
         log.info("Unsubscribing job '" + jobname + "' from the '" + this.topic + "' topic.");
         disconnect();
         if (subscriber != null) {
@@ -230,7 +230,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return "";
     }
 
-    public static String getMessageBody(Message message) {
+    public static @Nonnull String getMessageBody(Message message) {
         try {
             if (message instanceof MapMessage) {
                 MapMessage mm = (MapMessage) message;
@@ -243,10 +243,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     String field = e.nextElement();
                     root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                 }
-                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+                String value = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+                return Objects.firstNonNull(value, "");
             } else if (message instanceof TextMessage) {
                 TextMessage tm = (TextMessage) message;
-                return tm.getText();
+                return Objects.firstNonNull(tm.getText(), "");
             } else if (message instanceof BytesMessage) {
                 BytesMessage bm = (BytesMessage) message;
                 bm.reset();
@@ -505,7 +506,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             try {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
-                connection.setClientID(ip + "_" + UUID.randomUUID().toString());
+                connection.setClientID(ip + "_" + UUID.randomUUID());
                 connection.start();
                 Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 if (provider.getUseQueues()) {

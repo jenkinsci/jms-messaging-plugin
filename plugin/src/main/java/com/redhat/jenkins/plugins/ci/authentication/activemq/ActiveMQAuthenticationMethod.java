@@ -23,20 +23,17 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.activemq;
 
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
 import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-
+import jenkins.model.Jenkins;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
 
 public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod implements Describable<ActiveMQAuthenticationMethod> {
 

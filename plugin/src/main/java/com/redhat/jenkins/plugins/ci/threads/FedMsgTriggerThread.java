@@ -1,12 +1,12 @@
 package com.redhat.jenkins.plugins.ci.threads;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FedMsgTriggerThread extends CITriggerThread {
     private static final Logger log = Logger.getLogger(FedMsgTriggerThread.class.getName());

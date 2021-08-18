@@ -1,11 +1,3 @@
-package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import org.jenkinsci.test.acceptance.docker.DockerContainer;
-import org.jenkinsci.test.acceptance.docker.DockerFixture;
-
-import java.io.IOException;
-
 /*
  * The MIT License
  *
@@ -29,20 +21,20 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id = "jbossamq", ports = 61616)
-public class JBossAMQContainer extends DockerContainer {
+package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-    public String getBroker() throws IOException {
-        String ip = getIpAddress();
-        if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("61616/tcp").get(0);
-            String hostIP = binding.get("HostIp").asText();
-            String hostPort = binding.get("HostPort").asText();
-            ip = hostIP + ":" + hostPort;
-            return "tcp://" + ip;
-        } else {
-            return "tcp://" + ip + ":61616";
-        }
+import org.jenkinsci.test.acceptance.docker.DockerContainer;
+import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
+@DockerFixture(id = "rabbitmq-relay", ports = RabbitMQRelayContainer.INNER_PORT_NUMBER)
+public class RabbitMQRelayContainer extends DockerContainer {
+    public static final int INNER_PORT_NUMBER = 5672;
+
+    @Override public String getIpAddress() {
+        return ipBound(INNER_PORT_NUMBER);
+    }
+
+    public int getPort() {
+        return port(INNER_PORT_NUMBER);
     }
 }

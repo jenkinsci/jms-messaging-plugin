@@ -23,18 +23,16 @@
  */
 package com.redhat.jenkins.plugins.ci.threads;
 
-import hudson.security.ACL;
-import hudson.security.ACLContext;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang3.builder.EqualsBuilder;
-
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static java.util.logging.Level.SEVERE;
 
@@ -83,6 +81,7 @@ public class CITriggerThread extends Thread {
         }
     }
 
+    @Override
     public void run() {
         try (ACLContext ignored = ACL.as(ACL.SYSTEM)) {
             cibt.clearJobActions();

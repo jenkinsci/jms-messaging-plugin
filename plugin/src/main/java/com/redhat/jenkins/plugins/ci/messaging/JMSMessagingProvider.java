@@ -23,29 +23,26 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import hudson.ExtensionList;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Objects;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import jenkins.model.Jenkins;
-
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import hudson.ExtensionList;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 public abstract class JMSMessagingProvider implements Describable<JMSMessagingProvider>, Serializable {
 

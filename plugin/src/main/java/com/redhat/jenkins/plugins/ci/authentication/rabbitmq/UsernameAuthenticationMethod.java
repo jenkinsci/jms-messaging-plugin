@@ -23,6 +23,10 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.redhat.jenkins.plugins.ci.Messages;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
@@ -36,15 +40,9 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-
 import javax.annotation.Nonnull;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.redhat.jenkins.plugins.ci.Messages;
 
 public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod {
     private static final long serialVersionUID = 452156745621333923L;

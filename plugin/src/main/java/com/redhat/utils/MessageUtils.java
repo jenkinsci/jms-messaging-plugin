@@ -23,17 +23,16 @@
  */
 package com.redhat.utils;
 
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import hudson.model.TaskListener;
-import hudson.model.Run;
-
-import java.util.logging.Logger;
-
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
+
+import java.util.logging.Logger;
 
 public class MessageUtils {
 

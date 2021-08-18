@@ -23,23 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import hudson.EnvVars;
-import hudson.model.Result;
-import hudson.model.TaskListener;
-import hudson.model.Run;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
@@ -50,6 +33,21 @@ import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.PluginUtils;
+import hudson.EnvVars;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
@@ -310,7 +308,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         listener.getLogger().println("Waiting for message.");
         for (MsgCheck msgCheck : pd.getChecks()) {
             log.info(" with check: " + msgCheck.toString());
-            listener.getLogger().println(" with check: " + msgCheck.toString());
+            listener.getLogger().println(" with check: " + msgCheck);
         }
         Integer timeout = (pd.getTimeout() != null ? pd.getTimeout(): FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
         log.info(" with timeout: " + timeout);

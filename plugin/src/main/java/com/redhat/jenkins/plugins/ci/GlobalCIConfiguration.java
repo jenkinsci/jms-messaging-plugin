@@ -46,12 +46,12 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -143,7 +143,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         return true;
     }
 
-    public JMSMessagingProvider getProvider(String name) {
+    public @CheckForNull JMSMessagingProvider getProvider(String name) {
         for (JMSMessagingProvider provider : getConfigs()) {
             if (provider.getName().equals(name)) {
                 return provider;

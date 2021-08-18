@@ -23,19 +23,18 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
-
-import hudson.model.TaskListener;
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.PluginUtils;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.PluginUtils;
+import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
 
 public abstract class JMSMessagingWorker {
     public static final String MESSAGECONTENTFIELD = "message-content";

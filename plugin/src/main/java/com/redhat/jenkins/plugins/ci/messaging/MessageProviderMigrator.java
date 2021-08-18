@@ -23,26 +23,29 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.provider.data.*;
-import hudson.Extension;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
-import hudson.matrix.MatrixProject;
-import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.AbstractProject;
-import hudson.model.Job;
-import hudson.model.Project;
-
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
 import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
+import hudson.Extension;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
+import hudson.matrix.MatrixProject;
+import hudson.model.AbstractProject;
+import hudson.model.BuildableItemWithBuildWrappers;
+import hudson.model.Job;
+import hudson.model.Project;
+import jenkins.model.Jenkins;
+
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Extension
 public class MessageProviderMigrator {

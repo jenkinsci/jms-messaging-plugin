@@ -1,8 +1,7 @@
 package com.redhat.jenkins.plugins.ci.provider.data;
 
-import org.kohsuke.stapler.DataBoundSetter;
-
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public abstract class FedMsgProviderData extends ProviderData {
 

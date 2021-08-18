@@ -3,14 +3,12 @@ package com.redhat.jenkins.plugins.ci.messaging.topics;
 import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
 import java.io.Serializable;
-
-import jenkins.model.Jenkins;
-
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 public abstract class TopicProvider implements Describable<TopicProvider>, Serializable {
 

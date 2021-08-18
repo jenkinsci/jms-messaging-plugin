@@ -1,9 +1,7 @@
-package com.redhat.jenkins.plugins.ci.integration.po;
-
 /*
  * The MIT License
  *
- * Copyright (c) 2016 Red Hat, Inc.
+ * Copyright (c) Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,21 +21,18 @@ package com.redhat.jenkins.plugins.ci.integration.po;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-import org.jenkinsci.test.acceptance.po.PageAreaImpl;
-import org.jenkinsci.test.acceptance.po.PageObject;
+import org.jenkinsci.test.acceptance.docker.DockerContainer;
+import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-public abstract class MessagingProvider extends PageAreaImpl {
+@DockerFixture(id = "activeamq", ports = {ActiveMQContainer.TCP_PORT, ActiveMQContainer.CONSOLE_PORT})
+public class ActiveMQContainer extends DockerContainer {
 
-    public MessagingProvider(PageObject parent, String path) {
-        super(parent, path);
+    public static final int TCP_PORT = 61616;
+    public static final int CONSOLE_PORT = 8161;
+
+    public String getBroker() {
+        return String.format("tcp://%s:%d", ipBound(TCP_PORT), port(TCP_PORT));
     }
-
-    public MessagingProvider(GlobalCIConfiguration context) {
-        super(context, "/com-redhat-jenkins-plugins-ci-GlobalCIConfiguration");
-    }
-
-    public abstract MessagingProvider addMessagingProvider();
-
-
 }

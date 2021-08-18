@@ -1,11 +1,3 @@
-package com.redhat.jenkins.plugins.ci.integration.docker.fixtures;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import org.jenkinsci.test.acceptance.docker.DockerContainer;
-import org.jenkinsci.test.acceptance.docker.DockerFixture;
-
-import java.io.IOException;
-
 /*
  * The MIT License
  *
@@ -29,26 +21,27 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id = "rabbitmq-relay", ports = 5672)
-public class RabbitMQRelayContainer extends DockerContainer {
+package com.redhat.jenkins.plugins.ci;
 
-    public String getHost() throws IOException {
-        String ip = getIpAddress();
-        if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
-            String hostIP = binding.get("HostIp").asText();
-            ip = hostIP;
-        }
-        return ip;
-    }
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.junit.Rule;
+import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.recipes.LocalData;
 
-    public String getPort() throws IOException {
-        String hostPort = "5672";
-        String ip = super.getIpAddress();
-        if (ip == null || ip.equals("")) {
-            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("5672/tcp").get(0);
-            hostPort = binding.get("HostPort").asText();
-        }
-        return hostPort;
+/**
+ * @author ogondza.
+ */
+public class LoadTest {
+    @Rule public final JenkinsRule j = new JenkinsRule();
+
+    @Test @LocalData
+    public void load() throws Exception {
+        WorkflowJob foo = j.jenkins.getItemByFullName("foo", WorkflowJob.class);
+        CIBuildTrigger next = ((CIBuildTrigger) foo.getTriggers().values().iterator().next());
+
+        // TODO finish
+        //Thread.getAllStackTraces().keySet().fin
+//        j.interactiveBreak();
     }
 }

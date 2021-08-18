@@ -24,14 +24,11 @@
 package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
 import com.rabbitmq.client.ConnectionFactory;
-
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import hudson.ExtensionList;
-
 import jenkins.model.Jenkins;
-
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
 
 public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod implements Describable<RabbitMQAuthenticationMethod> {
 

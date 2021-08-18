@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow-definition>
+    <actions/>
+    <description/>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <hudson.model.ParametersDefinitionProperty>
+            <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                    <name>PIPELINE_REPO</name>
+                    <defaultValue>https://gitlab.cee.redhat.com/keycloak/keycloak-pipeline.git</defaultValue>
+                    <description/>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>PIPELINE_BRANCH</name>
+                    <defaultValue>master</defaultValue>
+                    <description/>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.TextParameterDefinition>
+                    <name>CI_MESSAGE</name>
+                    <defaultValue/>
+                    <description>UMB message body</description>
+                </hudson.model.TextParameterDefinition>
+            </parameterDefinitions>
+        </hudson.model.ParametersDefinitionProperty>
+    </properties>
+    <triggers>
+        <com.redhat.jenkins.plugins.ci.CIBuildTrigger plugin="jms-messaging@1.1.22">
+            <spec/>
+            <noSquash>true</noSquash>
+            <providers>
+                <com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData>
+                    <name>UMB</name>
+                    <overrides>
+                        <topic>VirtualTopic.eng.cd.rh-sso.core.pnc-setup</topic>
+                    </overrides>
+                    <checks/>
+                    <timeout>60</timeout>
+                </com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData>
+            </providers>
+        </com.redhat.jenkins.plugins.ci.CIBuildTrigger>
+    </triggers>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition">
+        <scriptPath>adapters/Jenkinsfile</scriptPath>
+        <lightweight>false</lightweight>
+        <scm class="hudson.plugins.git.GitSCM">
+            <userRemoteConfigs>
+                <hudson.plugins.git.UserRemoteConfig>
+                    <url>$PIPELINE_REPO</url>
+                    <credentialsId>rh-sso-cd-service-gitlab</credentialsId>
+                </hudson.plugins.git.UserRemoteConfig>
+            </userRemoteConfigs>
+            <branches>
+                <hudson.plugins.git.BranchSpec>
+                    <name>$PIPELINE_BRANCH</name>
+                </hudson.plugins.git.BranchSpec>
+            </branches>
+            <configVersion>2</configVersion>
+            <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+            <gitTool>Default</gitTool>
+            <extensions>
+                <hudson.plugins.git.extensions.impl.CloneOption>
+                    <shallow>false</shallow>
+                    <noTags>false</noTags>
+                    <reference/>
+                    <honorRefspec>true</honorRefspec>
+                    <depth>0</depth>
+                </hudson.plugins.git.extensions.impl.CloneOption>
+                <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+                    <relativeTargetDir>.</relativeTargetDir>
+                </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+            </extensions>
+        </scm>
+    </definition>
+</flow-definition>

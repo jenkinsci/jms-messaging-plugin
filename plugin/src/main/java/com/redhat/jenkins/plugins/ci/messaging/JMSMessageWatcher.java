@@ -1,11 +1,10 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 
 import java.util.List;
-
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 public abstract class JMSMessageWatcher {
 

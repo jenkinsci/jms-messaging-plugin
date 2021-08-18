@@ -23,6 +23,17 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,19 +44,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import net.sf.json.JSONObject;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonPropertyOrder(
@@ -70,7 +68,7 @@ public class FedmsgMessage {
 
     public FedmsgMessage(String topic, String body) {
         this.topic = topic;
-        this.msgId = Calendar.getInstance().get(1) + "-" + UUID.randomUUID().toString();
+        this.msgId = Calendar.getInstance().get(1) + "-" + UUID.randomUUID();
 
         if (!StringUtils.isBlank(body)) {
             try {

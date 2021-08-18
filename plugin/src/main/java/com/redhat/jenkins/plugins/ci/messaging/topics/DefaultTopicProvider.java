@@ -3,7 +3,6 @@ package com.redhat.jenkins.plugins.ci.messaging.topics;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;

@@ -1,11 +1,3 @@
-package com.redhat.jenkins.plugins.ci.integration.po;
-
-import org.jenkinsci.test.acceptance.po.AbstractStep;
-import org.jenkinsci.test.acceptance.po.BuildStep;
-import org.jenkinsci.test.acceptance.po.Control;
-import org.jenkinsci.test.acceptance.po.Describable;
-import org.jenkinsci.test.acceptance.po.Job;
-
 /*
  * The MIT License
  *
@@ -29,18 +21,28 @@ import org.jenkinsci.test.acceptance.po.Job;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@Describable("CI Notifier")
-public class CINotifierBuildStep extends AbstractStep implements BuildStep {
+package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-    public final Control providerData = control("/");
-    public final Control overrides = control("providerData/overrides");
-    public final Control topic = control("providerData/overrides/topic");
-    public final Control messageType = control("providerData/messageType");
-    public final Control messageProperties = control("providerData/messageProperties");
-    public final Control messageContent = control("providerData/messageContent");
-    public final Control failOnError = control("providerData/failOnError");
+import com.fasterxml.jackson.databind.JsonNode;
+import org.jenkinsci.test.acceptance.docker.DockerContainer;
+import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-    public CINotifierBuildStep(Job parent, String path) {
-        super(parent, path);
+import java.io.IOException;
+
+@DockerFixture(id = "jbossamq", ports = 61616)
+public class JBossAMQContainer extends DockerContainer {
+
+    public String getBroker() throws IOException {
+        String ip = getIpAddress();
+        if (ip == null || ip.equals("")) {
+            JsonNode binding = inspect().get("HostConfig").get("PortBindings").get("61616/tcp").get(0);
+            String hostIP = binding.get("HostIp").asText();
+            String hostPort = binding.get("HostPort").asText();
+            ip = hostIP + ":" + hostPort;
+            return "tcp://" + ip;
+        } else {
+            return "tcp://" + ip + ":61616";
+        }
+
     }
 }

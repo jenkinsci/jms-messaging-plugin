@@ -23,26 +23,28 @@
  */
 package com.redhat.jenkins.plugins.ci.pipeline;
 
-import com.redhat.jenkins.plugins.ci.messaging.*;
+import com.google.common.collect.ImmutableSet;
+import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.TaskListener;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Future;
-
-import javax.annotation.Nonnull;
-import javax.inject.Inject;
-
 import jenkins.util.Timer;
-
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -50,21 +52,19 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import com.google.common.collect.ImmutableSet;
-import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
-import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import javax.annotation.Nonnull;
+import javax.inject.Inject;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Future;
 
 public class CIMessageSubscriberStep extends Step {
 
     private String providerName;
     private MessagingProviderOverrides overrides;
     private String selector;
-    private List<MsgCheck> checks;
+    private final List<MsgCheck> checks;
     private Integer timeout;
 
     @DataBoundConstructor
@@ -133,7 +133,7 @@ public class CIMessageSubscriberStep extends Step {
         }
 
         @Inject
-        private transient CIMessageSubscriberStep step;
+        private final transient CIMessageSubscriberStep step;
         private transient Future<?> task;
 
         @Override
@@ -141,7 +141,7 @@ public class CIMessageSubscriberStep extends Step {
             if (step.getProviderName() == null) {
                 throw new Exception("Provider name not specified!");
             } else if (GlobalCIConfiguration.get().getProvider(step.getProviderName()) == null) {
-                throw new Exception("Unrecognized provider name.");
+                throw new Exception("Unrecognized provider name: " + step.getProviderName());
             }
 
             task = Timer.get().submit(() -> {

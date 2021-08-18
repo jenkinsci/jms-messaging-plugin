@@ -1,8 +1,8 @@
 package com.redhat.jenkins.plugins.ci.messaging.data;
 
-import java.io.Serializable;
-
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
+
+import java.io.Serializable;
 
 public class SendResult implements Serializable {
     private static final long serialVersionUID = 7922547493388410558L;

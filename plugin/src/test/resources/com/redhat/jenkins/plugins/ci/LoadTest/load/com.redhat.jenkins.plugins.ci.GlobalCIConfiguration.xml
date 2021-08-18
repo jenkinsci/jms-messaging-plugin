@@ -1,0 +1,18 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<com.redhat.jenkins.plugins.ci.GlobalCIConfiguration plugin="jms-messaging@1.1.22">
+    <configs>
+        <com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
+            <name>UMB</name>
+            <topic>VirtualTopic.eng.cd.rh-sso.&gt;</topic>
+            <broker>ssl://umb.api.redhat.com:61616</broker>
+            <useQueues>false</useQueues>
+            <topicProvider class="com.redhat.jenkins.plugins.ci.messaging.topics.UMBTopicProvider"/>
+            <authenticationMethod class="com.redhat.jenkins.plugins.ci.authentication.activemq.SSLCertificateAuthenticationMethod">
+                <keystore>/var/run/secrets/casc-secret/rhssocdjenkins.jks</keystore>
+                <keypwd>{AQAAABAAAAAQsT9moBT9Jm58jnAOBDLodSfdFA3+FnNuiQ7GvamegJY=}</keypwd>
+                <truststore>/var/run/secrets/casc-secret/rh-it-trust.jks</truststore>
+                <trustpwd>{AQAAABAAAAAQzXtR6h1Tmx5m/yJRZGgDxHyrcV8349IAJZFcxOqGu80=}</trustpwd>
+            </authenticationMethod>
+        </com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider>
+    </configs>
+</com.redhat.jenkins.plugins.ci.GlobalCIConfiguration>

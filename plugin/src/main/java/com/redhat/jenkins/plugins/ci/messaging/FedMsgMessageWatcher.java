@@ -23,19 +23,18 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_TOPIC;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.utils.PluginUtils;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
 
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.utils.PluginUtils;
+import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_TOPIC;
 
 public class FedMsgMessageWatcher extends JMSMessageWatcher {
 
