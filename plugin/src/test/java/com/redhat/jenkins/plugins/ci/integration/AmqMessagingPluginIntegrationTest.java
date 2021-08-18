@@ -381,7 +381,6 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "        )\n" +
                 "    ]\n" +
                 ")\nnode('master') {\n sleep 1\n}", true));
-        receive.save();
 
         j.buildAndAssertSuccess(receive);
         // Allow some time for trigger thread stop/start.
