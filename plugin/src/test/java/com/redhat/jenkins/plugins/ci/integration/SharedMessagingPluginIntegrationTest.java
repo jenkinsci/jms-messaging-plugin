@@ -1043,6 +1043,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         scheduleAwaitStep(wait);
         WorkflowRun waitingBuild = wait.getLastBuild();
 
+        System.out.println(waitingBuild.getLog()); // Diagnose what the build is doing when it does not get interrupted
         waitingBuild.getExecutor().interrupt();
 
         waitUntilScheduledBuildCompletes();
