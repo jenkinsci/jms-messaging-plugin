@@ -1108,15 +1108,14 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     protected void printThreadsWithName(String tName) {
         System.out.println("Looking for Threads with name that contains: " + tName);
-        List<String> threads = getThreadsByName(tName);
+        List<Thread> threads = getThreadsByName(tName);
 
         threads.forEach(System.err::println);
     }
 
-    private List<String> getThreadsByName(String tName) {
+    protected List<Thread> getThreadsByName(String tName) {
         return Thread.getAllStackTraces().keySet().stream()
-                .map(Thread::getName)
-                .filter(name -> Pattern.compile(tName).matcher(name).matches())
+                .filter(thread -> Pattern.compile(tName).matcher(thread.getName()).matches())
                 .collect(Collectors.toList())
         ;
     }
