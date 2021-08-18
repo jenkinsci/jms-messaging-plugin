@@ -320,7 +320,7 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         attachTrigger(new CIBuildTrigger(true, Collections.singletonList(new FedMsgSubscriberProviderData(
                 "test",
                 new MessagingProviderOverrides("org.fedoraproject.dev.logger.log"),
-                Collections.singletonList(new MsgCheck("compose", "+compose_id.+message.+")),
+                Collections.singletonList(new MsgCheck("compose", ".+compose_id.+message.+")),
                 "CI_MESSAGE",
                 60
         ))), jobA);
