@@ -1,9 +1,14 @@
-The JMS Messaging Plugin provides the following functionality:
+[![Build Status](https://ci.jenkins.io/job/Plugins/job/jms-messaging-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/jms-messaging-plugin/job/master/)
+[![Contributors](https://img.shields.io/github/contributors/jenkinsci/jms-messaging-plugin.svg)](https://github.com/jenkinsci/jms-messaging-plugin/graphs/contributors)
+[![Jenkins Plugin](https://img.shields.io/jenkins/plugin/v/jms-messaging.svg)](https://plugins.jenkins.io/jms-messaging)
+[![GitHub release](https://img.shields.io/github/release/jenkinsci/jms-messaging-plugin.svg?label=changelog)](https://github.com/jenkinsci/jms-messaging-plugin/releases/latest)
+[![Jenkins Plugin Installs](https://img.shields.io/jenkins/plugin/i/jms-messaging.svg?color=blue)](https://plugins.jenkins.io/jms-messaging)
 
--   A build trigger to submit jenkins jobs upon receipt of a matching
-    message.
--   A post-build action that may be used to submit a message to the
-    topic upon the completion of a job
+# JMS Messaging Plugin
+
+- Trigger Jenkins build upon receipt of a matching message.
+- Await message in the middle of a Job
+- Send message from Jenkins Job.
 
 JMS Messaging Providers
 
