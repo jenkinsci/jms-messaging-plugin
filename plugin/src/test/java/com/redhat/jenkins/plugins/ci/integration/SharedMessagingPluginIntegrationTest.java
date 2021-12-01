@@ -534,7 +534,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
     }
 
     protected void waitUntilScheduledBuildCompletes() throws Exception {
-        Thread.sleep(500); // Sometimes, it needs a bit for the build to even start
+        Thread.sleep(1000); // Sometimes, it needs a bit for the build to even start
         j.waitUntilNoActivity();
     }
 

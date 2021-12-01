@@ -44,7 +44,7 @@
 
     <properties>
         <java.level>8</java.level>
-        <jenkins.version>2.190.3</jenkins.version>
+        <jenkins.version>2.277.3</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <spotbugs.failOnError>false</spotbugs.failOnError>
     </properties>

@@ -83,7 +83,7 @@ public class CITriggerThread extends Thread {
 
     @Override
     public void run() {
-        try (ACLContext ignored = ACL.as(ACL.SYSTEM)) {
+        try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
             cibt.clearJobActions();
             try {
                 while (!hasBeenInterrupted()) {
@@ -93,6 +93,7 @@ public class CITriggerThread extends Thread {
                 cibt.addJobAction(e);
             } finally {
                 messagingWorker.unsubscribe(jobname);
+                log.severe("Thread " + getName() + " completed");
             }
         }
     }
