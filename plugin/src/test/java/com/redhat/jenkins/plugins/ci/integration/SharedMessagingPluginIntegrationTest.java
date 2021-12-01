@@ -32,6 +32,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -1070,7 +1071,11 @@ public abstract class SharedMessagingPluginIntegrationTest {
     }
 
     protected String stringFrom(Process proc) throws InterruptedException, IOException {
-        assertThat(proc.waitFor(), is(equalTo(0)));
+        int exit = proc.waitFor();
+        if (exit != 0) {
+            String stderr = IOUtils.toString(proc.getErrorStream(), Charset.defaultCharset());
+            throw new IOException(proc.toString() + " failed with " + exit + System.lineSeparator() + stderr);
+        }
         StringWriter writer = new StringWriter();
         IOUtils.copy(proc.getInputStream(), writer);
         String string = writer.toString();
