@@ -4,11 +4,11 @@
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>4.18</version>
-        <relativePath/><!-- Tell maven this is outside of the repo -->
+        <relativePath /><!-- Tell maven this is outside of the repo -->
     </parent>
 
     <artifactId>jms-messaging</artifactId>
-    <version>1.1.25-SNAPSHOT</version>
+    <version>1.1.25</version>
     <packaging>hpi</packaging>
     <name>JMS Messaging Plugin</name>
     <description>Plugin to listen and emit messages during the build process using a JMS Messaging Provider.</description>
