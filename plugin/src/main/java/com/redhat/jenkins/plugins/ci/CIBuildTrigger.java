@@ -272,7 +272,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     @Override
     public void stop() {
-        new Error("FLARE stop").printStackTrace();
         super.stop();
         if (job != null) {
             stopTriggerThreads(job.getFullName());
@@ -291,7 +290,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private void startTriggerThreads() {
-        new Error("FLARE startTriggerThreads").printStackTrace();
         if (providerUpdated) {
             log.info("Saving job since messaging provider was migrated...");
             try {
@@ -337,7 +335,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
-        new Error("FLARE stopTriggerThreads").printStackTrace();
         synchronized (locks.computeIfAbsent(fullName, o -> new ArrayList<>())) {
             List<CITriggerThread> threads = locks.get(fullName);
             // If threads are the same we have start/stop sequence, so don't bother stopping.

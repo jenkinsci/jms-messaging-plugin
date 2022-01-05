@@ -177,7 +177,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
-        new Error("FLARE unsubscribe").printStackTrace();
         log.info("Unsubscribing job '" + jobname + "' from the '" + this.topic + "' topic.");
         disconnect();
         if (subscriber != null) {
