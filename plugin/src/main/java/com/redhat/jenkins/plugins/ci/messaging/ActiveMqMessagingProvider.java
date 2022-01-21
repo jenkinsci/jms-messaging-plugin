@@ -37,6 +37,7 @@ import hudson.model.Descriptor;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQPrefetchPolicy;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
