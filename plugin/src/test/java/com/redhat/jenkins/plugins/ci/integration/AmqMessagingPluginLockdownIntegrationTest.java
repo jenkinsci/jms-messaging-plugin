@@ -86,7 +86,8 @@ public class AmqMessagingPluginLockdownIntegrationTest {
                 true,
                 "CI",
                 null,
-                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat"))
+                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")),
+                0
         )));
 
         String adminUser = "admin";

@@ -80,7 +80,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 false,
                 DEFAULT_TOPIC_NAME,
                 null,
-                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat"))
+                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")),
+                0
         )));
 
         // TODO test connection
