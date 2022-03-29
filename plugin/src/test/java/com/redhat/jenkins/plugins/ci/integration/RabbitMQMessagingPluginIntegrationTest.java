@@ -23,8 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.google.common.base.Objects;
-import com.google.common.base.MoreObjects;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.UsernameAuthenticationMethod;
@@ -35,6 +33,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
+import hudson.Util;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
@@ -76,7 +75,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
                 DEFAULT_PROVIDER_NAME,
                 overrideTopic(topic),
                 Arrays.asList(msgChecks),
-                MoreObjects.firstNonNull(variableName, "CI_MESSAGE"),
+                Util.fixNull(variableName, "CI_MESSAGE"),
                 60
         );
     }

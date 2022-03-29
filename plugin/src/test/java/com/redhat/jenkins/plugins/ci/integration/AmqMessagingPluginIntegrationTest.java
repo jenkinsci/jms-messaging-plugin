@@ -23,8 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.google.common.base.Objects;
-import com.google.common.base.MoreObjects;
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
@@ -99,7 +97,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 overrideTopic(topic),
                 Util.fixNull(selector),
                 Arrays.asList(msgChecks),
-                MoreObjects.firstNonNull(variableName, "CI_MESSAGE"),
+                Util.fixNull(variableName, "CI_MESSAGE"),
                 60
         );
     }
