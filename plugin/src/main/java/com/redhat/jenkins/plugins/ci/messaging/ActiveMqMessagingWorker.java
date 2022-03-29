@@ -26,7 +26,6 @@ package com.redhat.jenkins.plugins.ci.messaging;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Objects;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
@@ -70,6 +69,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -243,10 +243,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                 }
                 String value = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
-                return Objects.firstNonNull(value, "");
+                return Objects.requireNonNullElse(value, "");
             } else if (message instanceof TextMessage) {
                 TextMessage tm = (TextMessage) message;
-                return Objects.firstNonNull(tm.getText(), "");
+                return Objects.requireNonNullElse(tm.getText(), "");
             } else if (message instanceof BytesMessage) {
                 BytesMessage bm = (BytesMessage) message;
                 bm.reset();
