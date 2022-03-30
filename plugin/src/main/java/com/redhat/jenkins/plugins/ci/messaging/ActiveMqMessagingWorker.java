@@ -26,8 +26,6 @@ package com.redhat.jenkins.plugins.ci.messaging;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Objects;
-import com.google.common.base.MoreObjects;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
@@ -36,6 +34,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 import hudson.EnvVars;
+import hudson.Util;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -244,10 +243,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     root.set(field, mapper.convertValue(mm.getObject(field), JsonNode.class));
                 }
                 String value = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
-                return MoreObjects.firstNonNull(value, "");
+                return Util.fixNull(value);
             } else if (message instanceof TextMessage) {
                 TextMessage tm = (TextMessage) message;
-                return MoreObjects.firstNonNull(tm.getText(), "");
+                return Util.fixNull(tm.getText());
             } else if (message instanceof BytesMessage) {
                 BytesMessage bm = (BytesMessage) message;
                 bm.reset();
