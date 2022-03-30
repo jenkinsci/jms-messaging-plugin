@@ -147,6 +147,11 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
                 Objects.equals(this.schema, thatp.schema);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), messageContent, failOnError, fedoraMessaging, severity, schema);
+    }
+
     @Extension
     @Symbol("rabbitMQPublisher")
     public static class RabbitMQPublisherProviderDataDescriptor extends RabbitMQProviderDataDescriptor {
@@ -191,6 +196,5 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         public String getConfigPage() {
             return "rabbitmq-publisher.jelly";
         }
-
     }
 }

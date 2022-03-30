@@ -124,6 +124,11 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
                 Objects.equals(this.failOnError, thatp.failOnError);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), messageType, messageProperties, messageContent, failOnError);
+    }
+
     @Extension
     @Symbol("activeMQPublisher")
     public static class ActiveMQPublisherProviderDataDescriptor extends ActiveMQProviderDataDescriptor {

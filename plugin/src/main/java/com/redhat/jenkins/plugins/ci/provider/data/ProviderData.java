@@ -30,7 +30,6 @@ import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.Serializable;
@@ -82,6 +81,11 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
 
         ProviderData thatp = (ProviderData) that;
         return Objects.equals(this.name, thatp.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     private void setProvider() {
