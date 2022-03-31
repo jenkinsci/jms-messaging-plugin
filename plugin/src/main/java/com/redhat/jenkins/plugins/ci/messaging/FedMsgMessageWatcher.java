@@ -30,6 +30,7 @@ import com.redhat.utils.PluginUtils;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -75,7 +76,7 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
 
         topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
 
-        lsocket.subscribe(topic.getBytes());
+        lsocket.subscribe(topic.getBytes(StandardCharsets.UTF_8));
         lsocket.setLinger(0);
         lsocket.connect(fedMsgMessagingProvider.getHubAddr());
         lpoller.register(lsocket, ZMQ.Poller.POLLIN);
@@ -114,7 +115,7 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
                     ZMQ.Socket s = lpoller.getSocket(0);
                     lpoller.unregister(s);
                     s.disconnect(fedMsgMessagingProvider.getHubAddr());
-                    lsocket.unsubscribe(this.topic.getBytes());
+                    lsocket.unsubscribe(this.topic.getBytes(StandardCharsets.UTF_8));
                     lsocket.close();
                 }
                 if (lcontext != null) {
@@ -139,7 +140,7 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
                 ZMQ.Socket s = lpoller.getSocket(0);
                 lpoller.unregister(s);
                 s.disconnect(fedMsgMessagingProvider.getHubAddr());
-                lsocket.unsubscribe(this.topic.getBytes());
+                lsocket.unsubscribe(this.topic.getBytes(StandardCharsets.UTF_8));
                 lsocket.close();
             }
             if (lcontext != null) {
