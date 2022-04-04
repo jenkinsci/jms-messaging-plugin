@@ -83,7 +83,8 @@ public class CIEnvironmentContributingAction implements EnvironmentContributingA
 
         // Only include variables in environment that are not defined as job parameters. And
         // do not overwrite any existing environment variables (like PATH).
-        for (String key : messageParams.keySet()) {
+        for (Map.Entry<String, String> e : messageParams.entrySet()) {
+            String key = e.getKey();
             if (!jobParams.contains(key) && !env.containsKey(key)) {
                 env.put(key, messageParams.get(key));
             }

@@ -130,6 +130,11 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
                 Objects.equals(this.timeout, thatp.timeout);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), checks, variable, timeout);
+    }
+
     @Extension
     @Symbol("rabbitMQSubscriber")
     public static class RabbitMQSubscriberProviderDataDescriptor extends RabbitMQProviderDataDescriptor {
@@ -194,6 +199,5 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         public String getConfigPage() {
             return "rabbitmq-subscriber.jelly";
         }
-
     }
 }

@@ -45,7 +45,6 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
     private String messageContent;
     private Boolean failOnError = false;
 
-
     @DataBoundConstructor
     public FedMsgPublisherProviderData() {
     }
@@ -100,6 +99,11 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
                 Objects.equals(this.failOnError, thatp.failOnError);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), messageContent, failOnError);
+    }
+
     @Extension
     @Symbol("fedmsgPublisher")
     public static class FedMsgPublisherProviderDataDescriptor extends FedMsgProviderDataDescriptor {
@@ -133,6 +137,5 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
         public String getConfigPage() {
             return "fedmsg-publisher.jelly";
         }
-
     }
 }

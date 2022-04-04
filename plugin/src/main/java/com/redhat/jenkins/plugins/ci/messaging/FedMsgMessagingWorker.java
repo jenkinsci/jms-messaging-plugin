@@ -43,9 +43,11 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -83,7 +85,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     if (socket == null) {
                         socket = context.socket(ZMQ.SUB);
                         log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
-                        socket.subscribe(this.topic.getBytes());
+                        socket.subscribe(this.topic.getBytes(StandardCharsets.UTF_8));
                         socket.setLinger(0);
                         socket.connect(provider.getHubAddr());
                         poller.register(socket, ZMQ.Poller.POLLIN);
@@ -137,7 +139,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     poller.unregister(s);
                     s.disconnect(provider.getHubAddr());
                     log.info("Un-subscribing job '" + jobname + "' from " + this.topic + " topic.");
-                    socket.unsubscribe(this.topic.getBytes());
+                    socket.unsubscribe(this.topic.getBytes(StandardCharsets.UTF_8));
                 }
                 socket.close();
             }
@@ -259,7 +261,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             env.put("CI_NAME", build.getParent().getName());
             if (!build.isBuilding()) {
                 env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed": "failed"));
-                env.put("BUILD_STATUS", build.getResult().toString());
+                env.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
             }
 
             FedmsgMessage fm = new FedmsgMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
@@ -325,7 +327,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             log.warning(e.getMessage());
         }
 
-        lsocket.subscribe(ltopic.getBytes());
+        lsocket.subscribe(ltopic.getBytes(StandardCharsets.UTF_8));
         lsocket.setLinger(0);
         lsocket.connect(provider.getHubAddr());
         lpoller.register(lsocket, ZMQ.Poller.POLLIN);
@@ -368,7 +370,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 ZMQ.Socket s = lpoller.getSocket(0);
                 lpoller.unregister(s);
                 s.disconnect(provider.getHubAddr());
-                lsocket.unsubscribe(ltopic.getBytes());
+                lsocket.unsubscribe(ltopic.getBytes(StandardCharsets.UTF_8));
                 lsocket.close();
                 lcontext.term();
             } catch (Exception e) {
@@ -398,7 +400,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 poller.unregister(s);
                 s.disconnect(provider.getHubAddr());
                 log.info("Un-subscribing job '" + jobname + "' from " + this.topic + " topic.");
-                socket.unsubscribe(this.topic.getBytes());
+                socket.unsubscribe(this.topic.getBytes(StandardCharsets.UTF_8));
                 socket.close();
             }
             if (context != null) {

@@ -302,7 +302,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                 channel.exchangeDeclarePassive(exchangeName);
                 channel.basicPublish(exchangeName, msg.getTopic(),
                         new AMQP.BasicProperties.Builder().headers(headers)
-                                .messageId(msgId).build(), body.getBytes());
+                                .messageId(msgId).build(), body.getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
                 if (pd.isFailOnError()) {
                     log.severe("Unhandled exception in perform: Failed to send message!");

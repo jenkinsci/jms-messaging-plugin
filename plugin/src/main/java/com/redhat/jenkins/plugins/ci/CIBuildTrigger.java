@@ -290,6 +290,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private void startTriggerThreads() {
+        if (job == null) return;
+
         if (providerUpdated) {
             log.info("Saving job since messaging provider was migrated...");
             try {
@@ -370,7 +372,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private List<CITriggerThread> getComparisonThreads() {
-        if (providers != null) {
+        if (providers != null && job != null) {
             List<CITriggerThread> threads = new ArrayList<>();
             int instance = 1;
             for (ProviderData pd : providers) {
@@ -528,6 +530,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     public void scheduleBuild(Map<String, String> messageParams) {
+        if (job == null) throw new IllegalStateException("Trigger not started yet");
         ParametersAction parameters = createParameters(job, messageParams);
         List<ParameterValue> definedParameters = getDefinedParameters(job);
         List<ParameterValue> buildParameters = getUpdatedParameters(messageParams, definedParameters);
@@ -552,7 +555,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         for (ParameterValue def : definedParams) {
             newParams.put(def.getName(), def);
         }
-        for (String key : messageParams.keySet()) {
+        for (Map.Entry<String, String> e : messageParams.entrySet()) {
+            String key = e.getKey();
 
             if (newParams.containsKey(key)) {
                 if (newParams.get(key) instanceof TextParameterValue) {
@@ -584,7 +588,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                     param = new TextParameterValue(paramDef.getName(), ((TextParameterDefinition) paramDef).getDefaultValue());
                 }
                 if (paramDef instanceof BooleanParameterDefinition) {
-                    param = new BooleanParameterValue(paramDef.getName(), Boolean.getBoolean(paramDef.getDefaultParameterValue().getValue().toString()));
+                    BooleanParameterValue defaultParameterValue = ((BooleanParameterDefinition) paramDef).getDefaultParameterValue();
+                    param = new BooleanParameterValue(paramDef.getName(), Boolean.TRUE.equals(Objects.requireNonNull(defaultParameterValue).getValue()));
                 }
                 if (paramDef instanceof ChoiceParameterDefinition) {
                     param = ((ChoiceParameterDefinition) paramDef).getDefaultParameterValue();
