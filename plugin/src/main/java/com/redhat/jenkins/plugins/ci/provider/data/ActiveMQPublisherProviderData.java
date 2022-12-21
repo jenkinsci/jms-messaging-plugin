@@ -47,6 +47,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     private String messageProperties;
     private String messageContent;
     private Boolean failOnError = false;
+    private Integer timeToLiveMillis = 0;
 
     @DataBoundConstructor
     public ActiveMQPublisherProviderData() {
@@ -60,12 +61,13 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         super(name, overrides);
     }
 
-    public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, MESSAGE_TYPE messageType, String messageProperties, String messageContent, Boolean failOnError) {
+    public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, MESSAGE_TYPE messageType, String messageProperties, String messageContent, Boolean failOnError, Integer timeToLiveMillis) {
         this(name, overrides);
         this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
         this.failOnError = failOnError;
+        this.timeToLiveMillis = timeToLiveMillis;
     }
 
     public MESSAGE_TYPE getMessageType() {
@@ -104,6 +106,15 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         this.failOnError = failOnError;
     }
 
+    public Integer getTimeToLiveMillis() {
+        return timeToLiveMillis;
+    }
+
+    @DataBoundSetter
+    public void setTimeToLiveMillis(Integer timeToLiveMillis) {
+        this.timeToLiveMillis = timeToLiveMillis;
+    }
+
     @Override
     public Descriptor<ProviderData> getDescriptor() {
         return Jenkins.get().getDescriptorByType(ActiveMQPublisherProviderDataDescriptor.class);
@@ -121,12 +132,13 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
                 Objects.equals(this.messageType, thatp.messageType) &&
                 Objects.equals(this.messageProperties, thatp.messageProperties) &&
                 Objects.equals(this.messageContent, thatp.messageContent) &&
-                Objects.equals(this.failOnError, thatp.failOnError);
+                Objects.equals(this.failOnError, thatp.failOnError) &&
+                Objects.equals(this.timeToLiveMillis, thatp.timeToLiveMillis);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), messageType, messageProperties, messageContent, failOnError);
+        return Objects.hash(super.hashCode(), messageType, messageProperties, messageContent, failOnError, timeToLiveMillis);
     }
 
     @Extension
@@ -150,7 +162,8 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
                     MESSAGE_TYPE.fromString(jo.getString("messageType")),
                     jo.getString("messageProperties"),
                     jo.getString("messageContent"),
-                    jo.getBoolean("failOnError"));
+                    jo.getBoolean("failOnError"),
+                    jo.getInt("timeToLiveMinutes") * 60 * 1000);
         }
 
         public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
