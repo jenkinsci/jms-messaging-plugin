@@ -67,13 +67,23 @@ public class CIMessageSenderStep extends Step {
     private String messageProperties;
     private String messageContent;
     private boolean failOnError;
+    private Integer timeToLiveMinutes;
 
     public CIMessageSenderStep(final String providerName,
                                final MessagingProviderOverrides overrides,
                                final MESSAGE_TYPE messageType,
                                final String messageProperties,
                                final String messageContent) {
-        this(providerName, overrides, messageType, messageProperties, messageContent, false);
+        this(providerName, overrides, messageType, messageProperties, messageContent, false, 0);
+    }
+
+    public CIMessageSenderStep(final String providerName,
+                               final MessagingProviderOverrides overrides,
+                               final MESSAGE_TYPE messageType,
+                               final String messageProperties,
+                               final String messageContent,
+			       final Integer timeToLiveMinutes) {
+        this(providerName, overrides, messageType, messageProperties, messageContent, false, timeToLiveMinutes);
     }
 
     @DataBoundConstructor
@@ -82,7 +92,8 @@ public class CIMessageSenderStep extends Step {
                                final MESSAGE_TYPE messageType,
                                final String messageProperties,
                                final String messageContent,
-                               Boolean failOnError) {
+                               Boolean failOnError,
+                               Integer timeToLiveMinutes) {
         super();
         this.providerName = providerName;
         this.overrides = overrides;
@@ -93,6 +104,10 @@ public class CIMessageSenderStep extends Step {
             failOnError = false;
         }
         this.failOnError = failOnError;
+        if (timeToLiveMinutes == null) {
+            timeToLiveMinutes = 0;
+        }
+        this.timeToLiveMinutes = timeToLiveMinutes;
     }
 
 
@@ -144,6 +159,14 @@ public class CIMessageSenderStep extends Step {
         this.failOnError = failOnError;
     }
 
+    public Integer getTimeToLiveMinutes() {
+        return timeToLiveMinutes;
+    }
+
+    public void setTimeToLiveMinutes(Integer timeToLiveMinutes) {
+        this.timeToLiveMinutes = timeToLiveMinutes;
+    }
+
     @Override
     public StepExecution start(StepContext context) {
         return new CIMessageSenderStep.Execution(this, context);
@@ -182,6 +205,7 @@ public class CIMessageSenderStep extends Step {
                         apd.setMessageProperties(step.getMessageProperties());
                         apd.setMessageContent(step.getMessageContent());
                         apd.setFailOnError(step.getFailOnError());
+                        apd.setTimeToLiveMillis(step.getTimeToLiveMinutes() * 60 * 1000);
                         pd = apd;
                     } else if (p instanceof FedMsgMessagingProvider) {
                         FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(step.getProviderName());
