@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    Plugin to listen and emit messages during the build process using a JMS Messaging Provider
+</div>

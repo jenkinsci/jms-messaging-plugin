@@ -361,7 +361,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
         send.setDefinition(new CpsFlowDefinition(
-                "node('master') {\n sendCIMessage" +
+                "node('built-in') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " failOnError: true, " +
                 " messageContent: '" + MESSAGE_CHECK_CONTENT + "', " +
@@ -387,7 +387,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
                 "        )\n" +
                 "    ]\n" +
-                ")\nnode('master') {\n sleep 1\n}", true));
+                ")\nnode('built-in') {\n sleep 1\n}", true));
 
         j.buildAndAssertSuccess(receive);
         // Allow some time for trigger thread stop/start.
@@ -435,7 +435,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
                 "        )\n" +
                 "    ]\n" +
-                ")\nnode('master') {\n sleep 1\n}", false));
+                ")\nnode('built-in') {\n sleep 1\n}", false));
         scheduleAwaitStep(receive);
 
         for (int i = 0; i < 3; i++) {

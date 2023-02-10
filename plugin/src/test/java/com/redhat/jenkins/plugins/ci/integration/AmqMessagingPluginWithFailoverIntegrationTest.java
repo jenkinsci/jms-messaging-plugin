@@ -232,7 +232,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         WorkflowJob pipe = j.jenkins.createProject(WorkflowJob.class, "pipeline");
         pipe.setDefinition(new CpsFlowDefinition(
                 "pipeline {\n" +
-                "    agent { label 'master' }\n" +
+                "    agent { label 'built-in' }\n" +
                 "    triggers {\n" +
                 "        ciBuildTrigger(noSquash: true,\n" +
                 "                       providerData: activeMQSubscriber(name: '" + SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME + "',\n" +
@@ -272,7 +272,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         // Now fix the selector.
         pipe.setDefinition(new CpsFlowDefinition(
                 "pipeline {\n" +
-                "    agent { label 'master' }\n" +
+                "    agent { label 'built-in' }\n" +
                 "    triggers {\n" +
                 "        ciBuildTrigger(noSquash: true,\n" +
                 "                       providerData: activeMQSubscriber(name: '" + SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME + "',\n" +
