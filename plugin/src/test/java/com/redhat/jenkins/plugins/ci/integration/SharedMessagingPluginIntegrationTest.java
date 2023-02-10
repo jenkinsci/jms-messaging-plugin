@@ -92,10 +92,10 @@ public abstract class SharedMessagingPluginIntegrationTest {
         job.scheduleBuild2(0).waitForStart();
         Thread.sleep(3000);
     }
-    
+
     public void _testVerifyModelUIPersistence() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
-        jobA.setDefinition(new CpsFlowDefinition("node('master') {\n echo 'hello world' \n} ", true));
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n echo 'hello world' \n} ", true));
         CIBuildTrigger trigger = new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
                 "otopic", "HELLO", null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         )));
@@ -113,7 +113,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         assertThat(ciTrigger, equalTo(trigger));
 
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
-        job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
+        job.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " overrides: [topic: 'otopic'], " +
                 " failOnError: true, " +
@@ -149,7 +149,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithDefaultValue() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        
+
         jobA.getBuildersList().add(new Shell("echo hello $DEFAULTPARAM"));
         jobA.addProperty(new ParametersDefinitionProperty(
                 new StringParameterDefinition("CI_MESSAGE", "", ""),
@@ -161,7 +161,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, "Hello World"
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -175,7 +175,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithTextArea(String body, String matchString) throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        
+
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = \"$CI_MESSAGE\""));
         jobA.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition(
                 "CI_MESSAGE", "", ""
@@ -186,7 +186,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, body
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -196,7 +196,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithChoiceParam(String properties, String body, String matchString) throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "foo");
-        jobA.setDefinition(new CpsFlowDefinition("node('master') {\n echo \"mychoice is $mychoice\"\n}", true));
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n echo \"mychoice is $mychoice\"\n}", true));
         jobA.addProperty(new ParametersDefinitionProperty(
                 new StringParameterDefinition("CI_MESSAGE", "", ""),
                 new StringParameterDefinition("mychoice", "scott\ntom", "")
@@ -207,18 +207,18 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, properties, body
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        
+
         j.assertLogContains(matchString, jobA.getLastBuild());
     }
 
     public void _testSimpleCIEventTriggerWithBoolParam(String properties, String body, String matchString) throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "foo");
-        jobA.setDefinition(new CpsFlowDefinition("node('master') {\n echo \"dryrun is $dryrun, scott is $scott\"\n}", true));
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n echo \"dryrun is $dryrun, scott is $scott\"\n}", true));
         jobA.addProperty(new ParametersDefinitionProperty(
                 new StringParameterDefinition("CI_MESSAGE", "", ""),
                 new BooleanParameterDefinition("dryrun", false, ""),
@@ -231,7 +231,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, properties, body
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -246,7 +246,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
-        
+
         scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -254,7 +254,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -278,7 +278,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "This is my content"
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -300,7 +300,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -318,7 +318,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
-        
+
         scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -342,14 +342,14 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
-        
+
         scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "my-topic", null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -359,14 +359,14 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        
+
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
 
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
-        job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
+        job.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
@@ -385,7 +385,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         ))), jobA);
 
         WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
-        job.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
+        job.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n", true));
 
@@ -415,18 +415,18 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        
+
         jobA.getBuildersList().add(new Shell("echo job ran"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        
+
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -436,18 +436,18 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithCheckNoSquash() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        
+
         jobA.getBuildersList().add(new Shell("sleep 3;"));
         attachTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        
+
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
         j.buildAndAssertSuccess(jobB);
         j.buildAndAssertSuccess(jobB);
@@ -469,7 +469,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed\n compose = \"compose_id\": \"Fedora-Atomic-25-20170105.0\"", ""
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -489,7 +489,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, "{ \"compose\": { \"compose_id\": \"Fedora-Atomic-25-20170105.0\" } }"
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -508,7 +508,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -585,7 +585,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "$MY_TOPIC", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -607,7 +607,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "$MY_TOPIC", null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -695,7 +695,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerOnPipelineJob() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
-        jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n sleep 10\n}", true));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
@@ -704,7 +704,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -713,17 +713,17 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithCheckOnPipelineJob() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
-        jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n sleep 10\n}", true));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        
+
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -737,7 +737,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         ));
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
-        jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n sleep 10\n}", true));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "$MY_TOPIC_ID", null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
@@ -746,7 +746,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "$MY_TOPIC_ID", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -760,7 +760,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         ));
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
-        jobA.setDefinition(new CpsFlowDefinition("node('master') {\n sleep 10\n}", true));
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n sleep 10\n}", true));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 "$MY_TOPIC_ID", null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
@@ -769,7 +769,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "$MY_TOPIC_ID", null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
         waitUntilScheduledBuildCompletes();
         j.assertBuildStatusSuccess(jobA.getLastBuild());
@@ -777,17 +777,17 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
-        
+
         scheduleAwaitStep(wait);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -797,18 +797,18 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
-        
+
         scheduleAwaitStep(wait);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        
+
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, null, null, MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -818,7 +818,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
                 " selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"," +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
@@ -828,7 +828,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", MESSAGE_CHECK_CONTENT
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -847,15 +847,15 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob send, String expected) throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
                 "selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
                 " overrides: [topic: 'org.fedoraproject.otopic']" +
                 "\necho \"scott = \" + scott}", true));
-        
+
         scheduleAwaitStep(wait);
-        
-        send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
+
+        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " overrides: [topic: 'org.fedoraproject.otopic']," +
                 " messageContent: 'abcdefg', " +
@@ -872,16 +872,16 @@ public abstract class SharedMessagingPluginIntegrationTest {
     public void _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(WorkflowJob send, String selector,
                                                                        String expected) throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n" +
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
                 "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
                 "    def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', selector:  \"" +
                 selector + "${env.MY_TOPIC}'\",        overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
-        
+
         scheduleAwaitStep(wait);
-        
-        send.setDefinition(new CpsFlowDefinition("node('master') {\n" +
+
+        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
                 " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
                 " sendCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: 'abcdefg', messageProperties: 'CI_STATUS = failed', messageType: 'CodeQualityChecksDone'\n" +
                 "}", true));
@@ -926,7 +926,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
                 null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
-        
+
         Thread.sleep(1000);
 
         jobA.renameTo("ABC");
@@ -946,7 +946,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         jobA.enable();
@@ -998,12 +998,12 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
-        
+
         j.buildAndAssertSuccess(jobB);
 
         Thread.sleep(5000);
         assertThat(jobA.getBuilds(), Matchers.iterableWithSize(0));
-        
+
         jobA.doEnable();
         Thread.sleep(3000);
 
@@ -1025,8 +1025,8 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
-        
-        send.setDefinition(new CpsFlowDefinition("node('master') {\n sendCIMessage" +
+
+        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " failOnError: true, " +
                 " messageContent: 'abcdefg', " +
@@ -1038,7 +1038,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testAbortWaitingForMessageWithPipelineBuild() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \n}", true));
         scheduleAwaitStep(wait);
@@ -1053,7 +1053,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public void _testPipelineInvalidProvider() throws Exception {
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
-        send.setDefinition(new CpsFlowDefinition("node('master') {\n def message = sendCIMessage " +
+        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: 'bogus', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
@@ -1063,7 +1063,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
 
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('master') {\n def scott = waitForCIMessage  providerName: 'bogus', " +
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: 'bogus', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
         build = j.buildAndAssertStatus(Result.FAILURE, wait);
