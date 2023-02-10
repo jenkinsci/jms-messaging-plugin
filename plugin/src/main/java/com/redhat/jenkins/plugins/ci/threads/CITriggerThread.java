@@ -91,9 +91,9 @@ public class CITriggerThread extends Thread {
                 }
             } catch (Exception e) {
                 cibt.addJobAction(e);
+                log.log(SEVERE, "Thread " + getName() + " completed", e);
             } finally {
                 messagingWorker.unsubscribe(jobname);
-                log.severe("Thread " + getName() + " completed");
             }
         }
     }
