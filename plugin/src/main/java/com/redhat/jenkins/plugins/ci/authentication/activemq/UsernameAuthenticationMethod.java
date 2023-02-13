@@ -118,7 +118,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
             if (broker != null && isValidURL(broker)) {
                 try {
                     UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
-                    ActiveMQConnectionFactory connectionFactory = uam.getConnectionFactory(broker);
+                    ActiveMQConnectionFactory connectionFactory = uam.getConnectionFactory(broker + "?initialReconnectDelay=2000&maxReconnectAttempts=5");
                     connection = connectionFactory.createConnection();
                     connection.start();
                     session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
