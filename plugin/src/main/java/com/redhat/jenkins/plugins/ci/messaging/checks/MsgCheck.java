@@ -38,15 +38,14 @@ public class MsgCheck {
 
         MsgCheck msgCheck = (MsgCheck) o;
 
-        if (!Objects.equals(field, msgCheck.field)) return false;
-        return Objects.equals(expectedValue, msgCheck.expectedValue);
+        return Objects.equals(expectedValue, msgCheck.expectedValue)
+                && Objects.equals(field, msgCheck.field)
+        ;
     }
 
     @Override
     public int hashCode() {
-        int result = field != null ? field.hashCode(): 0;
-        result = 31 * result + (expectedValue != null ? expectedValue.hashCode(): 0);
-        return result;
+        return Objects.hash(field, expectedValue);
     }
 
     @DataBoundConstructor
@@ -66,9 +65,6 @@ public class MsgCheck {
 
     @Override
     public String toString() {
-        return "MsgCheck{" +
-                "field='" + field + '\'' +
-                ", expectedValue='" + expectedValue + '\'' +
-                '}';
+        return String.format("MsgCheck{field='%s', expectedValue='%s'}", field, expectedValue);
     }
 }
