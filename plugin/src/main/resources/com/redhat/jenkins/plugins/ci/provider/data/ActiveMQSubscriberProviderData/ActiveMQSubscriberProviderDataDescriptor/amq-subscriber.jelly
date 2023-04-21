@@ -52,11 +52,11 @@
         <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
             <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}" minimum="0">
                 <rh:blockWrapper>
-                    <f:entry title="${%Field}">
+                    <f:entry title="${%Field JsonPath}">
                         <f:textbox name="checks.field" value="${check.field}"
                                    checkUrl="'descriptorByName/com.redhat.jenkins.plugins.ci.CIBuildTrigger/checkField?value='+escape(this.value)"/>
                     </f:entry>
-                    <f:entry title="${%Expected value}">
+                    <f:entry title="${%Value Regex}">
                         <f:textbox name="checks.expectedValue" value="${check.expectedValue}"/>
                     </f:entry>
                     <f:entry>
