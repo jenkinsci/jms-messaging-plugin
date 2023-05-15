@@ -276,7 +276,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         if (job != null) {
             stopTriggerThreads(job.getFullName());
         } else {
-            log.info("job is null! Not stopping trigger thread!");
+            log.fine("job is null! Not stopping trigger thread!");
         }
     }
 
