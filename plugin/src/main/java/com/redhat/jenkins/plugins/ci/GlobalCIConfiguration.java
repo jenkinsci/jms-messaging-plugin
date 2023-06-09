@@ -139,7 +139,9 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         if (configs.contains(provider)) {
             throw new Failure("Attempt to add a duplicate message provider");
         }
+        log.info("Add message provider " + provider.getName());
         configs.add(provider);
+        save();
         return true;
     }
 
