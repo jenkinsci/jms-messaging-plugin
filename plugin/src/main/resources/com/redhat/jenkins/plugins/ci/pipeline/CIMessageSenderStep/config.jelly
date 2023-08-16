@@ -56,6 +56,9 @@
   <f:entry title="${%Message content}" field="messageContent">
     <f:textarea name="messageContent"/>
   </f:entry>
+  <f:entry title="${%Message time-to-live}" field="timeToLiveMinutes">
+    <f:number name="timeToLiveMinutes" default="0"/>
+  </f:entry>
   <f:entry field="failOnError">
     <f:checkbox title="${%Fail On Error}" name="failOnError" default="false"/>
   </f:entry>
