@@ -75,6 +75,32 @@ unclassified:
               trustpwd: "trustpwd" # User, encrypt secrets
 ```
 
+A more realistic example is the RabbitMQ configuration for Fedora's broker,
+connecting to the public endpoint:
+
+```
+unclassified:
+  jmsProviders:
+    configs:
+    - rabbitMq:
+        exchange: "amq.topic"
+        hostname: "rabbitmq.fedoraproject.org"
+        name: "Fedora Messaging"
+        portNumber: 5671
+        virtualHost: "/public_pubsub"
+        authenticationMethod:
+          sslCertificate:
+            username: "fedora"
+            keystore: "/path/to/keystore.jks"
+            keypwd: "sooperseekret"
+            truststore: "/path/to/truststore.jks"
+            trustpwd: "sooperseekret"
+```
+
+For a tutorial on how to create keystores from the certificates and private key
+in the `fedora-messaging` RPM package, see
+[this guide](https://docs.oracle.com/cd/E35976_01/server.740/es_admin/src/tadm_ssl_convert_pem_to_jks.html).
+
 ## Triggering
 
 To enable the CI trigger, go to the job configuration page and add click
