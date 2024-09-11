@@ -64,6 +64,7 @@ public class CIMessageSubscriberStep extends Step {
     private String providerName;
     private MessagingProviderOverrides overrides;
     private String selector;
+    private String variable;
     private final List<MsgCheck> checks;
     private Integer timeout;
 
@@ -71,12 +72,14 @@ public class CIMessageSubscriberStep extends Step {
     public CIMessageSubscriberStep(final String providerName,
                                    final MessagingProviderOverrides overrides,
                                    final String selector,
+                                   final String variable,
                                    final Integer timeout,
                                    List<MsgCheck> checks) {
         super();
         this.providerName = providerName;
         this.overrides = overrides;
         this.selector = selector;
+        this.variable = variable;
         this.timeout = timeout;
         this.checks = checks == null ? Collections.emptyList(): checks;
     }
@@ -103,6 +106,14 @@ public class CIMessageSubscriberStep extends Step {
 
     public void setSelector(String selector) {
         this.selector = selector;
+    }
+
+    public String getVariable() {
+        return variable;
+    }
+
+    public void setVariable(String variable) {
+        this.variable = variable;
     }
 
     public Integer getTimeout() {
@@ -154,18 +165,21 @@ public class CIMessageSubscriberStep extends Step {
                         apd.setSelector(step.getSelector());
                         apd.setChecks(step.getChecks());
                         apd.setTimeout(step.getTimeout());
+                        apd.setVariable(step.getVariable());
                         pd = apd;
                     } else if (p instanceof FedMsgMessagingProvider) {
                         FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(step.getProviderName());
                         fpd.setOverrides(step.getOverrides());
                         fpd.setChecks(step.getChecks());
                         fpd.setTimeout(step.getTimeout());
+                        fpd.setVariable(step.getVariable());
                         pd = fpd;
                     } else if (p instanceof RabbitMQMessagingProvider) {
                         RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(step.getProviderName());
                         rpd.setOverrides(step.getOverrides());
                         rpd.setChecks(step.getChecks());
                         rpd.setTimeout(step.getTimeout());
+                        rpd.setVariable(step.getVariable());
                         pd = rpd;
                     }
                     CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);

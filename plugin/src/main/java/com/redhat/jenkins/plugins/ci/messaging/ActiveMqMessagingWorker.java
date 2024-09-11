@@ -527,6 +527,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                             if (StringUtils.isNotEmpty(pd.getVariable())) {
                                 EnvVars vars = new EnvVars();
                                 vars.put(pd.getVariable(), value);
+                                vars.put(pd.getVariable() + "_HEADERS", getMessageHeaders(message));
                                 build.addAction(new CIEnvironmentContributingAction(vars));
                             }
                             log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));

@@ -25,6 +25,7 @@ package com.redhat.jenkins.plugins.ci.integration;
 
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
+import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
@@ -323,6 +324,39 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         System.out.println("Waiting 30 secs");
         Thread.sleep(30000);
         _testEnsureFailedSendingOfMessageFailsPipelineBuild();
+    }
+
+    @Test
+    public void testEnvVariablesWithPipelineWaitForMsg() throws Exception {
+        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
+        wait.setDefinition(new CpsFlowDefinition("node('master') {\n" +
+            "  def messageContent = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', variable: \"CI_MESSAGE_TEST\"\n" +
+            "  echo \"messageContent = \" + messageContent  \n" +
+            "  echo \"CI_MESSAGE_TEST = \" + CI_MESSAGE_TEST  \n" +
+            "  if (env.CI_MESSAGE_TEST == null) {\n" +
+            "    error(\"CI_MESSAGE_TEST not set\")\n"+
+            "  }\n" +
+            "  echo \"CI_MESSAGE_TEST_HEADERS = \" + env.CI_MESSAGE_TEST_HEADERS  \n" +
+            "  if (env.CI_MESSAGE_TEST_HEADERS == null) {\n" +
+            "    error(\"CI_MESSAGE_TEST_HEADERS not set\")\n"+
+            "  }\n" +
+            "  if (!env.CI_MESSAGE_TEST_HEADERS.contains(\"TEST_PROPERTY\")) {\n" +
+            "    error(\"TEST_PROPERTY not found\")\n"+
+            "  }\n" +
+            "}", true));
+
+        scheduleAwaitStep(wait);
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
+                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "TEST_PROPERTY = TEST_VALUE", "Hello World"
+        )));
+
+        j.buildAndAssertSuccess(jobB);
+
+        waitUntilScheduledBuildCompletes();
+        j.assertBuildStatusSuccess(wait.getLastBuild());
+        j.assertLogContains("Hello World", wait.getLastBuild());
     }
 
     @Test
