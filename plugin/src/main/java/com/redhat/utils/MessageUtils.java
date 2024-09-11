@@ -126,12 +126,19 @@ public class MessageUtils {
         log.info(startMessage);
         listener.getLogger().println(startMessage);
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
-        JMSMessagingWorker worker =
-                config.getProvider(pdata.getName()).createWorker(pdata, build.getParent().getName());
-        SendResult sendResult = worker.sendMessage(build, listener, pdata);
-        String completedMessage = "Sent successfully with messageId: " + sendResult.getMessageId();
-        log.info(completedMessage);
-        listener.getLogger().println(completedMessage);
-        return sendResult;
+	JMSMessagingProvider provider = config.getProvider(pdata.getName());
+	if (provider != null) {
+            JMSMessagingWorker worker = provider.createWorker(pdata, build.getParent().getName());
+            SendResult sendResult = worker.sendMessage(build, listener, pdata);
+            String completedMessage = "Sent successfully with messageId: " + sendResult.getMessageId();
+            log.info(completedMessage);
+            listener.getLogger().println(completedMessage);
+            return sendResult;
+	} else {
+            String errorMessage = "Unable to find provider " + pdata.getName() + ".";
+            log.severe(errorMessage);
+            listener.getLogger().println(errorMessage);
+	    return null;
+        }
     }
 }

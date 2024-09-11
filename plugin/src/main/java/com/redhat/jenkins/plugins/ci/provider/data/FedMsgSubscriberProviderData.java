@@ -40,6 +40,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
@@ -114,6 +115,11 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
                 (this.checks != null ? this.checks.equals(thatp.checks): thatp.checks == null) &&
                 (this.variable != null ? this.variable.equals(thatp.variable): thatp.variable == null) &&
                 (this.timeout != null ? this.timeout.equals(thatp.timeout): thatp.timeout == null);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, overrides, checks, variable, timeout);
     }
 
     @Extension

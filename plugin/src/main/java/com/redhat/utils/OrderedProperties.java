@@ -1,6 +1,7 @@
 package com.redhat.utils;
 
 import java.util.Enumeration;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -10,6 +11,8 @@ import java.util.Vector;
  * @author Brian Wing Shun Chan
  */
 public class OrderedProperties extends Properties {
+
+    private final Vector _names;
 
     public OrderedProperties() {
         super();
@@ -35,6 +38,18 @@ public class OrderedProperties extends Properties {
         return super.remove(key);
     }
 
-    private final Vector _names;
+    @Override
+    public boolean equals(Object that) {
+        if (!super.equals(that)) {
+            return false;
+        }
 
+        OrderedProperties thatp = (OrderedProperties) that;
+        return (this._names != null ? this._names.equals(thatp._names) : thatp._names == null);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_names);
+    }
 }
