@@ -156,7 +156,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             if (broker != null && isValidURL(broker)) {
                 try {
                     SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
-                    ActiveMQSslConnectionFactory connectionFactory = sam.getConnectionFactory(broker);
+                    ActiveMQSslConnectionFactory connectionFactory = sam.getConnectionFactory(broker + "?initialReconnectDelay=2000&maxReconnectAttempts=5");
                     connection = connectionFactory.createConnection();
                     connection.start();
                     session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
