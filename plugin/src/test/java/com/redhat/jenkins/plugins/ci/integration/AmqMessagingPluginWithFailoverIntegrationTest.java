@@ -79,7 +79,8 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
                 true,
                 "CI",
                 null,
-                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat"))
+                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")),
+                0
         )));
 
         // TODO test connection. WebClient? Rest?
