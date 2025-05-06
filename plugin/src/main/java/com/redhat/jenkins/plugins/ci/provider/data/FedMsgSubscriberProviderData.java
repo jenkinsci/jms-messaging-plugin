@@ -35,11 +35,12 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
@@ -116,6 +117,11 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
                 (this.timeout != null ? this.timeout.equals(thatp.timeout): thatp.timeout == null);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, overrides, checks, variable, timeout);
+    }
+
     @Extension
     @Symbol("fedmsgSubscriber")
     public static class FedMsgSubscriberProviderDataDescriptor extends FedMsgProviderDataDescriptor {
@@ -126,7 +132,7 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
         }
 
         @Override
-        public FedMsgSubscriberProviderData newInstance(StaplerRequest sr, JSONObject jo) {
+        public FedMsgSubscriberProviderData newInstance(StaplerRequest2 sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));

@@ -36,13 +36,13 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.Nonnull;
-import javax.jms.Connection;
-import javax.jms.JMSException;
-import javax.jms.Session;
+import jakarta.jms.Connection;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -97,7 +97,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
         }
 
         @Override
-        public UsernameAuthenticationMethod newInstance(StaplerRequest sr, JSONObject jo) {
+        public UsernameAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
             return new UsernameAuthenticationMethod(jo.getString("user"), Secret.fromString(jo.getString("password")));
         }
 

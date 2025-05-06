@@ -49,7 +49,7 @@ import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -153,7 +153,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     @Override
-    public boolean configure(StaplerRequest req, JSONObject json) {
+    public boolean configure(StaplerRequest2 req, JSONObject json) {
         HashMap<String, String> names = new HashMap<>();
         Object obj = json.get("configs");
         if (obj instanceof JSONArray) {

@@ -37,7 +37,7 @@ import hudson.tasks.Builder;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import javax.annotation.Nonnull;
 import java.util.logging.Level;
@@ -142,7 +142,7 @@ public class CIMessageBuilder extends Builder {
         }
 
         @Override
-        public CIMessageBuilder newInstance(StaplerRequest sr, JSONObject jo) {
+        public CIMessageBuilder newInstance(StaplerRequest2 sr, JSONObject jo) {
             try {
                 // The provider name is at the root of the JSON object with a key of "" (this
                 // is because the select is not named in dropdownList.jelly). Move that into the

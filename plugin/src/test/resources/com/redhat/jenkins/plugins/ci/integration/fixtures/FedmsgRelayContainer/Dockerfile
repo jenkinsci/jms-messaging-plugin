@@ -23,8 +23,8 @@ RUN yum -y install procps
 RUN mkdir /var/run/sshd
 
 # create host keys
-RUN ssh-keygen -b 1024 -t rsa -f /etc/ssh/ssh_host_key -P ""
-RUN ssh-keygen -b 1024 -t rsa -f /etc/ssh/ssh_host_rsa_key -P ""
+RUN ssh-keygen -b 2048 -t rsa -f /etc/ssh/ssh_host_key -P ""
+RUN ssh-keygen -b 2048 -t rsa -f /etc/ssh/ssh_host_rsa_key -P ""
 RUN ssh-keygen -b 1024 -t dsa -f /etc/ssh/ssh_host_dsa_key -P ""
 
 # tell ssh to not use ugly PAM

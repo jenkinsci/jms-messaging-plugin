@@ -37,7 +37,7 @@ import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.Nonnull;
@@ -157,7 +157,7 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
         }
 
         @Override
-        public SSLCertificateAuthenticationMethod newInstance(StaplerRequest sr, JSONObject jo) {
+        public SSLCertificateAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
             return new SSLCertificateAuthenticationMethod(jo.getString("username"), jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
                     jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
         }

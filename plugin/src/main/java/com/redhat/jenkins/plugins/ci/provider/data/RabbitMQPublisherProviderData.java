@@ -35,7 +35,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -162,7 +162,7 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         }
 
         @Override
-        public RabbitMQPublisherProviderData newInstance(StaplerRequest sr, JSONObject jo) {
+        public RabbitMQPublisherProviderData newInstance(StaplerRequest2 sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
             boolean fedoraMessaging = false;
             int severity = 20;

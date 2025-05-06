@@ -37,4 +37,14 @@ public class OrderedProperties extends Properties {
 
     private final Vector _names;
 
+    @Override
+    public boolean equals(Object that) {
+        return super.equals(that);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
 }

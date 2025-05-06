@@ -589,7 +589,9 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 }
                 if (paramDef instanceof BooleanParameterDefinition) {
                     BooleanParameterValue defaultParameterValue = ((BooleanParameterDefinition) paramDef).getDefaultParameterValue();
-                    param = new BooleanParameterValue(paramDef.getName(), Boolean.TRUE.equals(Objects.requireNonNull(defaultParameterValue).getValue()));
+		    if (defaultParameterValue != null) {
+                        param = new BooleanParameterValue(paramDef.getName(), Boolean.TRUE.equals(Objects.requireNonNull(defaultParameterValue).getValue()));
+		    }
                 }
                 if (paramDef instanceof ChoiceParameterDefinition) {
                     param = ((ChoiceParameterDefinition) paramDef).getDefaultParameterValue();

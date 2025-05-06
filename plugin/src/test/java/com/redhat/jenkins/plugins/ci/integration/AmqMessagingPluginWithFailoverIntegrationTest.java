@@ -197,7 +197,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         String source = wc.getPage(jobA).getWebResponse().getContentAsString();
 
         assertThat(source, containsString("CI Build Trigger Issue"));
-        assertThat(source, containsString("javax.jms.InvalidSelectorException"));
+        assertThat(source, containsString("jakarta.jms.InvalidSelectorException"));
 
         // Now fix the selector.
         jobA.addTrigger(new CIBuildTrigger(true, Collections.singletonList(
@@ -267,7 +267,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         JenkinsRule.WebClient wc = j.createWebClient();
         String source = wc.getPage(pipe).getWebResponse().getContentAsString();
         assertThat(source, containsString("CI Build Trigger Issue"));
-        assertThat(source, containsString("javax.jms.InvalidSelectorException"));
+        assertThat(source, containsString("jakarta.jms.InvalidSelectorException"));
 
         // Now fix the selector.
         pipe.setDefinition(new CpsFlowDefinition(
