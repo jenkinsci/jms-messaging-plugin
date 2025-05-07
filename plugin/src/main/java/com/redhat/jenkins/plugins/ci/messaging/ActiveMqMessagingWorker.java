@@ -23,6 +23,7 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -44,25 +45,26 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.DeliveryMode;
-import javax.jms.Destination;
-import javax.jms.InvalidSelectorException;
-import javax.jms.JMSException;
-import javax.jms.JMSSecurityException;
-import javax.jms.MapMessage;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.jms.Topic;
+import jakarta.jms.BytesMessage;
+import jakarta.jms.Connection;
+import jakarta.jms.DeliveryMode;
+import jakarta.jms.Destination;
+import jakarta.jms.InvalidSelectorException;
+import jakarta.jms.JMSException;
+import jakarta.jms.JMSSecurityException;
+import jakarta.jms.MapMessage;
+import jakarta.jms.Message;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import jakarta.jms.Topic;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.util.Date;
 import java.util.Enumeration;
@@ -222,7 +224,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             root.set("JMSType", mapper.convertValue(message.getJMSType(), JsonNode.class));
 
             return mapper.writer().writeValueAsString(root);
-        } catch (Exception e) {
+        } catch (JMSException | JsonProcessingException e) {
             log.log(Level.SEVERE, "Unhandled exception retrieving message headers:\n" + formatMessage(message), e);
         }
 
@@ -252,7 +254,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 bm.reset();
                 byte[] bytes = new byte[(int) bm.getBodyLength()];
                 bm.readBytes(bytes);
-                return new String(bytes);
+                return new String(bytes, StandardCharsets.UTF_8);
             } else {
                 log.log(Level.SEVERE, "Unsupported message type:\n" + formatMessage(message));
             }

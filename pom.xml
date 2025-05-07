@@ -4,7 +4,7 @@
     <groupId>org.jenkins-ci.plugins.jms-messaging</groupId>
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.1.28-SNAPSHOT</version>
+    <version>1.1.29-SNAPSHOT</version>
 
     <properties>
         <jenkins.version>2.346.3</jenkins.version>

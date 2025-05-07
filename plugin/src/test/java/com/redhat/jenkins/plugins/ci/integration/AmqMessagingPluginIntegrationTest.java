@@ -364,7 +364,10 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         leftoverFromPreviousRuns.addAll(getThreadsByName("CIBuildTrigger.*"));
         for (Thread thread : leftoverFromPreviousRuns) {
             thread.interrupt();
-            thread.stop();
+
+	    for (int i = 0; getCurrentThreadCountForName(thread.getName()) != 0 && i < 10; i++) {
+                Thread.sleep(1000);
+	    }
         }
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");

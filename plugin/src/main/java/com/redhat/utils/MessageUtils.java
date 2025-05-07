@@ -32,6 +32,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MessageUtils {
@@ -126,19 +127,20 @@ public class MessageUtils {
         log.info(startMessage);
         listener.getLogger().println(startMessage);
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
-	JMSMessagingProvider provider = config.getProvider(pdata.getName());
-	if (provider != null) {
+	      JMSMessagingProvider provider = config.getProvider(pdata.getName());
+	      if (provider != null) {
             JMSMessagingWorker worker = provider.createWorker(pdata, build.getParent().getName());
             SendResult sendResult = worker.sendMessage(build, listener, pdata);
             String completedMessage = "Sent successfully with messageId: " + sendResult.getMessageId();
             log.info(completedMessage);
             listener.getLogger().println(completedMessage);
             return sendResult;
-	} else {
+	      } else {
             String errorMessage = "Unable to find provider " + pdata.getName() + ".";
             log.severe(errorMessage);
             listener.getLogger().println(errorMessage);
-	    return null;
+	          return null;
         }
-    }
+
+     }
 }

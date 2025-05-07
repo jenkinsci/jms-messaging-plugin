@@ -35,7 +35,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -157,7 +157,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
         }
 
         @Override
-        public ActiveMQSubscriberProviderData newInstance(StaplerRequest sr, JSONObject jo) {
+        public ActiveMQSubscriberProviderData newInstance(StaplerRequest2 sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
