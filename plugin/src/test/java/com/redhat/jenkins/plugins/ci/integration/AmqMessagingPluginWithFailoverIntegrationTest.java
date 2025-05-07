@@ -59,6 +59,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class AmqMessagingPluginWithFailoverIntegrationTest {
     @ClassRule
@@ -404,28 +405,34 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
 
     private void ensureNoLeakingThreads(long previousThreadCount, String previousThreads) throws InterruptedException {
         long currentThreadCount = getCurrentAMQThreadCount();
+        System.out.println("Previous AMQ Thread Count: " + previousThreadCount);
         System.out.println("Current AMQ Thread Count: " + currentThreadCount);
+        if (currentThreadCount < previousThreadCount) {
+            fail(String.format("We already have less threads than before (%d -> %d)", previousThreadCount, currentThreadCount));
+        }
+
         int counter = 0;
         int MAXWAITTIME = 60;
         while (abs(currentThreadCount - previousThreadCount) > 2 &&
                 counter < MAXWAITTIME) {
-            System.out.println("abs(currentThreadCount [" + currentThreadCount
-                    + "] - previousThreadCount [" + previousThreadCount + "] ) > 2");
-            System.out.println(abs(currentThreadCount - previousThreadCount));
+            System.out.printf("abs(currentThreadCount [%d] - previousThreadCount [%d] ) = %d\n", currentThreadCount,
+                    previousThreadCount, abs(currentThreadCount - previousThreadCount));
             Thread.sleep(1000);
             counter++;
             currentThreadCount = getCurrentAMQThreadCount();
         }
-        boolean equal = abs(currentThreadCount - previousThreadCount) <= 2;
-        if (!equal) {
+        long threadDiff = abs(currentThreadCount - previousThreadCount);
+        if (threadDiff > 2) {
             System.out.println("*** Previous Threads ***");
             System.out.println(previousThreads);
             System.out.println("************************");
             System.out.println("************************");
             System.out.println("*** Current  Threads ***");
             System.out.println(printAMQThreads());
+            fail(String.format("abs(currentThreadCount [%d] - previousThreadCount [%d] ) = %d", currentThreadCount,
+                    previousThreadCount, abs(currentThreadCount - previousThreadCount)));
         }
-        assertTrue("abs(currentThreadCount - previousThreadCount) > 2", equal);
+
     }
 
     private void stopAMQ() throws Exception {
