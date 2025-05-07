@@ -583,19 +583,17 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 ParameterValue param = null;
                 if (paramDef instanceof StringParameterDefinition) {
                     param = new StringParameterValue(paramDef.getName(), ((StringParameterDefinition) paramDef).getDefaultValue());
-                }
-                if (paramDef instanceof TextParameterDefinition) {
+                } else if (paramDef instanceof TextParameterDefinition) {
                     param = new TextParameterValue(paramDef.getName(), ((TextParameterDefinition) paramDef).getDefaultValue());
-                }
-                if (paramDef instanceof BooleanParameterDefinition) {
+                } else if (paramDef instanceof BooleanParameterDefinition) {
                     BooleanParameterValue defaultParameterValue = ((BooleanParameterDefinition) paramDef).getDefaultParameterValue();
-		    if (defaultParameterValue != null) {
+                    if (defaultParameterValue != null) {
                         param = new BooleanParameterValue(paramDef.getName(), Boolean.TRUE.equals(Objects.requireNonNull(defaultParameterValue).getValue()));
-		    }
-                }
-                if (paramDef instanceof ChoiceParameterDefinition) {
+                    }
+                } else if (paramDef instanceof ChoiceParameterDefinition) {
                     param = ((ChoiceParameterDefinition) paramDef).getDefaultParameterValue();
                 }
+
                 if (param != null) {
                     parameters.add(param);
                 }

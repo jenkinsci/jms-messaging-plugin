@@ -429,7 +429,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message.setText(PluginUtils.getSubstitutedValue(pd.getMessageContent(), envVars2));
 
 
-                publisher.send(message);
+                publisher.send(message, publisher.getDeliveryMode(), publisher.getPriority(), pd.getTimeToLiveMillis());
 
                 mesgId = message.getJMSMessageID();
                 mesgContent = message.getText();

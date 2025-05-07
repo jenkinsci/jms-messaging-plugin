@@ -121,7 +121,8 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
                 MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone,
                 "CI_STATUS = failed",
                 null,
-                true
+                true,
+		5000
         )));
 
         j.buildAndAssertSuccess(jobB);
