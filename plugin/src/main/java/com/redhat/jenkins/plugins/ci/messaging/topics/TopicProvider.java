@@ -4,8 +4,8 @@ import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -26,12 +26,12 @@ public abstract class TopicProvider implements Describable<TopicProvider>, Seria
         public abstract String generateSubscriberTopic();
 
         // Web methods.
-        public void doGeneratePublisherTopic(StaplerRequest req, StaplerResponse resp) throws IOException {
+        public void doGeneratePublisherTopic(StaplerRequest2 req, StaplerResponse2 resp) throws IOException {
             String topic = generatePublisherTopic();
             resp.getWriter().write((topic != null ? topic: ""));
         }
 
-        public void doGenerateSubscriberTopic(StaplerRequest req, StaplerResponse resp) throws IOException {
+        public void doGenerateSubscriberTopic(StaplerRequest2 req, StaplerResponse2 resp) throws IOException {
             String topic = generateSubscriberTopic();
             resp.getWriter().write((topic != null ? topic: ""));
         }

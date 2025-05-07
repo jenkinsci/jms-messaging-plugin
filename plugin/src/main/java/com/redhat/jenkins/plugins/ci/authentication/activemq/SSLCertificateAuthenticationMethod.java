@@ -37,13 +37,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.Nonnull;
-import javax.jms.Connection;
-import javax.jms.JMSException;
-import javax.jms.Session;
+import jakarta.jms.Connection;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -132,7 +132,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
         }
 
         @Override
-        public SSLCertificateAuthenticationMethod newInstance(StaplerRequest sr, JSONObject jo) {
+        public SSLCertificateAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
             return new SSLCertificateAuthenticationMethod(jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
                     jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
         }

@@ -26,12 +26,12 @@ package com.redhat.jenkins.plugins.ci.messaging;
 import com.redhat.utils.PluginUtils;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-import javax.jms.Connection;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.Topic;
+import jakarta.jms.Connection;
+import jakarta.jms.Message;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.jms.Topic;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.UUID;
