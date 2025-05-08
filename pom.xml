@@ -26,6 +26,11 @@
             <name>Oliver Gondža</name>
             <email>ogondza@gmail.com</email>
         </developer>
+        <developer>
+            <id>ggallen</id>
+            <name>Greg Allen</name>
+            <email>gallen@redhat.com</email>
+        </developer>
     </developers>
 
     <scm>
@@ -40,7 +45,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
+                <version>3.1.4</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
