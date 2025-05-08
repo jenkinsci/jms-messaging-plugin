@@ -102,7 +102,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                 if (getProvider(DEFAULT_PROVIDER) == null) {
                     log.info("There is no default Message Provider.");
                     configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER,
-                            broker, false, topic, new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
+                            broker, false, topic, new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password), 0));
                     log.info("Added default Message Provider using deprecated configuration.");
                     setMigrationInProgress(true);
                 } else {

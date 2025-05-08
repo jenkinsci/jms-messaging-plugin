@@ -44,6 +44,9 @@
     <f:dropdownDescriptorSelector title="${%Authentication Method}"
                                   field="authenticationMethod"
                                   descriptors="${descriptor.getAuthenticationMethodDescriptors()}" />
+    <f:entry title="${%Prefetch size}" field="prefetchSize">
+      <f:textbox />
+    </f:entry>
   </f:section>
 </j:jelly>
 
