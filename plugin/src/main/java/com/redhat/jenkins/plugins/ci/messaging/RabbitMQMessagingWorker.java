@@ -472,7 +472,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         } else {
             // The queue is not set anywhere, let's use random queue
             if (queueName.isEmpty()) {
-                queueName = channel.queueDeclare().getQueue();
+                queueName = UUID.randomUUID().toString();
+                channel.queueDeclare(queueName, false, true, true, null);
             }
             ltopic = queueName;
         }
