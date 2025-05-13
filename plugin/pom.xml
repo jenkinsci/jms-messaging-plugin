@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>5.8</version>
+        <version>5.12</version>
         <relativePath /><!-- Tell maven this is outside of the repo -->
     </parent>
 
@@ -55,7 +55,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>4228.v0a_71308d905b_</version>
+                <version>4628.v2b_234a_1a_20d0</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -301,20 +301,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.jenkins-ci.tools</groupId>
-                <artifactId>maven-hpi-plugin</artifactId>
-		<version>2.4</version>
-                <configuration>
-                    <compatibleSinceVersion>1.0.38</compatibleSinceVersion>
-                    <systemProperties>
-                    <systemProperty>
-                        <name>hudson.model.ParametersAction.keepUndefinedParameters</name>
-                        <value>true</value>
-                    </systemProperty>
-                    </systemProperties>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
