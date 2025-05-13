@@ -265,11 +265,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         return "";
     }
 
-    private void process(String jobname, Message message) {
+    private void process(String jobname, ActiveMQSubscriberProviderData pd, Message message) {
         try {
             Map<String, String> params = new HashMap<>();
-            params.put("CI_MESSAGE", getMessageBody(message));
-            params.put("MESSAGE_HEADERS", getMessageHeaders(message));
+            params.put(pd.getMessageVariable(), getMessageBody(message));
+            params.put(pd.getHeadersVariable(), getMessageHeaders(message));
 
             @SuppressWarnings("unchecked")
             Enumeration<String> e = message.getPropertyNames();
@@ -310,7 +310,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 Message m = subscriber.receive(timeoutInMs); // In milliseconds!
                 if (m != null) {
                     if (provider.verify(getMessageBody(m), pd.getChecks(), jobname)) {
-                        process(jobname, m);
+                        process(jobname, pd, m);
                     }
                 } else {
                     log.info("No message received for the past " + timeoutInMs + " ms, unsubscribing job '" + jobname + "'.");
@@ -526,9 +526,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     if (message != null) {
                         String value = getMessageBody(message);
                         if (provider.verify(value, pd.getChecks(), jobname)) {
-                            if (StringUtils.isNotEmpty(pd.getVariable())) {
+                            if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                                 EnvVars vars = new EnvVars();
-                                vars.put(pd.getVariable(), value);
+                                vars.put(pd.getMessageVariable(), value);
                                 build.addAction(new CIEnvironmentContributingAction(vars));
                             }
                             log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));

@@ -651,7 +651,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         ))), jobA);
 
         // We are only checking that this shows up in the console output.
-        jobA.getBuildersList().add(new Shell("echo $MESSAGE_HEADERS"));
+        jobA.getBuildersList().add(new Shell("echo $CI_MESSAGE_HEADERS"));
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "some irrelevant content"
         )));

@@ -504,7 +504,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testTTL() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.getBuildersList().add(new Shell("echo $MESSAGE_HEADERS"));
+        jobA.getBuildersList().add(new Shell("echo $CI_MESSAGE_HEADERS"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
                 null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
