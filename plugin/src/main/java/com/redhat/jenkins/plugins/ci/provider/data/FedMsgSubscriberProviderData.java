@@ -46,10 +46,11 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
     public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
+    public static final String DEFAULT_HEADERS_VARIABLE_NAME_SUFFIX = "_HEADERS";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
     private List<MsgCheck> checks = new ArrayList<>();
-    private String variable;
+    private String variable = DEFAULT_VARIABLE_NAME;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
@@ -80,8 +81,12 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
         this.checks = checks;
     }
 
-    public String getVariable() {
+    public String getMessageVariable() {
         return variable;
+    }
+
+    public String getHeadersVariable() {
+        return variable + DEFAULT_HEADERS_VARIABLE_NAME_SUFFIX;
     }
 
     @DataBoundSetter

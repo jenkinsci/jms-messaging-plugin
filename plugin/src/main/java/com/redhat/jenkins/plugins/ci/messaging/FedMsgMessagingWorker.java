@@ -196,7 +196,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                         FedmsgMessage data = mapper.readValue(json, FedmsgMessage.class);
                         if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                             Map<String, String> params = new HashMap<>();
-                            params.put("CI_MESSAGE", data.getBodyJson());
+                            params.put(pd.getMessageVariable(), data.getBodyJson());
                             trigger(jobname, provider.formatMessage(data), params);
                         }
                     }
@@ -352,9 +352,9 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                             continue;
                         }
 
-                        if (StringUtils.isNotEmpty(pd.getVariable())) {
+                        if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                             EnvVars vars = new EnvVars();
-                            vars.put(pd.getVariable(), body);
+                            vars.put(pd.getMessageVariable(), body);
                             build.addAction(new CIEnvironmentContributingAction(vars));
                         }
                         return body;

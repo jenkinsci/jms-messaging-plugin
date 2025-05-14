@@ -185,7 +185,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     //
                     if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<>();
-                        params.put("CI_MESSAGE", data.getBodyJson());
+                        params.put(pd.getMessageVariable(), data.getBodyJson());
                         trigger(jobname, data.getBodyJson(), params);
                     }
                     channel.basicAck(data.getDeliveryTag(), false);
@@ -410,9 +410,9 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                             "Message: '" + message.getMsgId() + "' was succesfully checked.");
 
                     if (build != null) {
-                        if (StringUtils.isNotEmpty(pd.getVariable())) {
+                        if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                             EnvVars vars = new EnvVars();
-                            vars.put(pd.getVariable(), message.getBodyJson());
+                            vars.put(pd.getMessageVariable(), message.getBodyJson());
                             build.addAction(new CIEnvironmentContributingAction(vars));
                         }
                     }
@@ -471,7 +471,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             ltopic = providerd.getQueue();
         } else {
             // The queue is not set anywhere, let's use random queue
-            if (queueName.isEmpty()) {
+            if (StringUtils.isEmpty(queueName)) {
                 queueName = UUID.randomUUID().toString();
                 channel.queueDeclare(queueName, false, true, true, null);
             }

@@ -46,11 +46,12 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
     public static final String DEFAULT_VARIABLE_NAME = "CI_MESSAGE";
+    public static final String DEFAULT_HEADERS_VARIABLE_SUFFIX = "_HEADERS";
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
     private String selector;
     private List<MsgCheck> checks = new ArrayList<>();
-    private String variable;
+    private String variable = DEFAULT_VARIABLE_NAME;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
@@ -107,6 +108,15 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     @DataBoundSetter
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
+    }
+
+    // More descriptive name for callers.
+    public String getMessageVariable() {
+        return getVariable();
+    }
+
+    public String getHeadersVariable() {
+        return variable + DEFAULT_HEADERS_VARIABLE_SUFFIX;
     }
 
     @Override
