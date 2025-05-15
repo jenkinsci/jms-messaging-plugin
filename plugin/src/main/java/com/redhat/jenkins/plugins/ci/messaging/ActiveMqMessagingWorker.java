@@ -74,6 +74,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Objects;
 
 import static com.redhat.utils.MessageUtils.JSON_TYPE;
 
@@ -388,14 +389,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     envVarParts.put("CI_TYPE", pd.getMessageType().getMessage());
                 }
                 if (!build.isBuilding()) {
-                    String ciStatus = (build.getResult()
-                            == Result.SUCCESS ? "passed": "failed");
+                    String ciStatus = (build.getResult() == Result.SUCCESS ? "passed": "failed");
                     message.setStringProperty("CI_STATUS", ciStatus);
                     envVarParts.put("CI_STATUS", ciStatus);
-
-                    envVarParts.put("BUILD_STATUS", build.getResult().toString());
+                    envVarParts.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
                 }
-
 
                 EnvVars baseEnvVars = build.getEnvironment(listener);
                 EnvVars envVars = new EnvVars();
@@ -445,7 +443,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 return new SendResult(false, mesgId, mesgContent);
             }
 
-        } catch (Exception e) {
+        } catch (IOException | JMSException | InterruptedException e) {
             if (pd.isFailOnError()) {
                 log.severe("Unhandled exception in perform: ");
                 log.severe(ExceptionUtils.getStackTrace(e));

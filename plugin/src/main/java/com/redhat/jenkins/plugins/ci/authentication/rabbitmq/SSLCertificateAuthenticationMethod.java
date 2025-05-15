@@ -110,16 +110,17 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
 
     @Override
     public ConnectionFactory getConnectionFactory(String hostname, Integer portNumber, String virtualHost) {
-        try {
+        try (FileInputStream keystore = new FileInputStream(getKeystore());
+             FileInputStream truststore = new FileInputStream(getTruststore())) {
             // Prepare SSL context
             KeyStore ks = KeyStore.getInstance("PKCS12");
-            ks.load(new FileInputStream(getKeystore()), getKeypwd().getPlainText().toCharArray());
+            ks.load(keystore, getKeypwd().getPlainText().toCharArray());
 
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
             keyManagerFactory.init(ks, getKeypwd().getPlainText().toCharArray());
 
             KeyStore tks = KeyStore.getInstance("JKS");
-            tks.load(new FileInputStream(getTruststore()), getTrustpwd().getPlainText().toCharArray());
+            tks.load(truststore, getTrustpwd().getPlainText().toCharArray());
 
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
             trustManagerFactory.init(tks);

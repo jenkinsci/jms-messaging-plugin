@@ -115,7 +115,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             for (JMSMessagingProvider config : configs) {
                 if (config instanceof ActiveMqMessagingProvider) {
                     ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
-                    if (aconfig.IsMigrationInProgress()) {
+                    if (aconfig.isMigrationInProgress()) {
                         log.info("Migration in progress for ActiveMqMessagingProvider " + aconfig.getName());
                         setMigrationInProgress(true);
                     }

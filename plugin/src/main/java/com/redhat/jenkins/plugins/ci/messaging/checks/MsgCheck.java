@@ -25,9 +25,10 @@ package com.redhat.jenkins.plugins.ci.messaging.checks;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class MsgCheck {
+public class MsgCheck implements Serializable {
     private final String field;
     private final String expectedValue;
 
@@ -39,8 +40,7 @@ public class MsgCheck {
         MsgCheck msgCheck = (MsgCheck) o;
 
         return Objects.equals(expectedValue, msgCheck.expectedValue)
-                && Objects.equals(field, msgCheck.field)
-        ;
+                && Objects.equals(field, msgCheck.field);
     }
 
     @Override

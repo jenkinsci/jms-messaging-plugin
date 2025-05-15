@@ -309,8 +309,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         }
         try {
             synchronized (locks.computeIfAbsent(job.getFullName(), o -> new ArrayList<>())) {
-                if (stopTriggerThreads(job.getFullName()) == null && providers != null) {
-                    List<CITriggerThread> threads = locks.get(job.getFullName());
+                if (job != null && stopTriggerThreads(job.getFullName()) == null && providers != null) {
+                    List<CITriggerThread> threads = locks.get(Objects.requireNonNull(job).getFullName());
                     int instance = 1;
                     for (ProviderData pd : providers) {
                         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
@@ -320,7 +320,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                             return;
                         }
                         CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), this, instance);
-                        log.info("Starting thread (" + thread.getId() + ") for '" + job.getFullName() + "'.");
+                        log.info("Starting thread (" + thread.getId() + ") for '" + Objects.requireNonNull(job).getFullName() + "'.");
                         thread.start();
                         threads.add(thread);
                         instance++;
@@ -530,9 +530,11 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     public void scheduleBuild(Map<String, String> messageParams) {
-        if (job == null) throw new IllegalStateException("Trigger not started yet");
+        if (job == null) {
+            throw new IllegalStateException("Trigger not started yet");
+        }
         ParametersAction parameters = createParameters(job, messageParams);
-        List<ParameterValue> definedParameters = getDefinedParameters(job);
+        List<ParameterValue> definedParameters = getDefinedParameters(Objects.requireNonNull(job));
         List<ParameterValue> buildParameters = getUpdatedParameters(messageParams, definedParameters);
         ParameterizedJobMixIn<?, ?> jobMixIn = new ParameterizedJobMixIn() {
             @Override

@@ -8,6 +8,8 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+
 public class FedMsgTriggerThread extends CITriggerThread {
     private static final Logger log = Logger.getLogger(FedMsgTriggerThread.class.getName());
 
@@ -46,5 +48,22 @@ public class FedMsgTriggerThread extends CITriggerThread {
 
     public boolean hasBeenInterrupted() {
         return !Thread.currentThread().isInterrupted() && fworker.isBeingInterrupted();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        FedMsgTriggerThread thread = (FedMsgTriggerThread) o;
+
+        return super.equals(o) && new EqualsBuilder().append(fworker, thread.fworker).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = fworker != null ? fworker.hashCode(): 0;
+        return 31 * result + super.hashCode();
     }
 }

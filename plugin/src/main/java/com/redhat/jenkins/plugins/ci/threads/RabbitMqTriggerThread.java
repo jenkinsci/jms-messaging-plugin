@@ -8,6 +8,8 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+
 public class RabbitMqTriggerThread extends CITriggerThread {
     private static final Logger log = Logger.getLogger(RabbitMqTriggerThread.class.getName());
 
@@ -31,5 +33,22 @@ public class RabbitMqTriggerThread extends CITriggerThread {
 
     public boolean hasBeenInterrupted() {
         return !Thread.currentThread().isInterrupted() && worker.isBeingInterrupted();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RabbitMqTriggerThread thread = (RabbitMqTriggerThread) o;
+
+        return super.equals(o) && new EqualsBuilder().append(worker, thread.worker).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = worker != null ? worker.hashCode(): 0;
+        return 31 * result + super.hashCode();
     }
 }
