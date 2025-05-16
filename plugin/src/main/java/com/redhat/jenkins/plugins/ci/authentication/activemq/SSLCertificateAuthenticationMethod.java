@@ -38,7 +38,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
-import org.kohsuke.stapler.interceptor.RequirePOST;
+import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.Nonnull;
 import jakarta.jms.Connection;
@@ -141,7 +141,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             return "sslcert.jelly";
         }
 
-        @RequirePOST
+        @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
                                                @QueryParameter("keystore") String keystore,
                                                @QueryParameter("keypwd") String keypwd,

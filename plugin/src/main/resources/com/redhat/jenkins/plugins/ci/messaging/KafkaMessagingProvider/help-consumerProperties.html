@@ -1,0 +1,21 @@
+<div>
+    <p>
+    Properties to use for Kafka consumers. These properties are merged with a set of default
+    properties before being used to create a consumer. Properties specified here will override
+    a value set in the default properties.  
+    </p>
+    <p>
+    The default consumer properties are as follows:
+    </p>
+    <pre>
+max.poll.records=1
+key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+group.id=jms-messaging-&lt;uuid&gt;
+enable.auto.commit=true
+auto.commit.interval.ms=1000
+session.timeout.ms=30000
+    </pre>
+    <p>The "bootstrap.servers" property must be provided.</p>
+    <p>The full set of consumer properties may be found <a href="https://kafka.apache.org/documentation/#consumerconfigs">here</a>.</p>
+</div>

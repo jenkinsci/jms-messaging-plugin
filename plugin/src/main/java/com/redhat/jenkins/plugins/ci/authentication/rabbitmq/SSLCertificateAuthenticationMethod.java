@@ -38,7 +38,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
-import org.kohsuke.stapler.interceptor.RequirePOST;
+import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.Nonnull;
 import javax.net.ssl.KeyManagerFactory;
@@ -167,7 +167,7 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
             return "sslcert.jelly";
         }
 
-        @RequirePOST
+        @POST
         public FormValidation doTestConnection(@QueryParameter("username") String username,
                                                @QueryParameter("hostname") String hostname,
                                                @QueryParameter("portNumber") Integer portNumber,
