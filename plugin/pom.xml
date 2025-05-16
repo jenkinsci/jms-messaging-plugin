@@ -99,6 +99,11 @@
             <artifactId>amqp-client</artifactId>
             <version>5.25.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.0.0</version>
+        </dependency>
 
         <!-- Utilities -->
         <dependency>

@@ -28,12 +28,15 @@ import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.utils.MessageUtils;
@@ -196,7 +199,7 @@ public class CIMessageSenderStep extends Step {
 
             task = Timer.get().submit(() -> {
                 try {
-                    ProviderData pd;
+                    ProviderData pd = null;
                     JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
                     if (p instanceof ActiveMqMessagingProvider) {
                         ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(step.getProviderName());
@@ -213,12 +216,18 @@ public class CIMessageSenderStep extends Step {
                         fpd.setMessageContent(step.getMessageContent());
                         fpd.setFailOnError(step.getFailOnError());
                         pd = fpd;
-                    } else {
+                    } else if (p instanceof RabbitMQMessagingProvider) {
                         RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(step.getProviderName());
                         rpd.setOverrides(step.getOverrides());
                         rpd.setMessageContent(step.getMessageContent());
                         rpd.setFailOnError(step.getFailOnError());
                         pd = rpd;
+                    } else if (p instanceof KafkaMessagingProvider) {
+                        KafkaPublisherProviderData kpd = new KafkaPublisherProviderData(step.getProviderName());
+                        kpd.setOverrides(step.getOverrides());
+                        kpd.setMessageContent(step.getMessageContent());
+                        kpd.setFailOnError(step.getFailOnError());
+                        pd = kpd;
                     }
                     CIMessageNotifier notifier = new CIMessageNotifier(pd);
                     StepContext c = getContext();

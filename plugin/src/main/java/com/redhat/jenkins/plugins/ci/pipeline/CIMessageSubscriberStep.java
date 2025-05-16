@@ -28,13 +28,15 @@ import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
@@ -182,6 +184,13 @@ public class CIMessageSubscriberStep extends Step {
                         rpd.setTimeout(step.getTimeout());
                         rpd.setVariable(step.getVariable());
                         pd = rpd;
+                    } else if (p instanceof KafkaMessagingProvider) {
+                        KafkaSubscriberProviderData kpd = new KafkaSubscriberProviderData(step.getProviderName());
+                        kpd.setOverrides(step.getOverrides());
+                        kpd.setChecks(step.getChecks());
+                        kpd.setTimeout(step.getTimeout());
+                        kpd.setVariable(step.getVariable());
+                        pd = kpd;
                     }
                     CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
                     StepContext c = getContext();

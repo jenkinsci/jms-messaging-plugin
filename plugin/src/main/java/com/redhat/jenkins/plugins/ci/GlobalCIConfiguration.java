@@ -27,12 +27,16 @@ import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticat
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
@@ -243,8 +247,12 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                     pds.add(new ActiveMQSubscriberProviderData(p.getName()));
                 } else if (p instanceof FedMsgMessagingProvider) {
                     pds.add(new FedMsgSubscriberProviderData(p.getName()));
-                } else {
+                } else if (p instanceof RabbitMQMessagingProvider) {
                     pds.add(new RabbitMQSubscriberProviderData(p.getName()));
+                } else if (p instanceof KafkaMessagingProvider) {
+                    pds.add(new KafkaSubscriberProviderData(p.getName()));
+                } else {
+                    log.severe("Unknown provider instance '" + p.toString() + "'.");
                 }
             }
         }
@@ -259,8 +267,12 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                     pds.add(new ActiveMQPublisherProviderData(p.getName()));
                 } else if (p instanceof FedMsgMessagingProvider) {
                     pds.add(new FedMsgPublisherProviderData(p.getName()));
-                } else {
+                } else if (p instanceof RabbitMQMessagingProvider) {
                     pds.add(new RabbitMQPublisherProviderData(p.getName()));
+                } else if (p instanceof KafkaMessagingProvider) {
+                    pds.add(new KafkaPublisherProviderData(p.getName()));
+                } else {
+                    log.severe("Unknown provider instance '" + p.toString() + "'.");
                 }
             }
         }
