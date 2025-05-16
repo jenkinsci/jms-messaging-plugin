@@ -1,1 +1,1 @@
-FROM rmohr/activemq:5.15.9
+FROM apache/activemq-classic:5.17.7
