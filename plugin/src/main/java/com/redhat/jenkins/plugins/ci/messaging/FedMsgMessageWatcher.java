@@ -84,7 +84,7 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
         ObjectMapper mapper = new ObjectMapper();
         long startTime = new Date().getTime();
 
-        int timeoutInMs = timeout * 60 * 1000;
+        long timeoutInMs = timeout * 60 * 1000;
         interrupted = false;
         try {
             while ((new Date().getTime() - startTime) < timeoutInMs) {
@@ -111,16 +111,13 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
         } finally {
             try {
-                if (lpoller != null) {
-                    ZMQ.Socket s = lpoller.getSocket(0);
-                    lpoller.unregister(s);
-                    s.disconnect(fedMsgMessagingProvider.getHubAddr());
-                    lsocket.unsubscribe(this.topic.getBytes(StandardCharsets.UTF_8));
-                    lsocket.close();
-                }
-                if (lcontext != null) {
-                    lcontext.term();
-                }
+                ZMQ.Socket s = lpoller.getSocket(0);
+                lpoller.unregister(s);
+                s.disconnect(fedMsgMessagingProvider.getHubAddr());
+                lsocket.unsubscribe(this.topic.getBytes(StandardCharsets.UTF_8));
+                lsocket.close();
+
+                lcontext.term();
             } catch (Exception e) {
                 log.fine(e.getMessage());
             }

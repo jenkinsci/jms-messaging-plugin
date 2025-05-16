@@ -9,7 +9,7 @@ import java.util.List;
 public abstract class JMSMessageWatcher {
 
     protected String jobname;
-    protected int timeout;
+    protected long timeout;
     protected MessagingProviderOverrides overrides;
     protected String selector;
     protected List<MsgCheck> checks;
@@ -21,7 +21,7 @@ public abstract class JMSMessageWatcher {
         this.jobname = jobname;
     }
 
-    public void setTimeout(int timeout) {
+    public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 

@@ -154,7 +154,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         return new ActiveMqMessageWatcher(jobname);
     }
 
-    public boolean IsMigrationInProgress() {
+    public boolean isMigrationInProgress() {
         return migrationInProgress;
     }
 

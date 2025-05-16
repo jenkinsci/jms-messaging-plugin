@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Objects;
 
 public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
@@ -288,7 +289,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             env.put("CI_NAME", build.getParent().getName());
             if (!build.isBuilding()) {
                 env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed": "failed"));
-                env.put("BUILD_STATUS", build.getResult().toString());
+                env.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
             }
 
             RabbitMQMessage msg = new RabbitMQMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),

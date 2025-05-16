@@ -26,7 +26,7 @@ public class RabbitMQMessagingProvider extends JMSMessagingProvider {
     private final String hostname;
     private final Integer portNumber;
     private final RabbitMQAuthenticationMethod authenticationMethod;
-    private Connection connection;
+    private transient Connection connection;
     private final String exchange;
     private final String queue;
 

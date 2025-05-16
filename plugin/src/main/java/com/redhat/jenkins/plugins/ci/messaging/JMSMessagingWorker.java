@@ -40,7 +40,7 @@ public abstract class JMSMessagingWorker {
     public static final String MESSAGECONTENTFIELD = "message-content";
     public String jobname;
     private static final Logger log = Logger.getLogger(JMSMessagingWorker.class.getName());
-    public static final Integer RETRY_MINUTES = 1;
+    public static final long RETRY_MINUTES = 1L;
 
     protected MessagingProviderOverrides overrides;
     protected String topic;
