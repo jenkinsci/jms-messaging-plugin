@@ -37,6 +37,7 @@ import hudson.model.Descriptor;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQPrefetchPolicy;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -57,15 +58,17 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     private TopicProvider topicProvider = new DefaultTopicProvider();
     private ActiveMQAuthenticationMethod authenticationMethod;
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
+    private int prefetchSize = 0;
 
     @DataBoundConstructor
-    public ActiveMqMessagingProvider(String name, String broker, Boolean useQueues, String topic, TopicProvider topicProvider, ActiveMQAuthenticationMethod authenticationMethod) {
+    public ActiveMqMessagingProvider(String name, String broker, Boolean useQueues, String topic, TopicProvider topicProvider, ActiveMQAuthenticationMethod authenticationMethod, int prefetchSize) {
         this.name = name;
         this.broker = broker;
         this.useQueues = useQueues;
         this.topic = topic;
         this.topicProvider = topicProvider;
         this.authenticationMethod = authenticationMethod;
+        this.prefetchSize = prefetchSize;
     }
 
     protected Object readResolve() {
@@ -111,6 +114,11 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         this.authenticationMethod = method;
     }
 
+    @DataBoundSetter
+    public void setPrefetchSize(int prefetchSize) {
+        this.prefetchSize = prefetchSize;
+    }
+
     @Override
     public Descriptor<JMSMessagingProvider> getDescriptor() {
         return Jenkins.get().getDescriptorByType(ActiveMqMessagingProviderDescriptor.class);
@@ -141,7 +149,17 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     public ActiveMQConnectionFactory getConnectionFactory(String broker, ActiveMQAuthenticationMethod authenticationMethod) {
-        return authenticationMethod.getConnectionFactory(broker);
+        ActiveMQConnectionFactory connectionFactory = authenticationMethod.getConnectionFactory(broker);
+        if(prefetchSize > 0) {
+            ActiveMQPrefetchPolicy prefetchPolicy = new ActiveMQPrefetchPolicy();
+            prefetchPolicy.setAll(prefetchSize);
+            connectionFactory.setPrefetchPolicy(prefetchPolicy);
+        }
+        return connectionFactory;
+    }
+
+    public int getPrefetchSize() {
+        return prefetchSize;
     }
 
     @Override
