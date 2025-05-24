@@ -29,7 +29,7 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id = "fedmsg-relay", ports = {4001, 2003, 22})
+@DockerFixture(id = "fedmsg-relay", ports = { 4001, 2003, 22 })
 public class FedmsgRelayContainer extends DockerContainer {
 
     public String getPublisher() throws IOException {

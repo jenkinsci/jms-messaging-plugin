@@ -33,15 +33,17 @@ import org.jvnet.hudson.test.recipes.LocalData;
  * @author ogondza.
  */
 public class LoadTest {
-    @Rule public final JenkinsRule j = new JenkinsRule();
+    @Rule
+    public final JenkinsRule j = new JenkinsRule();
 
-    @Test @LocalData
+    @Test
+    @LocalData
     public void load() throws Exception {
         WorkflowJob foo = j.jenkins.getItemByFullName("foo", WorkflowJob.class);
         CIBuildTrigger next = ((CIBuildTrigger) foo.getTriggers().values().iterator().next());
 
         // TODO finish
-        //Thread.getAllStackTraces().keySet().fin
-//        j.interactiveBreak();
+        // Thread.getAllStackTraces().keySet().fin
+        // j.interactiveBreak();
     }
 }

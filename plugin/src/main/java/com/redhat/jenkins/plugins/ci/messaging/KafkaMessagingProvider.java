@@ -71,7 +71,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
         this.producerProperties = producerProperties;
         this.consumerProperties = consumerProperties;
         log.fine(String.format("provider: [%s], topic: [%s], connection properties: [%s]", name, topic,
-                               producerProperties, consumerProperties));
+                producerProperties, consumerProperties));
 
     }
 
@@ -81,7 +81,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
 
     @DataBoundSetter
     public void setTopic(String topic) {
-        this.topic= topic;
+        this.topic = topic;
     }
 
     @DataBoundSetter
@@ -124,7 +124,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
 
     static private Properties getMergedProperties(Properties defaults, String properties) {
         try {
-            defaults.load(IOUtils.toInputStream(properties == null  ? "" : properties, Charset.defaultCharset()));
+            defaults.load(IOUtils.toInputStream(properties == null ? "" : properties, Charset.defaultCharset()));
         } catch (IOException e) {
             log.log(Level.WARNING, String.format("bad properties: %s", properties));
         }
@@ -154,7 +154,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
-        return new KafkaMessagingWorker(this, ((KafkaProviderData)pdata).getOverrides(), jobname);
+        return new KafkaMessagingWorker(this, ((KafkaProviderData) pdata).getOverrides(), jobname);
     }
 
     @Override
@@ -176,8 +176,8 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("topic") String topic,
-                                               @QueryParameter("producerProperties") String producerProperties,
-                                               @QueryParameter("consumerProperties") String consumerProperties) {
+                @QueryParameter("producerProperties") String producerProperties,
+                @QueryParameter("consumerProperties") String consumerProperties) {
 
             AuthenticationMethod.checkAdmin();
 
@@ -187,7 +187,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(null);
             try (KafkaConsumer consumer = new KafkaConsumer<>(cprops);
-                 KafkaProducer producer = new KafkaProducer<>(pprops)) {
+                    KafkaProducer producer = new KafkaProducer<>(pprops)) {
 
                 // Test producer.
                 ProducerRecord<String, String> record = new ProducerRecord<>("test-topic", "test-key", "test-value");
@@ -195,9 +195,10 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
 
                 // Test consumer.
                 consumer.subscribe(Collections.singletonList(topic));
-		consumer.poll(Duration.ofMillis(100));
+                consumer.poll(Duration.ofMillis(100));
 
-                return FormValidation.ok(Messages.SuccessBrokersConnect(pprops.get("bootstrap.servers"), cprops.get("bootstrap.servers")));
+                return FormValidation.ok(Messages.SuccessBrokersConnect(pprops.get("bootstrap.servers"),
+                        cprops.get("bootstrap.servers")));
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestConnection: ", e);
                 return FormValidation.error(Messages.Error() + ": " + e);

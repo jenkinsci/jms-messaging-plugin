@@ -66,7 +66,8 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
         super(name, overrides);
     }
 
-    public ActiveMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, String selector, List<MsgCheck> checks, String variable, Integer timeout) {
+    public ActiveMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, String selector,
+            List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
         this.selector = selector;
         this.checks = checks;
@@ -131,14 +132,10 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
         }
 
         ActiveMQSubscriberProviderData thatp = (ActiveMQSubscriberProviderData) that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.selector, thatp.selector) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.checks, thatp.checks) &&
-                Objects.equals(this.variable, thatp.variable) &&
-                Objects.equals(this.timeout, thatp.timeout);
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.selector, thatp.selector)
+                && Objects.equals(this.overrides, thatp.overrides) && Objects.equals(this.checks, thatp.checks)
+                && Objects.equals(this.variable, thatp.variable) && Objects.equals(this.timeout, thatp.timeout);
     }
-
 
     @Override
     public int hashCode() {
@@ -147,14 +144,9 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
 
     @Override
     public String toString() {
-        return "ActiveMQSubscriberProviderData{" +
-                "overrides=" + overrides +
-                ", selector='" + selector + '\'' +
-                ", checks=" + checks +
-                ", variable='" + variable + '\'' +
-                ", timeout=" + timeout +
-                ", name='" + name + '\'' +
-                '}';
+        return "ActiveMQSubscriberProviderData{" + "overrides=" + overrides + ", selector='" + selector + '\''
+                + ", checks=" + checks + ", variable='" + variable + '\'' + ", timeout=" + timeout + ", name='" + name
+                + '\'' + '}';
     }
 
     @Extension
@@ -181,7 +173,8 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
             if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
-            return new ActiveMQSubscriberProviderData(jo.getString("name"), mpo, jo.getString("selector"), checks, variable, timeout);
+            return new ActiveMQSubscriberProviderData(jo.getString("name"), mpo, jo.getString("selector"), checks,
+                    variable, timeout);
         }
 
         public String getDefaultVariable() {

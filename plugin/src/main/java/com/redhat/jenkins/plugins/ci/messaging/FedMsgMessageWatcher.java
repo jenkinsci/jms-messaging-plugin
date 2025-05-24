@@ -74,7 +74,8 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
         lpoller = lcontext.poller(1);
         lsocket = lcontext.socket(ZMQ.SUB);
 
-        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
+        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_TOPIC),
+                environment);
 
         lsocket.subscribe(topic.getBytes(StandardCharsets.UTF_8));
         lsocket.setLinger(0);

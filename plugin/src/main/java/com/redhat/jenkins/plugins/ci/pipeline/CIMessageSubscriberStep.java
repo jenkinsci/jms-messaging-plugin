@@ -72,19 +72,15 @@ public class CIMessageSubscriberStep extends Step {
     private Integer timeout;
 
     @DataBoundConstructor
-    public CIMessageSubscriberStep(final String providerName,
-                                   final MessagingProviderOverrides overrides,
-                                   final String selector,
-                                   final String variable,
-                                   final Integer timeout,
-                                   List<MsgCheck> checks) {
+    public CIMessageSubscriberStep(final String providerName, final MessagingProviderOverrides overrides,
+            final String selector, final String variable, final Integer timeout, List<MsgCheck> checks) {
         super();
         this.providerName = providerName;
         this.overrides = overrides;
         this.selector = selector;
         this.variable = variable;
         this.timeout = timeout;
-        this.checks = checks == null ? Collections.emptyList(): checks;
+        this.checks = checks == null ? Collections.emptyList() : checks;
     }
 
     public String getProviderName() {
@@ -194,7 +190,8 @@ public class CIMessageSubscriberStep extends Step {
                     }
                     CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
                     StepContext c = getContext();
-                    String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class), c.get(TaskListener.class));
+                    String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class),
+                            c.get(TaskListener.class));
                     if (result != null) {
                         getContext().onSuccess(result);
                     } else {
@@ -231,7 +228,8 @@ public class CIMessageSubscriberStep extends Step {
             return MessageUtils.doFillProviderNameItems();
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, Launcher.class, TaskListener.class);
         }
 

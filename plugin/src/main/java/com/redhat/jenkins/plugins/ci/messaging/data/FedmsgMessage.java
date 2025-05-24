@@ -46,9 +46,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder(
-        alphabetic = true
-)
+@JsonPropertyOrder(alphabetic = true)
 public class FedmsgMessage {
 
     private static final Logger log = Logger.getLogger(FedmsgMessage.class.getName());

@@ -61,7 +61,8 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         super(name, overrides);
     }
 
-    public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, MESSAGE_TYPE messageType, String messageProperties, String messageContent, Boolean failOnError, Integer timeToLiveMillis) {
+    public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, MESSAGE_TYPE messageType,
+            String messageProperties, String messageContent, Boolean failOnError, Integer timeToLiveMillis) {
         this(name, overrides);
         this.messageType = messageType;
         this.messageProperties = messageProperties;
@@ -127,18 +128,18 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         }
 
         ActiveMQPublisherProviderData thatp = (ActiveMQPublisherProviderData) that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.messageType, thatp.messageType) &&
-                Objects.equals(this.messageProperties, thatp.messageProperties) &&
-                Objects.equals(this.messageContent, thatp.messageContent) &&
-                Objects.equals(this.failOnError, thatp.failOnError) &&
-                Objects.equals(this.timeToLiveMillis, thatp.timeToLiveMillis);
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+                && Objects.equals(this.messageType, thatp.messageType)
+                && Objects.equals(this.messageProperties, thatp.messageProperties)
+                && Objects.equals(this.messageContent, thatp.messageContent)
+                && Objects.equals(this.failOnError, thatp.failOnError)
+                && Objects.equals(this.timeToLiveMillis, thatp.timeToLiveMillis);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), messageType, messageProperties, messageContent, failOnError, timeToLiveMillis);
+        return Objects.hash(super.hashCode(), messageType, messageProperties, messageContent, failOnError,
+                timeToLiveMillis);
     }
 
     @Extension
@@ -156,13 +157,9 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new ActiveMQPublisherProviderData(
-                    jo.getString("name"),
-                    mpo,
-                    MESSAGE_TYPE.fromString(jo.getString("messageType")),
-                    jo.getString("messageProperties"),
-                    jo.getString("messageContent"),
-                    jo.getBoolean("failOnError"),
+            return new ActiveMQPublisherProviderData(jo.getString("name"), mpo,
+                    MESSAGE_TYPE.fromString(jo.getString("messageType")), jo.getString("messageProperties"),
+                    jo.getString("messageContent"), jo.getBoolean("failOnError"),
                     jo.getInt("timeToLiveMinutes") * 60 * 1000);
         }
 

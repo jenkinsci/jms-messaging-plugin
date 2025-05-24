@@ -150,7 +150,8 @@ public class MessageProviderMigrator {
         return false;
     }
 
-    private static boolean updateCIMessageSubscriberBuilder(AbstractProject<?, ?> p, CIMessageSubscriberBuilder builder) {
+    private static boolean updateCIMessageSubscriberBuilder(AbstractProject<?, ?> p,
+            CIMessageSubscriberBuilder builder) {
         if (builder.getProviderData() == null) {
             if (builder.getProviderName() == null) {
                 builder.setProviderName(GlobalCIConfiguration.get().getConfigs().get(0).getName());
@@ -206,7 +207,8 @@ public class MessageProviderMigrator {
             GlobalCIConfiguration.get().save();
         }
         int updatedCount = 0;
-        log.info("Attempting to migrate all CIMessageBuilders, CIMessageNotifier and CIMessageSubscriberBuilders build/publish steps");
+        log.info(
+                "Attempting to migrate all CIMessageBuilders, CIMessageNotifier and CIMessageSubscriberBuilders build/publish steps");
         for (BuildableItemWithBuildWrappers item : instance.getItems(BuildableItemWithBuildWrappers.class)) {
             Job<?, ?> job = (Job<?, ?>) item;
             if (job instanceof Project) {
@@ -221,7 +223,8 @@ public class MessageProviderMigrator {
                         updatedCount++;
                     }
                 }
-                for (CIMessageSubscriberBuilder builderObj : p.getBuildersList().getAll(CIMessageSubscriberBuilder.class)) {
+                for (CIMessageSubscriberBuilder builderObj : p.getBuildersList()
+                        .getAll(CIMessageSubscriberBuilder.class)) {
                     if (updateCIMessageSubscriberBuilder(p, builderObj)) {
                         updatedCount++;
                     }
@@ -239,7 +242,8 @@ public class MessageProviderMigrator {
                         updatedCount++;
                     }
                 }
-                for (CIMessageSubscriberBuilder builderObj : p.getBuildersList().getAll(CIMessageSubscriberBuilder.class)) {
+                for (CIMessageSubscriberBuilder builderObj : p.getBuildersList()
+                        .getAll(CIMessageSubscriberBuilder.class)) {
                     if (updateCIMessageSubscriberBuilder(p, builderObj)) {
                         updatedCount++;
                     }

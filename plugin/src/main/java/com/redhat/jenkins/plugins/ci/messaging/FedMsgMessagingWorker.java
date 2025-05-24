@@ -65,7 +65,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
 
     private boolean pollerClosed = false;
 
-    public FedMsgMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+    public FedMsgMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
+            String jobname) {
         super(messagingProvider, overrides, jobname);
         this.provider = (FedMsgMessagingProvider) messagingProvider;
     }
@@ -102,7 +103,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                     // then we just unsubscribe here, sleep, so that we may
                     // try again on the next iteration.
 
-                    log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in " + RETRY_MINUTES + " minutes.", ex);
+                    log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in "
+                            + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
 
                         unsubscribe(jobname);
@@ -158,7 +160,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
     @Override
     public void receive(String jobname, ProviderData pdata) {
         FedMsgSubscriberProviderData pd = (FedMsgSubscriberProviderData) pdata;
-        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout(): FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout()
+                : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
             return;
@@ -209,7 +212,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
                 }
             }
             if (!interrupt) {
-                log.info("No message received for the past " + timeoutInMs + " ms, re-subscribing for job '" + jobname + "'.");
+                log.info("No message received for the past " + timeoutInMs + " ms, re-subscribing for job '" + jobname
+                        + "'.");
                 unsubscribe(jobname);
             }
         } catch (Exception e) {
@@ -260,11 +264,12 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             env.putAll(build.getEnvironment(listener));
             env.put("CI_NAME", build.getParent().getName());
             if (!build.isBuilding()) {
-                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed": "failed"));
+                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed" : "failed"));
                 env.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
             }
 
-            FedmsgMessage fm = new FedmsgMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
+            FedmsgMessage fm = new FedmsgMessage(
+                    PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
                     PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
             fm.setTimestamp(System.currentTimeMillis());
@@ -312,7 +317,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
             log.info(" with check: " + msgCheck.toString());
             listener.getLogger().println(" with check: " + msgCheck);
         }
-        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout(): FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
+        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout()
+                : FedMsgSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
         log.info(" with timeout: " + timeout);
         listener.getLogger().println(" with timeout: " + timeout);
 

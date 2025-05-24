@@ -107,8 +107,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
-                                               @QueryParameter("username") String username,
-                                               @QueryParameter("password") String password) {
+                @QueryParameter("username") String username, @QueryParameter("password") String password) {
 
             checkAdmin();
 
@@ -117,7 +116,8 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
             Connection connection = null;
             if (broker != null && isValidURL(broker)) {
                 try {
-                    UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
+                    UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username,
+                            Secret.fromString(password));
                     ActiveMQConnectionFactory connectionFactory = uam.getConnectionFactory(broker);
                     connection = connectionFactory.createConnection();
                     connection.start();

@@ -32,8 +32,8 @@ public class KafkaContainer extends DockerContainer {
     public static final int PORT = 9092;
 
     public String getBootstrapServersProperty() {
-	String hostIP = ipBound(PORT);
-	int hostPort = port(PORT);
+        String hostIP = ipBound(PORT);
+        int hostPort = port(PORT);
         return String.format("bootstrap.servers=%s:%d", hostIP, hostPort);
     }
 }

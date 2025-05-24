@@ -44,7 +44,8 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     private Boolean failOnError = false;
 
     @DataBoundConstructor
-    public KafkaPublisherProviderData() {}
+    public KafkaPublisherProviderData() {
+    }
 
     public KafkaPublisherProviderData(String name) {
         this(name, null);
@@ -54,7 +55,8 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         super(name, overrides);
     }
 
-    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent, Boolean failOnError) {
+    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent,
+            Boolean failOnError) {
         this(name, overrides);
         this.messageContent = messageContent;
         this.failOnError = failOnError;
@@ -84,16 +86,15 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        KafkaPublisherProviderData thatp = (KafkaPublisherProviderData)that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.messageContent, thatp.messageContent) &&
-                Objects.equals(this.failOnError, thatp.failOnError);
+        KafkaPublisherProviderData thatp = (KafkaPublisherProviderData) that;
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+                && Objects.equals(this.messageContent, thatp.messageContent)
+                && Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Override
@@ -115,10 +116,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new KafkaPublisherProviderData(
-                    jo.getString("name"),
-                    mpo,
-                    jo.getString("messageContent"),
+            return new KafkaPublisherProviderData(jo.getString("name"), mpo, jo.getString("messageContent"),
                     jo.getBoolean("failOnError"));
         }
 

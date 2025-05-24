@@ -54,7 +54,8 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
-    public KafkaSubscriberProviderData() {}
+    public KafkaSubscriberProviderData() {
+    }
 
     public KafkaSubscriberProviderData(String name) {
         this(name, null);
@@ -64,7 +65,8 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
         super(name, overrides);
     }
 
-    public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks, String variable, Integer timeout) {
+    public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks,
+            String variable, Integer timeout) {
         this(name, overrides);
         this.checks = checks;
         this.variable = variable;
@@ -113,17 +115,15 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     }
 
     @Override
-    public boolean equals(Object that){
+    public boolean equals(Object that) {
         if (!super.equals(that)) {
             return false;
         }
 
-        KafkaSubscriberProviderData thatp = (KafkaSubscriberProviderData)that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.checks, thatp.checks) &&
-                Objects.equals(this.variable, thatp.variable) &&
-                Objects.equals(this.timeout, thatp.timeout);
+        KafkaSubscriberProviderData thatp = (KafkaSubscriberProviderData) that;
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+                && Objects.equals(this.checks, thatp.checks) && Objects.equals(this.variable, thatp.variable)
+                && Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Override

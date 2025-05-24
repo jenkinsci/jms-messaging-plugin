@@ -133,8 +133,9 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
-                    jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
+            return new SSLCertificateAuthenticationMethod(jo.getString("keystore"),
+                    Secret.fromString(jo.getString("keypwd")), jo.getString("truststore"),
+                    Secret.fromString(jo.getString("trustpwd")));
         }
 
         public String getConfigPage() {
@@ -143,10 +144,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
-                                               @QueryParameter("keystore") String keystore,
-                                               @QueryParameter("keypwd") String keypwd,
-                                               @QueryParameter("truststore") String truststore,
-                                               @QueryParameter("trustpwd") String trustpwd) {
+                @QueryParameter("keystore") String keystore, @QueryParameter("keypwd") String keypwd,
+                @QueryParameter("truststore") String truststore, @QueryParameter("trustpwd") String trustpwd) {
 
             checkAdmin();
 
@@ -155,7 +154,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             Session session = null;
             if (broker != null && isValidURL(broker)) {
                 try {
-                    SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
+                    SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore,
+                            Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
                     ActiveMQSslConnectionFactory connectionFactory = sam.getConnectionFactory(broker);
                     connection = connectionFactory.createConnection();
                     connection.start();
@@ -164,7 +164,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
                     connection.close();
                     return FormValidation.ok(Messages.SuccessBrokerConnect(broker));
                 } catch (Exception e) {
-                    log.log(Level.SEVERE, "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
+                    log.log(Level.SEVERE,
+                            "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
                     return FormValidation.error(Messages.Error() + ": " + e);
                 } finally {
                     try {

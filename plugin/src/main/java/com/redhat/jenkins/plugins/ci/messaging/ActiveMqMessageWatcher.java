@@ -62,9 +62,11 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
             log.severe("Unable to get localhost IP address.");
         }
 
-        String topic = PluginUtils.getSubstitutedValue(getTopic(overrides, activeMqMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
+        String topic = PluginUtils.getSubstitutedValue(
+                getTopic(overrides, activeMqMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
 
-        if (ip != null && activeMqMessagingProvider.getAuthenticationMethod() != null && topic != null && activeMqMessagingProvider.getBroker() != null) {
+        if (ip != null && activeMqMessagingProvider.getAuthenticationMethod() != null && topic != null
+                && activeMqMessagingProvider.getBroker() != null) {
             log.info("Waiting for message with selector: " + selector);
             taskListener.getLogger().println("Waiting for message with selector: " + selector);
             Connection connection = null;
@@ -80,14 +82,16 @@ public class ActiveMqMessageWatcher extends JMSMessageWatcher {
                     consumer = session.createConsumer(destination, selector, false);
                 } else {
                     Topic destination = session.createTopic(topic);
-                    consumer = session.createDurableSubscriber(destination, UUID.randomUUID().toString(), selector, false);
+                    consumer = session.createDurableSubscriber(destination, UUID.randomUUID().toString(), selector,
+                            false);
                 }
 
                 Message message = consumer.receive(timeout * 60 * 1000);
                 if (message != null) {
                     String value = getMessageBody(message);
                     log.info("Received message with selector: " + selector + "\n" + formatMessage(message));
-                    taskListener.getLogger().println("Received message with selector: " + selector + "\n" + formatMessage(message));
+                    taskListener.getLogger()
+                            .println("Received message with selector: " + selector + "\n" + formatMessage(message));
                     return value;
                 }
                 log.info("Timed out waiting for message!");

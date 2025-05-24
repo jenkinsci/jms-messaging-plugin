@@ -15,7 +15,8 @@ public class FedMsgTriggerThread extends CITriggerThread {
 
     FedMsgMessagingWorker fworker;
 
-    protected FedMsgTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
+    protected FedMsgTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname,
+            CIBuildTrigger cibt, int instance) {
         super(messagingProvider, providerData, jobname, cibt, instance);
         fworker = (FedMsgMessagingWorker) messagingWorker;
     }
@@ -52,9 +53,11 @@ public class FedMsgTriggerThread extends CITriggerThread {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o)
+            return true;
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         FedMsgTriggerThread thread = (FedMsgTriggerThread) o;
 
@@ -63,7 +66,7 @@ public class FedMsgTriggerThread extends CITriggerThread {
 
     @Override
     public int hashCode() {
-        int result = fworker != null ? fworker.hashCode(): 0;
+        int result = fworker != null ? fworker.hashCode() : 0;
         return 31 * result + super.hashCode();
     }
 }

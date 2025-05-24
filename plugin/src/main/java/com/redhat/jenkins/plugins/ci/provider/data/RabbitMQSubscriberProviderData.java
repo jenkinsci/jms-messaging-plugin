@@ -75,14 +75,15 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         super(name, overrides);
     }
 
-    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, @Nonnull List<MsgCheck> checks, String variable, Integer timeout) {
+    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides,
+            @Nonnull List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
-        if (checks == null) throw new IllegalArgumentException("checks are null");
+        if (checks == null)
+            throw new IllegalArgumentException("checks are null");
         this.checks = checks;
         this.variable = variable;
         this.timeout = timeout;
     }
-
 
     public @Nonnull List<MsgCheck> getChecks() {
         return checks;
@@ -90,7 +91,8 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
 
     @DataBoundSetter
     public void setChecks(@Nonnull List<MsgCheck> checks) {
-        if (checks == null) throw new IllegalArgumentException("checks are null");
+        if (checks == null)
+            throw new IllegalArgumentException("checks are null");
         this.checks = checks;
     }
 
@@ -128,11 +130,9 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         }
 
         RabbitMQSubscriberProviderData thatp = (RabbitMQSubscriberProviderData) that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.checks, thatp.checks) &&
-                Objects.equals(this.variable, thatp.variable) &&
-                Objects.equals(this.timeout, thatp.timeout);
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+                && Objects.equals(this.checks, thatp.checks) && Objects.equals(this.variable, thatp.variable)
+                && Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Override

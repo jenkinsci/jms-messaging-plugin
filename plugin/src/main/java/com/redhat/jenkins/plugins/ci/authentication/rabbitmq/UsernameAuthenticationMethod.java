@@ -111,17 +111,16 @@ public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod {
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("hostname") String hostname,
-                                               @QueryParameter("portNumber") Integer portNumber,
-                                               @QueryParameter("virtualHost") String virtualHost,
-                                               @QueryParameter("username") String username,
-                                               @QueryParameter("password") String password) {
+                @QueryParameter("portNumber") Integer portNumber, @QueryParameter("virtualHost") String virtualHost,
+                @QueryParameter("username") String username, @QueryParameter("password") String password) {
 
             checkAdmin();
 
             Connection connection = null;
             Channel channel = null;
             try {
-                UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
+                UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username,
+                        Secret.fromString(password));
                 ConnectionFactory connectionFactory = uam.getConnectionFactory(hostname, portNumber, virtualHost);
                 connection = connectionFactory.newConnection();
                 channel = connection.createChannel();
