@@ -55,7 +55,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
         return hubAddr;
     }
 
-    public String petHubAddr() {
+    public String petHubAddr() { // FIXME remove method w/ typo
         return pubAddr;
     }
 

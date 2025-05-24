@@ -31,6 +31,8 @@ import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import hudson.Extension;
@@ -73,12 +75,20 @@ public class MessageProviderMigrator {
                 fpd.setMessageContent(builder.getMessageContent());
                 fpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(fpd);
-            } else {
+            } else if (prov instanceof RabbitMQMessagingProvider) {
                 RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(builder.getProviderName());
                 rpd.setOverrides(builder.getOverrides());
                 rpd.setMessageContent(builder.getMessageContent());
                 rpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(rpd);
+            } else if (prov instanceof KafkaMessagingProvider) {
+                KafkaPublisherProviderData kpd = new KafkaPublisherProviderData(builder.getProviderName());
+                kpd.setOverrides(builder.getOverrides());
+                kpd.setMessageContent(builder.getMessageContent());
+                kpd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(kpd);
+            } else {
+                log.severe("Unknown provider instance '" + prov.toString() + "'");
             }
             try {
                 p.save();
@@ -111,12 +121,20 @@ public class MessageProviderMigrator {
                 fpd.setMessageContent(builder.getMessageContent());
                 fpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(fpd);
-            } else {
+            } else if (prov instanceof RabbitMQMessagingProvider) {
                 RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(builder.getProviderName());
                 rpd.setOverrides(builder.getOverrides());
                 rpd.setMessageContent(builder.getMessageContent());
                 rpd.setFailOnError(builder.isFailOnError());
                 builder.setProviderData(rpd);
+            } else if (prov instanceof KafkaMessagingProvider) {
+                KafkaPublisherProviderData kpd = new KafkaPublisherProviderData(builder.getProviderName());
+                kpd.setOverrides(builder.getOverrides());
+                kpd.setMessageContent(builder.getMessageContent());
+                kpd.setFailOnError(builder.isFailOnError());
+                builder.setProviderData(kpd);
+            } else {
+                log.severe("Unknown provider instance '" + prov.toString() + "'");
             }
             try {
                 p.save();
@@ -149,12 +167,20 @@ public class MessageProviderMigrator {
                 fpd.setVariable(builder.getVariable());
                 fpd.setTimeout(builder.getTimeout());
                 builder.setProviderData(fpd);
-            } else {
+            } else if (prov instanceof RabbitMQMessagingProvider) {
                 RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(builder.getProviderName());
                 rpd.setOverrides(builder.getOverrides());
                 rpd.setVariable(builder.getVariable());
                 rpd.setTimeout(builder.getTimeout());
                 builder.setProviderData(rpd);
+            } else if (prov instanceof KafkaMessagingProvider) {
+                KafkaSubscriberProviderData kpd = new KafkaSubscriberProviderData(builder.getProviderName());
+                kpd.setOverrides(builder.getOverrides());
+                kpd.setVariable(builder.getVariable());
+                kpd.setTimeout(builder.getTimeout());
+                builder.setProviderData(kpd);
+            } else {
+                log.severe("Unknown provider instance '" + prov.toString() + "'");
             }
             try {
                 p.save();

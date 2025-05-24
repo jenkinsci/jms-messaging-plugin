@@ -26,11 +26,15 @@ package com.redhat.jenkins.plugins.ci;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
 import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
@@ -70,6 +74,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -251,6 +256,24 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                         providers.add(f);
                         providerUpdated = true;
                         saveJob();
+                    } else if (provider instanceof RabbitMQMessagingProvider) {
+                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+                        RabbitMQSubscriberProviderData r = new RabbitMQSubscriberProviderData(providerName);
+                        r.setOverrides(overrides);
+                        r.setChecks(checks);
+                        providers.add(r);
+                        providerUpdated = true;
+                        saveJob();
+                    } else if (provider instanceof KafkaMessagingProvider) {
+                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+                        KafkaSubscriberProviderData k = new KafkaSubscriberProviderData(providerName);
+                        k.setOverrides(overrides);
+                        k.setChecks(checks);
+                        providers.add(k);
+                        providerUpdated = true;
+                        saveJob();
+                    } else {
+                        log.info("Unknown instance for provider '" + providerName + "' for job '" + getJobName() + "'.");
                     }
                 } else {
                     log.warning("Unable to find provider '" + providerName + "', so unable to upgrade job.");
@@ -342,10 +365,12 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             // If threads are the same we have start/stop sequence, so don't bother stopping.
             if (comparisonThreads != null && threads.size() == comparisonThreads.size()) {
                 for (CITriggerThread thread : threads) {
-                    for (int i = 0; i < comparisonThreads.size(); i++) {
-                        if (thread.equals(comparisonThreads.get(i))) {
+		    ListIterator<CITriggerThread> iter = comparisonThreads.listIterator();
+		    while (iter.hasNext()) {
+                        Thread t = iter.next();
+                        if (thread.equals(t)) {
                             log.info("Already have thread " + thread.getId() + "...");
-                            comparisonThreads.remove(i);
+                            iter.remove();
                             break;
                         }
                     }
