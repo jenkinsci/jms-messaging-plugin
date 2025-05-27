@@ -27,12 +27,12 @@ import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
-import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.integration.fixtures.KafkaContainer;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
 import hudson.Util;
@@ -58,48 +58,45 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
+public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
 
     @ClassRule
-    public static DockerClassRule<ActiveMQContainer> docker = new DockerClassRule<>(ActiveMQContainer.class);
-    private static ActiveMQContainer amq = null;
+    public static DockerClassRule<KafkaContainer> docker = new DockerClassRule<>(KafkaContainer.class);
+    private static KafkaContainer kafka = null;
 
     @Before
-    public void setUp() throws IOException, InterruptedException {
-        amq = docker.create(); // Can be moved to @BeforeClass, BUT there are tests that stops the container on purpose - breaks subsequent tests.
-        String brokerUrl = amq.getBroker();
+    public void setUp() throws IOException, InterruptedException, ClassNotFoundException {
+        kafka = docker.create(); // Can be moved to @BeforeClass, BUT there are tests that stops the container on purpose - breaks subsequent tests.
         Thread.sleep(3000);
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
-        gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(
+        gcc.setConfigs(Collections.singletonList(new KafkaMessagingProvider(
                 DEFAULT_PROVIDER_NAME,
-                brokerUrl,
-                false,
                 DEFAULT_TOPIC_NAME,
-                null,
-                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat"))
+                kafka.getBootstrapServersProperty(),
+                kafka.getBootstrapServersProperty()
         )));
 
-        // TODO test connection
+	logger.record(Class.forName("com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingWorker"), Level.INFO).capture(10000);
     }
 
     @After
     public void after() {
-        amq.close();
+        kafka.close();
     }
 
     @Override
     public ProviderData getSubscriberProviderData(String topic, String variableName, String selector, MsgCheck... msgChecks) {
-        return new ActiveMQSubscriberProviderData(
+        return new KafkaSubscriberProviderData(
                 DEFAULT_PROVIDER_NAME,
                 overrideTopic(topic),
-                Util.fixNull(selector),
                 Arrays.asList(msgChecks),
                 Util.fixNull(variableName, "CI_MESSAGE"),
                 60
@@ -108,12 +105,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @Override
     public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content) {
-        return getPublisherProviderData(topic, type, properties, content, 0);
-    }
-
-    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content, int ttl) {
-        return new ActiveMQPublisherProviderData(
-                DEFAULT_PROVIDER_NAME, overrideTopic(topic), type, properties, content, true, ttl
+        return new KafkaPublisherProviderData(
+                DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true
         );
     }
 
@@ -126,12 +119,6 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public void testSimpleCIEventTriggerWithTextArea() throws Exception {
         _testSimpleCIEventTriggerWithTextArea("scott=123\ntom=456",
                 "scott=123\ntom=456");
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithBooleanParam() throws Exception {
-        _testSimpleCIEventTriggerWithBoolParam("scott=123\ntom=456\ndryrun=true", "{ \"scott\": \"123\", \"tom\": \"456\", \"dryrun\": true }",
-                "dryrun is true, scott is 123");
     }
 
     @Test
@@ -201,11 +188,6 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
-    public void testSimpleCIEventTriggerWithWildcardInSelector() throws Exception {
-        _testSimpleCIEventTriggerWithWildcardInSelector();
-    }
-
-    @Test
     public void testSimpleCIEventTriggerWithRegExpCheck() throws Exception {
         _testSimpleCIEventTriggerWithRegExpCheck();
     }
@@ -235,16 +217,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic();
     }
 
+      // No headers for Kafka.  Check for CI_MESSAGE_RECORD instead.
     @Test
-    public void testSimpleCIEventTriggerWithParamOverride() throws Exception {
-        _testSimpleCIEventTriggerWithParamOverride();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerHeadersInEnv() throws Exception {
+    public void testSimpleCIEventTriggerRecordInEnv() throws Exception {
         FreeStyleProject jobB = j.createFreeStyleProject();
-        String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"" + jobB.getName() + "\",\"CI_TYPE\":\"code-quality-checks-done\"";
-        _testSimpleCIEventTriggerHeadersInEnv(jobB, "CI_MESSAGE_HEADERS", expected);
+        String expected = "\"topic\":\"topic\",\"partition\":0";
+        _testSimpleCIEventTriggerHeadersInEnv(jobB, "CI_MESSAGE_RECORD", expected);
     }
 
     @Test
@@ -270,11 +248,6 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
         _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
-        _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg();
     }
 
     @Test
@@ -319,7 +292,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @Test
     public void testEnsureFailedSendingOfMessageFailsBuild() throws Exception {
-        stopContainer(amq);
+        stopContainer(kafka);
         System.out.println("Waiting 30 secs");
         Thread.sleep(30000);
         _testEnsureFailedSendingOfMessageFailsBuild();
@@ -327,7 +300,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
     @Test
     public void testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
-        stopContainer(amq);
+        stopContainer(kafka);
         System.out.println("Waiting 30 secs");
         Thread.sleep(30000);
         _testEnsureFailedSendingOfMessageFailsPipelineBuild();
@@ -343,21 +316,19 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
             "  if (env.CI_MESSAGE_TEST == null) {\n" +
             "    error(\"CI_MESSAGE_TEST not set\")\n"+
             "  }\n" +
-            "  echo \"CI_MESSAGE_TEST_HEADERS = \" + env.CI_MESSAGE_TEST_HEADERS  \n" +
-            "  if (env.CI_MESSAGE_TEST_HEADERS == null) {\n" +
-            "    error(\"CI_MESSAGE_TEST_HEADERS not set\")\n"+
+            "  echo \"CI_MESSAGE_TEST_RECORD = \" + env.CI_MESSAGE_TEST_RECORD  \n" +
+            "  if (env.CI_MESSAGE_TEST_RECORD == null) {\n" +
+            "    error(\"CI_MESSAGE_TEST_RECORD not set\")\n"+
             "  }\n" +
-            "  if (!env.CI_MESSAGE_TEST_HEADERS.contains(\"TEST_PROPERTY\")) {\n" +
-            "    error(\"TEST_PROPERTY not found\")\n"+
+            "  if (!env.CI_MESSAGE_TEST_RECORD.contains(\"topic\")) {\n" +
+            "    error(\"topic not found\")\n"+
             "  }\n" +
             "}", true));
 
         scheduleAwaitStep(wait);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "TEST_PROPERTY = TEST_VALUE", "Hello World"
-        )));
+        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(null, null, null, "Hello World")));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -382,19 +353,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Test
-    public void testPipelineJobPropertiesSingleProvider() throws Exception {
-        // For backward compatibility, uses "providerData".
-        _testPipelineJobProperties(true);
-    }
-
-    @Test
-    public void testPipelineJobPropertiesMultipleProviders() throws Exception {
-        _testPipelineJobProperties(false);
-    }
-
-    public void _testPipelineJobProperties(boolean backwardCompatible) throws Exception {
-        List<Thread> leftoverFromPreviousRuns = getThreadsByName("ActiveMQ.*Task-.*");
-        leftoverFromPreviousRuns.addAll(getThreadsByName("CIBuildTrigger.*"));
+    public void testPipelineJobProperties() throws Exception {
+        List<Thread> leftoverFromPreviousRuns = getThreadsByName("CIBuildTrigger.*");
         for (Thread thread : leftoverFromPreviousRuns) {
             thread.interrupt();
 
@@ -413,12 +373,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 " messageType: 'CodeQualityChecksDone'}", true));
 
         //[expectedValue: number + '0.0234', field: 'CI_STATUS2']
-        String pd = "[$class: 'ActiveMQSubscriberProviderData', name: '" + DEFAULT_PROVIDER_NAME + "', selector: 'CI_NAME = \\'" + send.getName() + "\\'']";
-        if (backwardCompatible) {
-            pd = "providerData: " + pd;
-        } else {
-            pd = "providerList: [" + pd + "]";
-        }
+        String pd = "providerList: [[$class: 'KafkaSubscriberProviderData', name: '" + DEFAULT_PROVIDER_NAME + "']]";
         WorkflowJob receive = j.jenkins.createProject(WorkflowJob.class, "receive");
         receive.addProperty(new ParametersDefinitionProperty(
                 new TextParameterDefinition("CI_MESSAGE", "", "")
@@ -436,16 +391,13 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         j.buildAndAssertSuccess(receive);
         // Allow some time for trigger thread stop/start.
         Thread.sleep(2000);
-        assertEquals("ActiveMQ.*Task- count", 1, getCurrentThreadCountForName("ActiveMQ.*Task-.*"));
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
         j.configRoundtrip(receive);
 
         j.buildAndAssertSuccess(receive);
         Thread.sleep(2000);
-        printThreadsWithName("ActiveMQ.*Task-.*");
         printThreadsWithName("CIBuildTrigger.*");
-        assertEquals("ActiveMQ.*Task- count", 1, getCurrentThreadCountForName("ActiveMQ.*Task-.*"));
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
         //checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
@@ -458,28 +410,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         Thread.sleep(5000);
         assertEquals("there are not 5 builds", 5, receive.getLastBuild().getNumber());
 
-        printThreadsWithName("ActiveMQ.*Task-.*");
         printThreadsWithName("CIBuildTrigger.*");
-        assertEquals("ActiveMQ.*Task- count", 1, getCurrentThreadCountForName("ActiveMQ.*Task-.*"));
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
-        pd = "[$class: 'ActiveMQSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD
-                + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test', selector: 'CI_NAME = \\'"
-                + send.getName() + "\\'']";
-        if (backwardCompatible) {
-            pd = "providerData: " + pd;
-        } else {
-            pd = "providerList: [" + pd + "]";
-        }
-        receive.setDefinition(new CpsFlowDefinition(
-                "def number = currentBuild.getNumber().toString()\n" +
-                "properties(\n" +
-                "    [\n" +
-                "        pipelineTriggers(\n" +
-                "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
-                "        )\n" +
-                "    ]\n" +
-                ")\nnode('built-in') {\n sleep 1\n}", false));
+        pd = "providerList: [[$class: 'KafkaSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD
+                + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test']]";
         scheduleAwaitStep(receive);
 
         for (int i = 0; i < 3; i++) {
@@ -494,72 +429,12 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         for (int i = 1; i < 8; i++) {
             j.assertBuildStatusSuccess(receive.getBuildByNumber(i));
         }
-        printThreadsWithName("ActiveMQ.*Task-.*");
         printThreadsWithName("CIBuildTrigger.*");
-        assertEquals("ActiveMQ.*Task- count", 1, getCurrentThreadCountForName("ActiveMQ.*Task-.*"));
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
     }
 
     @Test
     public void testPipelineInvalidProvider() throws Exception {
         _testPipelineInvalidProvider();
-    }
-
-    @Test
-    public void testSimpleCIEventWithMessagePropertiesAsVariable() throws Exception {
-        FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
-        jobA.getBuildersList().add(new Shell("echo TEST_PROP1 = $TEST_PROP1"));
-        jobA.getBuildersList().add(new Shell("echo TEST_PROP2 = $TEST_PROP2"));
-        attachTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
-                "otopic", "CI_MESSAGE", "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))), jobA);
-        Thread.sleep(1000);
-
-        FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.addProperty(new ParametersDefinitionProperty(
-                new TextParameterDefinition("MESSAGE_PROPERTIES", "CI_STATUS = failed\nTEST_PROP1 = GOT 1\nTEST_PROP2 = GOT 2", "")
-        ));
-        jobB.getBuildersList().add(new CIMessageBuilder(
-                getPublisherProviderData("otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "${MESSAGE_PROPERTIES}", "")
-        ));
-        j.buildAndAssertSuccess(jobB);
-
-        waitUntilScheduledBuildCompletes();
-        FreeStyleBuild lastBuild = jobA.getLastBuild();
-        j.assertBuildStatusSuccess(lastBuild);
-
-        j.assertLogContains("echo CI_TYPE = code-quality-checks-done", lastBuild);
-        j.assertLogContains("echo TEST_PROP1 = GOT 1", lastBuild);
-        j.assertLogContains("echo TEST_PROP2 = GOT 2", lastBuild);
-    }
-
-    @Test
-    public void testTTL() throws Exception {
-        FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.getBuildersList().add(new Shell("echo $CI_MESSAGE_HEADERS"));
-        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
-        ))), jobA);
-
-        FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
-        )));
-        
-        j.buildAndAssertSuccess(jobB);
-        waitUntilScheduledBuildCompletes();
-        j.assertBuildStatusSuccess(jobA.getLastBuild());
-        j.assertLogContains("\"JMSExpiration\":0", jobA.getLastBuild());
-
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null, 1000
-        )));
-
-        j.buildAndAssertSuccess(jobB);
-        waitUntilScheduledBuildCompletes();
-        j.assertBuildStatusSuccess(jobA.getLastBuild());
-        j.assertLogNotContains("JMSExpiration: 0", jobA.getLastBuild());
-        j.assertLogContains("\"JMSExpiration\":", jobA.getLastBuild());
     }
 }

@@ -37,7 +37,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
-import org.kohsuke.stapler.interceptor.RequirePOST;
+import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.Nonnull;
 import jakarta.jms.Connection;
@@ -105,7 +105,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
             return "username.jelly";
         }
 
-        @RequirePOST
+        @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
                                                @QueryParameter("username") String username,
                                                @QueryParameter("password") String password) {
