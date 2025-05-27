@@ -43,8 +43,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     private final String topic;
 
     @DataBoundConstructor
-    public FedMsgMessagingProvider(String name, String hubAddr,
-                                   String pubAddr, String topic) {
+    public FedMsgMessagingProvider(String name, String hubAddr, String pubAddr, String topic) {
         this.name = name;
         this.hubAddr = hubAddr;
         this.pubAddr = pubAddr;

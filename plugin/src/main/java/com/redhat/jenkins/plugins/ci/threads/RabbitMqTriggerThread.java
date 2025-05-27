@@ -15,7 +15,8 @@ public class RabbitMqTriggerThread extends CITriggerThread {
 
     private final RabbitMQMessagingWorker worker;
 
-    public RabbitMqTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
+    public RabbitMqTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname,
+            CIBuildTrigger cibt, int instance) {
         super(messagingProvider, providerData, jobname, cibt, instance);
         worker = (RabbitMQMessagingWorker) messagingWorker;
     }
@@ -37,9 +38,11 @@ public class RabbitMqTriggerThread extends CITriggerThread {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o)
+            return true;
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         RabbitMqTriggerThread thread = (RabbitMqTriggerThread) o;
 
@@ -48,7 +51,7 @@ public class RabbitMqTriggerThread extends CITriggerThread {
 
     @Override
     public int hashCode() {
-        int result = worker != null ? worker.hashCode(): 0;
+        int result = worker != null ? worker.hashCode() : 0;
         return 31 * result + super.hashCode();
     }
 }

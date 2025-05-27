@@ -65,7 +65,8 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
         super(name, overrides);
     }
 
-    public FedMsgSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks, String variable, Integer timeout) {
+    public FedMsgSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks,
+            String variable, Integer timeout) {
         this(name, overrides);
         this.checks = checks;
         this.variable = variable;
@@ -115,11 +116,11 @@ public class FedMsgSubscriberProviderData extends FedMsgProviderData {
         }
 
         FedMsgSubscriberProviderData thatp = (FedMsgSubscriberProviderData) that;
-        return (this.name != null ? this.name.equals(thatp.name): thatp.name == null) &&
-                (this.overrides != null ? this.overrides.equals(thatp.overrides): thatp.overrides == null) &&
-                (this.checks != null ? this.checks.equals(thatp.checks): thatp.checks == null) &&
-                (this.variable != null ? this.variable.equals(thatp.variable): thatp.variable == null) &&
-                (this.timeout != null ? this.timeout.equals(thatp.timeout): thatp.timeout == null);
+        return (this.name != null ? this.name.equals(thatp.name) : thatp.name == null)
+                && (this.overrides != null ? this.overrides.equals(thatp.overrides) : thatp.overrides == null)
+                && (this.checks != null ? this.checks.equals(thatp.checks) : thatp.checks == null)
+                && (this.variable != null ? this.variable.equals(thatp.variable) : thatp.variable == null)
+                && (this.timeout != null ? this.timeout.equals(thatp.timeout) : thatp.timeout == null);
     }
 
     @Override

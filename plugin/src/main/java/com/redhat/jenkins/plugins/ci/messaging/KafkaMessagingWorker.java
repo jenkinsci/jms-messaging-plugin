@@ -74,7 +74,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     static final String DEFAULT_TOPIC = "io.jenkins";
     KafkaConsumer<String, String> consumer;
 
-    public KafkaMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+    public KafkaMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
+            String jobname) {
         super(messagingProvider, overrides, jobname);
         this.provider = (KafkaMessagingProvider) messagingProvider;
     }
@@ -99,7 +100,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                     // then we just unsubscribe here, sleep, so that we may
                     // try again on the next iteration.
 
-                    log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in " + RETRY_MINUTES + " minutes.", ex);
+                    log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in "
+                            + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
 
                         unsubscribe(jobname);
@@ -125,12 +127,12 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
-	disconnect();
+        disconnect();
     }
 
     @Override
     public void receive(String jobname, ProviderData pdata) {
-        KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData)pdata;
+        KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData) pdata;
         while (!subscribe(jobname) && !Thread.currentThread().isInterrupted()) {
             try {
                 Thread.sleep(TimeUnit.SECONDS.toMillis(2));
@@ -146,15 +148,17 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             }
         }
 
-	if (!Thread.currentThread().isInterrupted()) {
-            int timeout = (pd.getTimeout() != null ? pd.getTimeout() : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
+        if (!Thread.currentThread().isInterrupted()) {
+            int timeout = (pd.getTimeout() != null ? pd.getTimeout()
+                    : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
             try {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMinutes(timeout));
                 Iterator<ConsumerRecord<String, String>> it = records.iterator();
                 if (it.hasNext()) {
                     ConsumerRecord<String, String> rec = it.next();
                     log.info(String.format("kafka message received [%s]", rec.toString()));
-                    log.info(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(), rec.value()));
+                    log.info(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(),
+                            rec.value()));
                     if (provider.verify(rec.value(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<String, String>();
                         if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
@@ -162,11 +166,12 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                                 params.put(pd.getMessageVariable(), rec.value());
                             }
                             params.put(pd.getRecordVariable(), consumerRecordToJson(rec));
-			}
+                        }
                         trigger(jobname, rec.value(), params);
                     }
                 } else {
-                    log.info("No message received for the past " + timeout + " minutes, re-subscribing for job '" + jobname + "'.");
+                    log.info("No message received for the past " + timeout + " minutes, re-subscribing for job '"
+                            + jobname + "'.");
                     unsubscribe(jobname);
                 }
             } catch (Exception e) {
@@ -188,12 +193,12 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         // This is a fix for org.apache.kafka.common.config.ConfigException:
         // Invalid value org.apache.kafka.common.serialization.StringDeserializer for configuration
         // value.deserializer: Class org.apache.kafka.common.serialization.StringDeserializer could not be found.
-	if (consumer == null) {
+        if (consumer == null) {
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(null);
             consumer = new KafkaConsumer<>(provider.getMergedConsumerProperties());
             Thread.currentThread().setContextClassLoader(original);
-	}
+        }
         return true;
     }
 
@@ -218,7 +223,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        KafkaPublisherProviderData pd = (KafkaPublisherProviderData)pdata;
+        KafkaPublisherProviderData pd = (KafkaPublisherProviderData) pdata;
         String body = "";
         String msgId = "";
         ClassLoader original = Thread.currentThread().getContextClassLoader();
@@ -228,25 +233,22 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             env.putAll(build.getEnvironment(listener));
             env.put("CI_NAME", build.getParent().getName());
             if (!build.isBuilding()) {
-                String ciStatus = (build.getResult() == Result.SUCCESS ? "passed": "failed");
+                String ciStatus = (build.getResult() == Result.SUCCESS ? "passed" : "failed");
                 env.put("CI_STATUS", ciStatus);
                 env.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
             }
 
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
-            ProducerRecord<String, String> producerRecord = new ProducerRecord<>(
-                    ltopic,
-                    null,
-                    Instant.now().toEpochMilli(),
-                    UUID.randomUUID().toString(),
-                    PluginUtils.getSubstitutedValue(pd.getMessageContent(), env)
-            );
+            ProducerRecord<String, String> producerRecord = new ProducerRecord<>(ltopic, null,
+                    Instant.now().toEpochMilli(), UUID.randomUUID().toString(),
+                    PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
             body = producerRecord.value();
             msgId = producerRecord.key();
 
             producer.send(producerRecord).get();
             log.info(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
-            listener.getLogger().println(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
+            listener.getLogger()
+                    .println(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
 
         } catch (Exception e) {
             if (pd.isFailOnError()) {
@@ -270,7 +272,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData)pdata;
+        KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData) pdata;
         log.info("Waiting for message.");
         listener.getLogger().println("Waiting for message.");
 
@@ -282,24 +284,26 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         }
 
         try (KafkaConsumer<String, String> lconsumer = new KafkaConsumer<>(provider.getMergedConsumerProperties())) {
-            int timeout = (pd.getTimeout() != null ? pd.getTimeout() : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
+            int timeout = (pd.getTimeout() != null ? pd.getTimeout()
+                    : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
             lconsumer.subscribe(Collections.singletonList(ltopic));
             ConsumerRecords<String, String> records = lconsumer.poll(Duration.ofMinutes(timeout));
             Iterator<ConsumerRecord<String, String>> it = records.iterator();
             if (it.hasNext()) {
                 ConsumerRecord<String, String> rec = it.next();
                 listener.getLogger().println(String.format("Received a message: %s", rec.toString()));
-                //log.info(String.format("kafka message received [%s]", rec.toString()));
-                //log.info(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(), rec.value()));
+                // log.info(String.format("kafka message received [%s]", rec.toString()));
+                // log.info(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(),
+                // rec.value()));
                 if (provider.verify(rec.value(), pd.getChecks(), jobname)) {
                     if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                         EnvVars vars = new EnvVars();
-			if (rec.value() != null) {
+                        if (rec.value() != null) {
                             vars.put(pd.getMessageVariable(), rec.value());
-			}
+                        }
                         vars.put(pd.getRecordVariable(), consumerRecordToJson(rec));
                         build.addAction(new CIEnvironmentContributingAction(vars));
-		    }
+                    }
                     return rec.value();
                 }
             } else {
@@ -319,10 +323,10 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
 
     private String consumerRecordToJson(ConsumerRecord<String, String> rec) {
         // Convert the consumer record to a JSON string, excluding value.
-        ConsumerRecord<String, String> copy = new ConsumerRecord<>(
-            rec.topic(), rec.partition(), rec.offset(), rec.timestamp(), rec.timestampType(), rec.serializedKeySize(),
-            rec.serializedValueSize(), rec.key(), null, rec.headers(), rec.leaderEpoch());
-	ObjectMapper mapper = new ObjectMapper();
+        ConsumerRecord<String, String> copy = new ConsumerRecord<>(rec.topic(), rec.partition(), rec.offset(),
+                rec.timestamp(), rec.timestampType(), rec.serializedKeySize(), rec.serializedValueSize(), rec.key(),
+                null, rec.headers(), rec.leaderEpoch());
+        ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(Include.NON_NULL);
         mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
         mapper.registerModule(new Jdk8Module());
@@ -330,7 +334,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             return mapper.writeValueAsString(copy);
         } catch (IOException e) {
             log.severe("Unable to convert consumer record to JSON");
-	    e.printStackTrace();
+            e.printStackTrace();
         }
         return "";
     }

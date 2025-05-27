@@ -45,9 +45,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder(
-        alphabetic = true
-)
+@JsonPropertyOrder(alphabetic = true)
 public class RabbitMQMessage {
 
     private static final Logger log = Logger.getLogger(RabbitMQMessage.class.getName());

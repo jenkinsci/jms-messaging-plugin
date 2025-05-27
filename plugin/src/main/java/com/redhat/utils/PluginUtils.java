@@ -38,7 +38,7 @@ public class PluginUtils {
         if (id == null) {
             return id;
         }
-        String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); //replace $VAR instances with ${VAR}.
+        String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); // replace $VAR instances with ${VAR}.
         if (env != null) {
             StrSubstitutor sub1 = new StrSubstitutor(env);
             text = sub1.replace(text).trim();
@@ -46,7 +46,6 @@ public class PluginUtils {
         StrSubstitutor sub2 = new StrSubstitutor(getNodeGlobalProperties());
         return sub2.replace(text).trim();
     }
-
 
     public static Map<String, String> getNodeGlobalProperties() {
         Map<String, String> globalNodeProperties = new HashMap<>();

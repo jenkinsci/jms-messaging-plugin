@@ -113,9 +113,11 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o)
+            return true;
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         JMSMessagingProvider that = (JMSMessagingProvider) o;
         return Objects.equals(name, that.name);

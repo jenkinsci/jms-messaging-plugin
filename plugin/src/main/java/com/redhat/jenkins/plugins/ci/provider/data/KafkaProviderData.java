@@ -35,7 +35,8 @@ public abstract class KafkaProviderData extends ProviderData {
 
     protected MessagingProviderOverrides overrides;
 
-    public KafkaProviderData() {}
+    public KafkaProviderData() {
+    }
 
     public KafkaProviderData(String name) {
         this(name, null);
@@ -62,21 +63,23 @@ public abstract class KafkaProviderData extends ProviderData {
     public String getSubscriberTopic() {
         if (hasOverrides()) {
             return overrides.getTopic();
-	} else {
+        } else {
             return ((KafkaMessagingProvider) provider).getTopic();
         }
-        //TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((KafkaMessagingProvider) provider).getTopicProvider().getDescriptor();
-        //return tpd.generateSubscriberTopic();
+        // TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((KafkaMessagingProvider)
+        // provider).getTopicProvider().getDescriptor();
+        // return tpd.generateSubscriberTopic();
     }
 
     public String getPublisherTopic() {
         if (hasOverrides()) {
             return overrides.getTopic();
-	} else {
+        } else {
             return ((KafkaMessagingProvider) provider).getTopic();
         }
-        //TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((KafkaMessagingProvider) provider).getTopicProvider().getDescriptor();
-        //return tpd.generatePublisherTopic();
+        // TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((KafkaMessagingProvider)
+        // provider).getTopicProvider().getDescriptor();
+        // return tpd.generatePublisherTopic();
     }
 
     public abstract static class KafkaProviderDataDescriptor extends ProviderDataDescriptor {

@@ -44,7 +44,6 @@ public class OrderedProperties extends Properties {
             return false;
         }
 
-
         OrderedProperties thatp = (OrderedProperties) that;
         return (this._names != null ? this._names.equals(thatp._names) : thatp._names == null);
     }

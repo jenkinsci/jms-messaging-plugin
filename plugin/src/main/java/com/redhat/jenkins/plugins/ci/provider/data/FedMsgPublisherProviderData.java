@@ -57,7 +57,8 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
         super(name, overrides);
     }
 
-    public FedMsgPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent, Boolean failOnError) {
+    public FedMsgPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent,
+            Boolean failOnError) {
         this(name, overrides);
         this.messageContent = messageContent;
         this.failOnError = failOnError;
@@ -93,10 +94,9 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
         }
 
         FedMsgPublisherProviderData thatp = (FedMsgPublisherProviderData) that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.messageContent, thatp.messageContent) &&
-                Objects.equals(this.failOnError, thatp.failOnError);
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+                && Objects.equals(this.messageContent, thatp.messageContent)
+                && Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Override
@@ -119,10 +119,7 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new FedMsgPublisherProviderData(
-                    jo.getString("name"),
-                    mpo,
-                    jo.getString("messageContent"),
+            return new FedMsgPublisherProviderData(jo.getString("name"), mpo, jo.getString("messageContent"),
                     jo.getBoolean("failOnError"));
         }
 

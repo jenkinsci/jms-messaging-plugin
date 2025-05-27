@@ -56,12 +56,18 @@ public class CIMessageSubscriberBuilder extends Builder {
 
     private static final String BUILDER_NAME = Messages.SubscriberBuilder();
 
-    @Deprecated private transient String providerName;
-    @Deprecated private transient MessagingProviderOverrides overrides;
-    @Deprecated private transient String selector;
-    @Deprecated private transient String variable;
-    @Deprecated private transient List<MsgCheck> checks = new ArrayList<>();
-    @Deprecated private transient Integer timeout;
+    @Deprecated
+    private transient String providerName;
+    @Deprecated
+    private transient MessagingProviderOverrides overrides;
+    @Deprecated
+    private transient String selector;
+    @Deprecated
+    private transient String variable;
+    @Deprecated
+    private transient List<MsgCheck> checks = new ArrayList<>();
+    @Deprecated
+    private transient Integer timeout;
     private ProviderData providerData;
 
     @DataBoundConstructor
@@ -73,51 +79,63 @@ public class CIMessageSubscriberBuilder extends Builder {
         this.providerData = providerData;
     }
 
-    @Deprecated public String getProviderName() {
+    @Deprecated
+    public String getProviderName() {
         return providerName;
     }
 
-    @Deprecated public void setProviderName(String providerName) {
+    @Deprecated
+    public void setProviderName(String providerName) {
         this.providerName = providerName;
     }
 
-    @Deprecated public MessagingProviderOverrides getOverrides() {
+    @Deprecated
+    public MessagingProviderOverrides getOverrides() {
         return overrides;
     }
 
-    @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
+    @Deprecated
+    public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
 
-    @Deprecated public String getSelector() {
+    @Deprecated
+    public String getSelector() {
         return selector;
     }
 
-    @Deprecated public void setSelector(String selector) {
+    @Deprecated
+    public void setSelector(String selector) {
         this.selector = selector;
     }
 
-    @Deprecated public String getVariable() {
+    @Deprecated
+    public String getVariable() {
         return variable;
     }
 
-    @Deprecated public void setVariable(String variable) {
+    @Deprecated
+    public void setVariable(String variable) {
         this.variable = variable;
     }
 
-    @Deprecated public List<MsgCheck> getChecks() {
+    @Deprecated
+    public List<MsgCheck> getChecks() {
         return checks;
     }
 
-    @Deprecated public void setChecks(List<MsgCheck> checks) {
+    @Deprecated
+    public void setChecks(List<MsgCheck> checks) {
         this.checks = checks;
     }
 
-    @Deprecated public Integer getTimeout() {
+    @Deprecated
+    public Integer getTimeout() {
         return timeout;
     }
 
-    @Deprecated public void setTimeout(Integer timeout) {
+    @Deprecated
+    public void setTimeout(Integer timeout) {
         this.timeout = timeout;
     }
 
@@ -137,8 +155,8 @@ public class CIMessageSubscriberBuilder extends Builder {
     public String waitforCIMessage(Run<?, ?> build, Launcher launcher, TaskListener listener) {
         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
         if (provider == null) {
-            listener.error("Failed to locate JMSMessagingProvider with name "
-                    + providerData.getName() + ". You must update the job configuration.");
+            listener.error("Failed to locate JMSMessagingProvider with name " + providerData.getName()
+                    + ". You must update the job configuration.");
             return null;
         }
 

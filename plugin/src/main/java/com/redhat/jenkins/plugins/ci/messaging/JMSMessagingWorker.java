@@ -59,7 +59,8 @@ public abstract class JMSMessagingWorker {
 
     public abstract void disconnect();
 
-    public JMSMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+    public JMSMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
+            String jobname) {
         this.overrides = overrides;
         this.jobname = jobname;
     }
@@ -68,8 +69,7 @@ public abstract class JMSMessagingWorker {
 
     public abstract String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
 
-    public void trigger(String jobname, String messageSummary,
-                        Map<String, String> params) {
+    public void trigger(String jobname, String messageSummary, Map<String, String> params) {
         CIBuildTrigger trigger = findTrigger(jobname);
         if (trigger != null) {
             log.info("Scheduling job '" + jobname + "' based on message:\n" + messageSummary);
@@ -93,4 +93,3 @@ public abstract class JMSMessagingWorker {
         return PluginUtils.getSubstitutedValue(ltopic, null);
     }
 }
-

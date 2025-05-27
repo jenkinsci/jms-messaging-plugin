@@ -72,31 +72,21 @@ public class CIMessageSenderStep extends Step {
     private boolean failOnError;
     private Integer timeToLiveMinutes;
 
-    public CIMessageSenderStep(final String providerName,
-                               final MessagingProviderOverrides overrides,
-                               final MESSAGE_TYPE messageType,
-                               final String messageProperties,
-                               final String messageContent) {
+    public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
+            final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent) {
         this(providerName, overrides, messageType, messageProperties, messageContent, false, 0);
     }
 
-    public CIMessageSenderStep(final String providerName,
-                               final MessagingProviderOverrides overrides,
-                               final MESSAGE_TYPE messageType,
-                               final String messageProperties,
-                               final String messageContent,
-			       final Integer timeToLiveMinutes) {
+    public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
+            final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent,
+            final Integer timeToLiveMinutes) {
         this(providerName, overrides, messageType, messageProperties, messageContent, false, timeToLiveMinutes);
     }
 
     @DataBoundConstructor
-    public CIMessageSenderStep(final String providerName,
-                               final MessagingProviderOverrides overrides,
-                               final MESSAGE_TYPE messageType,
-                               final String messageProperties,
-                               final String messageContent,
-                               Boolean failOnError,
-                               Integer timeToLiveMinutes) {
+    public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
+            final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent,
+            Boolean failOnError, Integer timeToLiveMinutes) {
         super();
         this.providerName = providerName;
         this.overrides = overrides;
@@ -112,7 +102,6 @@ public class CIMessageSenderStep extends Step {
         }
         this.timeToLiveMinutes = timeToLiveMinutes;
     }
-
 
     public String getProviderName() {
         return providerName;
@@ -260,7 +249,8 @@ public class CIMessageSenderStep extends Step {
     @Extension(optional = true)
     public static class DescriptorImpl extends StepDescriptor {
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, TaskListener.class);
         }
 
@@ -281,7 +271,6 @@ public class CIMessageSenderStep extends Step {
         public ListBoxModel doFillProviderNameItems() {
             return MessageUtils.doFillProviderNameItems();
         }
-
 
         public MESSAGE_TYPE getDefaultMessageType() {
             return DEFAULT_MESSAGE_TYPE;

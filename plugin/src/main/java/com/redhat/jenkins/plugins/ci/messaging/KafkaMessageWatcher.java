@@ -49,7 +49,7 @@ public class KafkaMessageWatcher extends JMSMessageWatcher {
     @Override
     public String watch() {
 
-        KafkaMessagingProvider kprovider = (KafkaMessagingProvider)provider;
+        KafkaMessagingProvider kprovider = (KafkaMessagingProvider) provider;
 
         log.info("Waiting for message");
 
@@ -63,7 +63,8 @@ public class KafkaMessageWatcher extends JMSMessageWatcher {
                 if (it.hasNext()) {
                     ConsumerRecord<String, String> rec = it.next();
                     log.fine(String.format("kafka message received [%s]", rec.toString()));
-                    log.fine(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(), rec.value()));
+                    log.fine(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(),
+                            rec.value()));
                     if (provider.verify(rec.value(), checks, jobname)) {
                         return rec.value();
                     }
@@ -79,5 +80,6 @@ public class KafkaMessageWatcher extends JMSMessageWatcher {
     }
 
     @Override
-    public void interrupt() {}
+    public void interrupt() {
+    }
 }

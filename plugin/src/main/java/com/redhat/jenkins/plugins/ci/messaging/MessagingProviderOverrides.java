@@ -28,7 +28,6 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
         return topic;
     }
 
-
     public String getQueue() {
         return queue;
     }
@@ -45,8 +44,10 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         MessagingProviderOverrides that = (MessagingProviderOverrides) o;
 

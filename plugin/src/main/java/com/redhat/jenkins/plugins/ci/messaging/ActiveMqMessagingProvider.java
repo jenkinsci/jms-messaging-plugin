@@ -59,7 +59,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
 
     @DataBoundConstructor
-    public ActiveMqMessagingProvider(String name, String broker, Boolean useQueues, String topic, TopicProvider topicProvider, ActiveMQAuthenticationMethod authenticationMethod) {
+    public ActiveMqMessagingProvider(String name, String broker, Boolean useQueues, String topic,
+            TopicProvider topicProvider, ActiveMQAuthenticationMethod authenticationMethod) {
         this.name = name;
         this.broker = broker;
         this.useQueues = useQueues;
@@ -121,7 +122,7 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     public Boolean getUseQueues() {
-        return (useQueues != null ? useQueues: false);
+        return (useQueues != null ? useQueues : false);
     }
 
     public String getTopic() {
@@ -140,7 +141,8 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
         return getConnectionFactory(getBroker(), getAuthenticationMethod());
     }
 
-    public ActiveMQConnectionFactory getConnectionFactory(String broker, ActiveMQAuthenticationMethod authenticationMethod) {
+    public ActiveMQConnectionFactory getConnectionFactory(String broker,
+            ActiveMQAuthenticationMethod authenticationMethod) {
         return authenticationMethod.getConnectionFactory(broker);
     }
 

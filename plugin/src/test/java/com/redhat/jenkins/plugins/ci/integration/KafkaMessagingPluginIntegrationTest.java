@@ -73,18 +73,16 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
     @Before
     public void setUp() throws IOException, InterruptedException, ClassNotFoundException {
-        kafka = docker.create(); // Can be moved to @BeforeClass, BUT there are tests that stops the container on purpose - breaks subsequent tests.
+        kafka = docker.create(); // Can be moved to @BeforeClass, BUT there are tests that stops the container on
+                                 // purpose - breaks subsequent tests.
         Thread.sleep(3000);
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
-        gcc.setConfigs(Collections.singletonList(new KafkaMessagingProvider(
-                DEFAULT_PROVIDER_NAME,
-                DEFAULT_TOPIC_NAME,
-                kafka.getBootstrapServersProperty(),
-                kafka.getBootstrapServersProperty()
-        )));
+        gcc.setConfigs(Collections.singletonList(new KafkaMessagingProvider(DEFAULT_PROVIDER_NAME, DEFAULT_TOPIC_NAME,
+                kafka.getBootstrapServersProperty(), kafka.getBootstrapServersProperty())));
 
-	logger.record(Class.forName("com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingWorker"), Level.INFO).capture(10000);
+        logger.record(Class.forName("com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingWorker"), Level.INFO)
+                .capture(10000);
     }
 
     @After
@@ -93,21 +91,16 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     }
 
     @Override
-    public ProviderData getSubscriberProviderData(String topic, String variableName, String selector, MsgCheck... msgChecks) {
-        return new KafkaSubscriberProviderData(
-                DEFAULT_PROVIDER_NAME,
-                overrideTopic(topic),
-                Arrays.asList(msgChecks),
-                Util.fixNull(variableName, "CI_MESSAGE"),
-                60
-        );
+    public ProviderData getSubscriberProviderData(String topic, String variableName, String selector,
+            MsgCheck... msgChecks) {
+        return new KafkaSubscriberProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), Arrays.asList(msgChecks),
+                Util.fixNull(variableName, "CI_MESSAGE"), 60);
     }
 
     @Override
-    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content) {
-        return new KafkaPublisherProviderData(
-                DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true
-        );
+    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties,
+            String content) {
+        return new KafkaPublisherProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true);
     }
 
     @Test
@@ -117,14 +110,12 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
     @Test
     public void testSimpleCIEventTriggerWithTextArea() throws Exception {
-        _testSimpleCIEventTriggerWithTextArea("scott=123\ntom=456",
-                "scott=123\ntom=456");
+        _testSimpleCIEventTriggerWithTextArea("scott=123\ntom=456", "scott=123\ntom=456");
     }
 
     @Test
     public void testSimpleCIEventTriggerWithChoiceParam() throws Exception {
-        _testSimpleCIEventTriggerWithChoiceParam("scott=123", "{}",
-                "mychoice is scott");
+        _testSimpleCIEventTriggerWithChoiceParam("scott=123", "{}", "mychoice is scott");
     }
 
     @Test
@@ -217,7 +208,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic();
     }
 
-      // No headers for Kafka.  Check for CI_MESSAGE_RECORD instead.
+    // No headers for Kafka. Check for CI_MESSAGE_RECORD instead.
     @Test
     public void testSimpleCIEventTriggerRecordInEnv() throws Exception {
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -309,21 +300,15 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     @Test
     public void testEnvVariablesWithPipelineWaitForMsg() throws Exception {
         WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
-            "  def messageContent = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', variable: \"CI_MESSAGE_TEST\"\n" +
-            "  echo \"messageContent = \" + messageContent  \n" +
-            "  echo \"CI_MESSAGE_TEST = \" + CI_MESSAGE_TEST  \n" +
-            "  if (env.CI_MESSAGE_TEST == null) {\n" +
-            "    error(\"CI_MESSAGE_TEST not set\")\n"+
-            "  }\n" +
-            "  echo \"CI_MESSAGE_TEST_RECORD = \" + env.CI_MESSAGE_TEST_RECORD  \n" +
-            "  if (env.CI_MESSAGE_TEST_RECORD == null) {\n" +
-            "    error(\"CI_MESSAGE_TEST_RECORD not set\")\n"+
-            "  }\n" +
-            "  if (!env.CI_MESSAGE_TEST_RECORD.contains(\"topic\")) {\n" +
-            "    error(\"topic not found\")\n"+
-            "  }\n" +
-            "}", true));
+        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n"
+                + "  def messageContent = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME
+                + "', variable: \"CI_MESSAGE_TEST\"\n" + "  echo \"messageContent = \" + messageContent  \n"
+                + "  echo \"CI_MESSAGE_TEST = \" + CI_MESSAGE_TEST  \n" + "  if (env.CI_MESSAGE_TEST == null) {\n"
+                + "    error(\"CI_MESSAGE_TEST not set\")\n" + "  }\n"
+                + "  echo \"CI_MESSAGE_TEST_RECORD = \" + env.CI_MESSAGE_TEST_RECORD  \n"
+                + "  if (env.CI_MESSAGE_TEST_RECORD == null) {\n" + "    error(\"CI_MESSAGE_TEST_RECORD not set\")\n"
+                + "  }\n" + "  if (!env.CI_MESSAGE_TEST_RECORD.contains(\"topic\")) {\n"
+                + "    error(\"topic not found\")\n" + "  }\n" + "}", true));
 
         scheduleAwaitStep(wait);
 
@@ -358,35 +343,25 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         for (Thread thread : leftoverFromPreviousRuns) {
             thread.interrupt();
 
-	    for (int i = 0; getCurrentThreadCountForName(thread.getName()) != 0 && i < 10; i++) {
+            for (int i = 0; getCurrentThreadCountForName(thread.getName()) != 0 && i < 10; i++) {
                 Thread.sleep(1000);
-	    }
+            }
         }
 
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
-        send.setDefinition(new CpsFlowDefinition(
-                "node('built-in') {\n sendCIMessage" +
-                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
-                " failOnError: true, " +
-                " messageContent: '" + MESSAGE_CHECK_CONTENT + "', " +
-                " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}', " +
-                " messageType: 'CodeQualityChecksDone'}", true));
+        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" + " providerName: '"
+                + DEFAULT_PROVIDER_NAME + "', " + " failOnError: true, " + " messageContent: '" + MESSAGE_CHECK_CONTENT
+                + "', " + " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}', "
+                + " messageType: 'CodeQualityChecksDone'}", true));
 
-        //[expectedValue: number + '0.0234', field: 'CI_STATUS2']
+        // [expectedValue: number + '0.0234', field: 'CI_STATUS2']
         String pd = "providerList: [[$class: 'KafkaSubscriberProviderData', name: '" + DEFAULT_PROVIDER_NAME + "']]";
         WorkflowJob receive = j.jenkins.createProject(WorkflowJob.class, "receive");
-        receive.addProperty(new ParametersDefinitionProperty(
-                new TextParameterDefinition("CI_MESSAGE", "", "")
-        ));
-        receive.setDefinition(new CpsFlowDefinition(
-                "def number = currentBuild.getNumber().toString()\n" +
-                "properties(\n" +
-                "    [\n" +
-                "        pipelineTriggers(\n" +
-                "            [[$class: 'CIBuildTrigger', noSquash: false, " + pd + "]]\n" +
-                "        )\n" +
-                "    ]\n" +
-                ")\nnode('built-in') {\n sleep 1\n}", true));
+        receive.addProperty(new ParametersDefinitionProperty(new TextParameterDefinition("CI_MESSAGE", "", "")));
+        receive.setDefinition(
+                new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n" + "properties(\n" + "    [\n"
+                        + "        pipelineTriggers(\n" + "            [[$class: 'CIBuildTrigger', noSquash: false, "
+                        + pd + "]]\n" + "        )\n" + "    ]\n" + ")\nnode('built-in') {\n sleep 1\n}", true));
 
         j.buildAndAssertSuccess(receive);
         // Allow some time for trigger thread stop/start.
@@ -400,10 +375,11 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         printThreadsWithName("CIBuildTrigger.*");
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
-        //checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
+        // checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
         String randomNumber = "123456789";
         for (int i = 0; i < 3; i++) {
-            QueueTaskFuture<WorkflowRun> build = send.scheduleBuild2(0, new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));
+            QueueTaskFuture<WorkflowRun> build = send.scheduleBuild2(0,
+                    new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));
             j.assertBuildStatusSuccess(build);
         }
 
@@ -418,7 +394,8 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         scheduleAwaitStep(receive);
 
         for (int i = 0; i < 3; i++) {
-            QueueTaskFuture<WorkflowRun> build = send.scheduleBuild2(0, new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));
+            QueueTaskFuture<WorkflowRun> build = send.scheduleBuild2(0,
+                    new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));
             j.assertBuildStatusSuccess(build);
             Thread.sleep(1000);
         }

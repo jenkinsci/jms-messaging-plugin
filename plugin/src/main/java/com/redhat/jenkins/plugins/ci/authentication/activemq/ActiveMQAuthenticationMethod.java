@@ -35,7 +35,8 @@ import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod implements Describable<ActiveMQAuthenticationMethod> {
+public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod
+        implements Describable<ActiveMQAuthenticationMethod> {
 
     private static final long serialVersionUID = -6077120270692721571L;
     private transient static final Logger log = Logger.getLogger(AuthenticationMethod.class.getName());

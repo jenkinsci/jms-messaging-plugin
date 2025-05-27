@@ -53,13 +53,20 @@ public class CIMessageNotifier extends Notifier {
 
     private static final String BUILDER_NAME = Messages.MessageNotifier();
 
-    @Deprecated private transient String providerName;
-    @Deprecated private transient MessagingProviderOverrides overrides;
-    @Deprecated private transient MESSAGE_TYPE messageType;
-    @Deprecated private transient String messageProperties;
-    @Deprecated private transient String messageContent;
-    @Deprecated private transient boolean failOnError = false;
-    @Deprecated private ProviderData providerData;
+    @Deprecated
+    private transient String providerName;
+    @Deprecated
+    private transient MessagingProviderOverrides overrides;
+    @Deprecated
+    private transient MESSAGE_TYPE messageType;
+    @Deprecated
+    private transient String messageProperties;
+    @Deprecated
+    private transient String messageContent;
+    @Deprecated
+    private transient boolean failOnError = false;
+    @Deprecated
+    private ProviderData providerData;
 
     @DataBoundConstructor
     public CIMessageNotifier() {
@@ -70,51 +77,63 @@ public class CIMessageNotifier extends Notifier {
         this.providerData = providerData;
     }
 
-    @Deprecated public String getProviderName() {
+    @Deprecated
+    public String getProviderName() {
         return providerName;
     }
 
-    @Deprecated public void setProviderName(String providerName) {
+    @Deprecated
+    public void setProviderName(String providerName) {
         this.providerName = providerName;
     }
 
-    @Deprecated public MessagingProviderOverrides getOverrides() {
+    @Deprecated
+    public MessagingProviderOverrides getOverrides() {
         return overrides;
     }
 
-    @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
+    @Deprecated
+    public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
 
-    @Deprecated public MESSAGE_TYPE getMessageType() {
+    @Deprecated
+    public MESSAGE_TYPE getMessageType() {
         return messageType;
     }
 
-    @Deprecated public void setMessageType(MESSAGE_TYPE messageType) {
+    @Deprecated
+    public void setMessageType(MESSAGE_TYPE messageType) {
         this.messageType = messageType;
     }
 
-    @Deprecated public String getMessageProperties() {
+    @Deprecated
+    public String getMessageProperties() {
         return messageProperties;
     }
 
-    @Deprecated public void setMessageProperties(String messageProperties) {
+    @Deprecated
+    public void setMessageProperties(String messageProperties) {
         this.messageProperties = messageProperties;
     }
 
-    @Deprecated public String getMessageContent() {
+    @Deprecated
+    public String getMessageContent() {
         return messageContent;
     }
 
-    @Deprecated public void setMessageContent(String messageContent) {
+    @Deprecated
+    public void setMessageContent(String messageContent) {
         this.messageContent = messageContent;
     }
 
-    @Deprecated public boolean isFailOnError() {
+    @Deprecated
+    public boolean isFailOnError() {
         return failOnError;
     }
 
-    @Deprecated public void setFailOnError(boolean failOnError) {
+    @Deprecated
+    public void setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
     }
 

@@ -28,12 +28,12 @@ public abstract class TopicProvider implements Describable<TopicProvider>, Seria
         // Web methods.
         public void doGeneratePublisherTopic(StaplerRequest2 req, StaplerResponse2 resp) throws IOException {
             String topic = generatePublisherTopic();
-            resp.getWriter().write((topic != null ? topic: ""));
+            resp.getWriter().write((topic != null ? topic : ""));
         }
 
         public void doGenerateSubscriberTopic(StaplerRequest2 req, StaplerResponse2 resp) throws IOException {
             String topic = generateSubscriberTopic();
-            resp.getWriter().write((topic != null ? topic: ""));
+            resp.getWriter().write((topic != null ? topic : ""));
         }
 
         public static ExtensionList<TopicProviderDescriptor> all() {

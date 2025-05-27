@@ -60,7 +60,8 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
     private Secret trustpwd = Secret.fromString("");
 
     @DataBoundConstructor
-    public SSLCertificateAuthenticationMethod(String username, String keystore, Secret keypwd, String truststore, Secret trustpwd) {
+    public SSLCertificateAuthenticationMethod(String username, String keystore, Secret keypwd, String truststore,
+            Secret trustpwd) {
         this.setUsername(username);
         this.setKeystore(keystore);
         this.setKeypwd(keypwd);
@@ -111,7 +112,7 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
     @Override
     public ConnectionFactory getConnectionFactory(String hostname, Integer portNumber, String virtualHost) {
         try (FileInputStream keystore = new FileInputStream(getKeystore());
-             FileInputStream truststore = new FileInputStream(getTruststore())) {
+                FileInputStream truststore = new FileInputStream(getTruststore())) {
             // Prepare SSL context
             KeyStore ks = KeyStore.getInstance("PKCS12");
             ks.load(keystore, getKeypwd().getPlainText().toCharArray());
@@ -159,8 +160,9 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("username"), jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
-                    jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
+            return new SSLCertificateAuthenticationMethod(jo.getString("username"), jo.getString("keystore"),
+                    Secret.fromString(jo.getString("keypwd")), jo.getString("truststore"),
+                    Secret.fromString(jo.getString("trustpwd")));
         }
 
         public String getConfigPage() {
@@ -169,21 +171,18 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("username") String username,
-                                               @QueryParameter("hostname") String hostname,
-                                               @QueryParameter("portNumber") Integer portNumber,
-                                               @QueryParameter("virtualHost") String virtualHost,
-                                               @QueryParameter("keystore") String keystore,
-                                               @QueryParameter("keypwd") String keypwd,
-                                               @QueryParameter("truststore") String truststore,
-                                               @QueryParameter("trustpwd") String trustpwd) {
+                @QueryParameter("hostname") String hostname, @QueryParameter("portNumber") Integer portNumber,
+                @QueryParameter("virtualHost") String virtualHost, @QueryParameter("keystore") String keystore,
+                @QueryParameter("keypwd") String keypwd, @QueryParameter("truststore") String truststore,
+                @QueryParameter("trustpwd") String trustpwd) {
 
             checkAdmin();
 
             Connection connection = null;
             Channel channel = null;
             try {
-                SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(username,
-                        keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
+                SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(username, keystore,
+                        Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
                 ConnectionFactory connectionFactory = sam.getConnectionFactory(hostname, portNumber, virtualHost);
                 connection = connectionFactory.newConnection();
                 channel = connection.createChannel();
@@ -191,7 +190,8 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
                 connection.close();
                 return FormValidation.ok(Messages.SuccessBrokerConnect(hostname + ":" + portNumber));
             } catch (Exception e) {
-                log.log(Level.SEVERE, "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
+                log.log(Level.SEVERE, "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ",
+                        e);
                 return FormValidation.error(Messages.Error() + ": " + e);
             } finally {
                 try {
