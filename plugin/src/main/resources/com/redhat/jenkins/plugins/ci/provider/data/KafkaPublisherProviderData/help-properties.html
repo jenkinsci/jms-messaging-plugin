@@ -1,0 +1,21 @@
+<div>
+    <p>
+    Properties to use for Kafka producers. These properties are merged with a set of default
+    properties before being used to create a producer. Properties specified here will override
+    a value set in the default properties.  
+    </p>
+    <p>
+    The default producer properties are as follows:
+    </p>
+    <pre>
+key.serializer=org.apache.kafka.common.serialization.StringSerializer
+value.serializer=org.apache.kafka.common.serialization.StringSerializer
+acks=all
+retries=0
+    </pre>
+    <p>
+    A default "bootstrap.servers" property should have been included when the Kafka provider was
+    configured. This may be overridden here if desired.
+    </p>
+    <p>The full set of producer properties may be found <a href="https://kafka.apache.org/documentation/#producerconfigs">here</a>.</p>
+</div>

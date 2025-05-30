@@ -29,21 +29,30 @@ import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import hudson.model.Descriptor;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Properties;
+import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public abstract class KafkaProviderData extends ProviderData {
+    private static final Logger log = Logger.getLogger(KafkaProviderData.class.getName());
 
     protected MessagingProviderOverrides overrides;
+    protected String properties;
 
     public KafkaProviderData() {}
 
     public KafkaProviderData(String name) {
-        this(name, null);
+        this(name, null, null);
     }
 
-    public KafkaProviderData(String name, MessagingProviderOverrides overrides) {
+    public KafkaProviderData(String name, MessagingProviderOverrides overrides, String properties) {
         super(name);
         this.overrides = overrides;
+        this.properties = properties;
     }
 
     public MessagingProviderOverrides getOverrides() {
@@ -59,14 +68,30 @@ public abstract class KafkaProviderData extends ProviderData {
         return overrides != null;
     }
 
+    public String getProperties() {
+        return properties;
+    }
+
+    public Properties mergeProperties(Properties props) {
+        try {
+            props.load(IOUtils.toInputStream(properties == null  ? "" : properties, Charset.defaultCharset()));
+        } catch (IOException e) {
+            log.log(Level.WARNING, String.format("bad properties: %s", properties));
+        }
+        return props;
+    }
+
+    @DataBoundSetter
+    public void setProperties(String properties) {
+        this.properties = properties;
+    }
+
     public String getSubscriberTopic() {
         if (hasOverrides()) {
             return overrides.getTopic();
 	} else {
             return ((KafkaMessagingProvider) provider).getTopic();
         }
-        //TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((KafkaMessagingProvider) provider).getTopicProvider().getDescriptor();
-        //return tpd.generateSubscriberTopic();
     }
 
     public String getPublisherTopic() {
@@ -75,8 +100,6 @@ public abstract class KafkaProviderData extends ProviderData {
 	} else {
             return ((KafkaMessagingProvider) provider).getTopic();
         }
-        //TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((KafkaMessagingProvider) provider).getTopicProvider().getDescriptor();
-        //return tpd.generatePublisherTopic();
     }
 
     public abstract static class KafkaProviderDataDescriptor extends ProviderDataDescriptor {

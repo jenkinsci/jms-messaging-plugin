@@ -154,7 +154,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public JMSMessagingWorker createWorker(ProviderData pdata, String jobname) {
-        return new KafkaMessagingWorker(this, ((KafkaProviderData)pdata).getOverrides(), jobname);
+        return new KafkaMessagingWorker(this, (KafkaProviderData)pdata, jobname);
     }
 
     @Override

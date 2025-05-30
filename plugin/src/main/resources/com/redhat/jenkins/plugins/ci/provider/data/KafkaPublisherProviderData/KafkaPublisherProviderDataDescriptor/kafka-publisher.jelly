@@ -46,6 +46,9 @@
       </f:optionalBlock>
     </table>
   </f:nested>
+  <f:entry title="${%Publisher properties}" field="properties">
+    <f:textarea name="properties"/>
+  </f:entry>
   <f:entry title="${%Message content}" field="messageContent">
     <f:textarea name="messageContent"/>
   </f:entry>
