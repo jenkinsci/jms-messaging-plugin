@@ -97,6 +97,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         return new KafkaSubscriberProviderData(
                 DEFAULT_PROVIDER_NAME,
                 overrideTopic(topic),
+		"",
                 Arrays.asList(msgChecks),
                 Util.fixNull(variableName, "CI_MESSAGE"),
                 60
@@ -106,7 +107,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     @Override
     public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content) {
         return new KafkaPublisherProviderData(
-                DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true
+                DEFAULT_PROVIDER_NAME, overrideTopic(topic), "", content, true
         );
     }
 

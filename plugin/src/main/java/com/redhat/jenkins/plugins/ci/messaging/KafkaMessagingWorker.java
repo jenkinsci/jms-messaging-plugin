@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.logging.Level;
@@ -71,12 +72,14 @@ import com.redhat.utils.PluginUtils;
 public class KafkaMessagingWorker extends JMSMessagingWorker {
     private static final Logger log = Logger.getLogger(KafkaMessagingWorker.class.getName());
     private final KafkaMessagingProvider provider;
+    private final KafkaProviderData pdata;
     static final String DEFAULT_TOPIC = "io.jenkins";
     KafkaConsumer<String, String> consumer;
 
-    public KafkaMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
-        super(messagingProvider, overrides, jobname);
+    public KafkaMessagingWorker(JMSMessagingProvider messagingProvider, KafkaProviderData pdata, String jobname) {
+        super(messagingProvider, pdata.getOverrides(), jobname);
         this.provider = (KafkaMessagingProvider) messagingProvider;
+        this.pdata = pdata;
     }
 
     @Override
@@ -185,13 +188,13 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public boolean connect() {
-        // This is a fix for org.apache.kafka.common.config.ConfigException:
-        // Invalid value org.apache.kafka.common.serialization.StringDeserializer for configuration
-        // value.deserializer: Class org.apache.kafka.common.serialization.StringDeserializer could not be found.
 	if (consumer == null) {
+            // This is a fix for org.apache.kafka.common.config.ConfigException:
+            // Invalid value org.apache.kafka.common.serialization.StringDeserializer for configuration
+            // value.deserializer: Class org.apache.kafka.common.serialization.StringDeserializer could not be found.
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(null);
-            consumer = new KafkaConsumer<>(provider.getMergedConsumerProperties());
+            consumer = new KafkaConsumer<>(pdata.mergeProperties(provider.getMergedConsumerProperties()));
             Thread.currentThread().setContextClassLoader(original);
 	}
         return true;
@@ -223,7 +226,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         String msgId = "";
         ClassLoader original = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(null);
-        try (KafkaProducer<String, String> producer = new KafkaProducer<>(provider.getMergedProducerProperties())) {
+        try (KafkaProducer<String, String> producer = new KafkaProducer<>(pd.mergeProperties(provider.getMergedProducerProperties()))) {
             EnvVars env = new EnvVars();
             env.putAll(build.getEnvironment(listener));
             env.put("CI_NAME", build.getParent().getName());
@@ -248,7 +251,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             log.info(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
             listener.getLogger().println(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
 
-        } catch (Exception e) {
+        } catch (ExecutionException | IOException | InterruptedException e) {
             if (pd.isFailOnError()) {
                 log.severe("Unhandled exception in perform: ");
                 log.severe(ExceptionUtils.getStackTrace(e));
@@ -281,7 +284,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             log.warning(e.getMessage());
         }
 
-        try (KafkaConsumer<String, String> lconsumer = new KafkaConsumer<>(provider.getMergedConsumerProperties())) {
+        try (KafkaConsumer<String, String> lconsumer = new KafkaConsumer<>(pd.mergeProperties(provider.getMergedConsumerProperties()))) {
             int timeout = (pd.getTimeout() != null ? pd.getTimeout() : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
             lconsumer.subscribe(Collections.singletonList(ltopic));
             ConsumerRecords<String, String> records = lconsumer.poll(Duration.ofMinutes(timeout));

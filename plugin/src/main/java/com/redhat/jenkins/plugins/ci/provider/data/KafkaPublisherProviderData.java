@@ -47,15 +47,16 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     public KafkaPublisherProviderData() {}
 
     public KafkaPublisherProviderData(String name) {
-        this(name, null);
+        this(name, null, null);
     }
 
-    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides) {
-        super(name, overrides);
+    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String properties) {
+        super(name, overrides, properties);
     }
 
-    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent, Boolean failOnError) {
-        this(name, overrides);
+    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String properties,
+		                      String messageContent, Boolean failOnError) {
+        this(name, overrides, properties);
         this.messageContent = messageContent;
         this.failOnError = failOnError;
     }
@@ -92,13 +93,14 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         KafkaPublisherProviderData thatp = (KafkaPublisherProviderData)that;
         return Objects.equals(this.name, thatp.name) &&
                 Objects.equals(this.overrides, thatp.overrides) &&
+                Objects.equals(this.properties, thatp.properties) &&
                 Objects.equals(this.messageContent, thatp.messageContent) &&
                 Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, overrides, messageContent, failOnError);
+        return Objects.hash(name, overrides, properties, messageContent, failOnError);
     }
 
     @Extension
@@ -118,6 +120,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
             return new KafkaPublisherProviderData(
                     jo.getString("name"),
                     mpo,
+                    jo.getString("properties"),
                     jo.getString("messageContent"),
                     jo.getBoolean("failOnError"));
         }
@@ -127,5 +130,4 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         }
 
     }
-
 }

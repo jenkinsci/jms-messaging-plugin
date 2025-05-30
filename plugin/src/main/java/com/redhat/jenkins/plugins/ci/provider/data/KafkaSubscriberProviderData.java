@@ -57,15 +57,16 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     public KafkaSubscriberProviderData() {}
 
     public KafkaSubscriberProviderData(String name) {
-        this(name, null);
+        this(name, null, null);
     }
 
-    public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides) {
-        super(name, overrides);
+    public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, String properties) {
+        super(name, overrides, properties);
     }
 
-    public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, List<MsgCheck> checks, String variable, Integer timeout) {
-        this(name, overrides);
+    public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, String properties,
+		                       List<MsgCheck> checks, String variable, Integer timeout) {
+        this(name, overrides, properties);
         this.checks = checks;
         this.variable = variable;
         this.timeout = timeout;
@@ -121,6 +122,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
         KafkaSubscriberProviderData thatp = (KafkaSubscriberProviderData)that;
         return Objects.equals(this.name, thatp.name) &&
                 Objects.equals(this.overrides, thatp.overrides) &&
+                Objects.equals(this.properties, thatp.properties) &&
                 Objects.equals(this.checks, thatp.checks) &&
                 Objects.equals(this.variable, thatp.variable) &&
                 Objects.equals(this.timeout, thatp.timeout);
@@ -128,7 +130,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, overrides, checks, variable, timeout);
+        return Objects.hash(name, overrides, properties, checks, variable, timeout);
     }
 
     @Extension
@@ -145,6 +147,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
+	    String properties = jo.getString("properties");
             List<MsgCheck> checks = sr.bindJSONToList(MsgCheck.class, jo.get("checks"));
             String variable = null;
             if (jo.has("variable")) {
@@ -154,7 +157,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
             if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
-            return new KafkaSubscriberProviderData(jo.getString("name"), mpo, checks, variable, timeout);
+            return new KafkaSubscriberProviderData(jo.getString("name"), mpo, properties, checks, variable, timeout);
         }
 
         public String getDefaultVariable() {
