@@ -185,6 +185,7 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         long lastSeenMessage = new Date().getTime();
         try {
             while ((new Date().getTime() - lastSeenMessage) < timeoutInMs) {
+                log.info("Job '" + jobname + "' waiting to receive message");
                 if (poller.poll(1000) > 0) {
                     pollerClosed = false;
                     if (poller.pollin(0)) {
@@ -338,6 +339,8 @@ public class FedMsgMessagingWorker extends JMSMessagingWorker {
         int timeoutInMs = timeout * 60 * 1000;
         try {
             while ((new Date().getTime() - startTime) < timeoutInMs) {
+                log.info("Job '" + jobname + "' waiting to receive message");
+                listener.getLogger().println("Job '" + jobname + "' waiting to receive message");
                 if (lpoller.poll(1000) > 0) {
                     if (lpoller.pollin(0)) {
                         ZMsg z = ZMsg.recvMsg(lpoller.getSocket(0));
