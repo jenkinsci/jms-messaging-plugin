@@ -46,18 +46,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
 import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
@@ -89,17 +79,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     public static final Logger RESOURCE_LOGGER = Logger.getLogger(CIBuildTrigger.class.getName());
     private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
-    @Deprecated
-    private transient String providerName;
-    @Deprecated
-    private transient String selector;
-    @Deprecated
-    private transient List<MsgCheck> checks = new ArrayList<>();
-    @Deprecated
-    private transient MessagingProviderOverrides overrides;
     private Boolean noSquash;
-    @Deprecated // Replaced by providers collection
-    private transient ProviderData providerData;
     private List<ProviderData> providers;
 
     public static final ConcurrentMap<String, List<CITriggerThread>> locks = new ConcurrentHashMap<>();
@@ -115,51 +95,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         super();
         this.noSquash = noSquash;
         this.providers = providers;
-    }
-
-    @Deprecated
-    public String getProviderName() {
-        return providerName;
-    }
-
-    @Deprecated
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
-    }
-
-    @Deprecated
-    public String getSelector() {
-        return selector;
-    }
-
-    @Deprecated
-    public void setSelector(String selector) {
-        this.selector = selector;
-    }
-
-    @Deprecated
-    public List<MsgCheck> getChecks() {
-        return checks;
-    }
-
-    @Deprecated
-    public void setChecks(List<MsgCheck> checks) {
-        this.checks = checks;
-    }
-
-    @Deprecated
-    public MessagingProviderOverrides getOverrides() {
-        return overrides;
-    }
-
-    @Deprecated
-    public void setOverrides(MessagingProviderOverrides overrides) {
-        this.overrides = overrides;
-    }
-
-    @Deprecated
-    public ProviderData getProviderData() {
-        return providerData;
     }
 
     @DataBoundSetter
@@ -248,72 +183,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     @Override
     protected Object readResolve() {
-        if (providers == null) {
-            log.info("Migrating CIBuildTrigger for job '" + getJobName() + "'.");
-            providers = new ArrayList<>();
-            if (providerData == null) {
-                if (providerName == null) {
-                    log.info("Provider is null for trigger for job '" + getJobName() + "'.");
-                    JMSMessagingProvider provider = GlobalCIConfiguration.get().getConfigs().get(0);
-                    if (provider != null) {
-                        providerName = provider.getName();
-                        providerUpdated = true;
-                        saveJob();
-                    }
-                }
-
-                JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerName);
-                if (provider != null) {
-                    if (provider instanceof ActiveMqMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
-                                + "'.");
-                        ActiveMQSubscriberProviderData a = new ActiveMQSubscriberProviderData(providerName);
-                        a.setSelector(selector);
-                        a.setOverrides(overrides);
-                        a.setChecks(checks);
-                        providers.add(a);
-                        providerUpdated = true;
-                        saveJob();
-                    } else if (provider instanceof FedMsgMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
-                                + "'.");
-                        FedMsgSubscriberProviderData f = new FedMsgSubscriberProviderData(providerName);
-                        f.setOverrides(overrides);
-                        f.setChecks(checks);
-                        providers.add(f);
-                        providerUpdated = true;
-                        saveJob();
-                    } else if (provider instanceof RabbitMQMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
-                                + "'.");
-                        RabbitMQSubscriberProviderData r = new RabbitMQSubscriberProviderData(providerName);
-                        r.setOverrides(overrides);
-                        r.setChecks(checks);
-                        providers.add(r);
-                        providerUpdated = true;
-                        saveJob();
-                    } else if (provider instanceof KafkaMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
-                                + "'.");
-                        KafkaSubscriberProviderData k = new KafkaSubscriberProviderData(providerName);
-                        k.setOverrides(overrides);
-                        k.setChecks(checks);
-                        providers.add(k);
-                        providerUpdated = true;
-                        saveJob();
-                    } else {
-                        log.info(
-                                "Unknown instance for provider '" + providerName + "' for job '" + getJobName() + "'.");
-                    }
-                } else {
-                    log.warning("Unable to find provider '" + providerName + "', so unable to upgrade job.");
-                }
-            } else {
-                providers.add(providerData);
-                providerUpdated = true;
-                saveJob();
-            }
-        }
         return this;
     }
 

@@ -23,8 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,8 +34,6 @@ import org.kohsuke.stapler.StaplerRequest2;
 
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 import hudson.Extension;
@@ -59,18 +55,6 @@ public class CIMessageSubscriberBuilder extends Builder {
 
     private static final String BUILDER_NAME = Messages.SubscriberBuilder();
 
-    @Deprecated
-    private transient String providerName;
-    @Deprecated
-    private transient MessagingProviderOverrides overrides;
-    @Deprecated
-    private transient String selector;
-    @Deprecated
-    private transient String variable;
-    @Deprecated
-    private transient List<MsgCheck> checks = new ArrayList<>();
-    @Deprecated
-    private transient Integer timeout;
     private ProviderData providerData;
 
     @DataBoundConstructor
@@ -80,66 +64,6 @@ public class CIMessageSubscriberBuilder extends Builder {
     public CIMessageSubscriberBuilder(ProviderData providerData) {
         super();
         this.providerData = providerData;
-    }
-
-    @Deprecated
-    public String getProviderName() {
-        return providerName;
-    }
-
-    @Deprecated
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
-    }
-
-    @Deprecated
-    public MessagingProviderOverrides getOverrides() {
-        return overrides;
-    }
-
-    @Deprecated
-    public void setOverrides(MessagingProviderOverrides overrides) {
-        this.overrides = overrides;
-    }
-
-    @Deprecated
-    public String getSelector() {
-        return selector;
-    }
-
-    @Deprecated
-    public void setSelector(String selector) {
-        this.selector = selector;
-    }
-
-    @Deprecated
-    public String getVariable() {
-        return variable;
-    }
-
-    @Deprecated
-    public void setVariable(String variable) {
-        this.variable = variable;
-    }
-
-    @Deprecated
-    public List<MsgCheck> getChecks() {
-        return checks;
-    }
-
-    @Deprecated
-    public void setChecks(List<MsgCheck> checks) {
-        this.checks = checks;
-    }
-
-    @Deprecated
-    public Integer getTimeout() {
-        return timeout;
-    }
-
-    @Deprecated
-    public void setTimeout(Integer timeout) {
-        this.timeout = timeout;
     }
 
     public ProviderData getProviderData() {

@@ -32,11 +32,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest2;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
-import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
 import hudson.Extension;
 import hudson.Launcher;
@@ -56,19 +54,6 @@ public class CIMessageNotifier extends Notifier {
 
     private static final String BUILDER_NAME = Messages.MessageNotifier();
 
-    @Deprecated
-    private transient String providerName;
-    @Deprecated
-    private transient MessagingProviderOverrides overrides;
-    @Deprecated
-    private transient MESSAGE_TYPE messageType;
-    @Deprecated
-    private transient String messageProperties;
-    @Deprecated
-    private transient String messageContent;
-    @Deprecated
-    private transient boolean failOnError = false;
-    @Deprecated
     private ProviderData providerData;
 
     @DataBoundConstructor
@@ -78,66 +63,6 @@ public class CIMessageNotifier extends Notifier {
     public CIMessageNotifier(ProviderData providerData) {
         super();
         this.providerData = providerData;
-    }
-
-    @Deprecated
-    public String getProviderName() {
-        return providerName;
-    }
-
-    @Deprecated
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
-    }
-
-    @Deprecated
-    public MessagingProviderOverrides getOverrides() {
-        return overrides;
-    }
-
-    @Deprecated
-    public void setOverrides(MessagingProviderOverrides overrides) {
-        this.overrides = overrides;
-    }
-
-    @Deprecated
-    public MESSAGE_TYPE getMessageType() {
-        return messageType;
-    }
-
-    @Deprecated
-    public void setMessageType(MESSAGE_TYPE messageType) {
-        this.messageType = messageType;
-    }
-
-    @Deprecated
-    public String getMessageProperties() {
-        return messageProperties;
-    }
-
-    @Deprecated
-    public void setMessageProperties(String messageProperties) {
-        this.messageProperties = messageProperties;
-    }
-
-    @Deprecated
-    public String getMessageContent() {
-        return messageContent;
-    }
-
-    @Deprecated
-    public void setMessageContent(String messageContent) {
-        this.messageContent = messageContent;
-    }
-
-    @Deprecated
-    public boolean isFailOnError() {
-        return failOnError;
-    }
-
-    @Deprecated
-    public void setFailOnError(boolean failOnError) {
-        this.failOnError = failOnError;
     }
 
     public ProviderData getProviderData() {
