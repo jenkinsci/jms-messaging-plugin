@@ -139,10 +139,10 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
-        if (interrupt) {
-            log.info("We are being interrupted. Skipping unsubscribe...");
-            return;
-        }
+        //if (interrupt) {
+        //    log.info("We are being interrupted. Skipping unsubscribe...");
+        //    return;
+        //}
         disconnect();
     }
 
@@ -178,6 +178,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         long lastSeenMessage = new Date().getTime();
 
         try {
+            log.info("Job '" + jobname + "' waiting to receive message");
             while ((new Date().getTime() - lastSeenMessage) < timeout) {
                 if (!messageQueue.isEmpty()) {
                     RabbitMQMessage data = messageQueue.poll();
@@ -396,6 +397,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         int timeoutInMs = timeout * 60 * 1000;
 
         try {
+            log.info("Job '" + jobname + "' waiting to receive message");
             consumerTag = channel.basicConsume(getQueue(provider), deliverCallback, (CancelCallback) null);
             while ((new Date().getTime() - startTime) < timeoutInMs) {
                 if (!messageQueue.isEmpty()) {

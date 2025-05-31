@@ -216,8 +216,16 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
         final Job<?, ?> p = jenkins.getItemByFullName(fullname, Job.class);
         if (p != null) {
-            return ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
+            CIBuildTrigger cibt = ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
+	    if (cibt != null) {
+	        log.warning("Trigger for job '" + fullname + "' is: " + cibt.toString());
+            } else {
+	        log.warning("Trigger for job '" + fullname + "' is: NULL");
+            }
+            return cibt;
+            //return ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
         }
+	log.warning("Unable to find job '" + fullname + "'");
         return null;
     }
 
@@ -356,7 +364,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private List<CITriggerThread> stopTriggerThreads(String fullName) {
-        return stopTriggerThreads(fullName, getComparisonThreads());
+        return stopTriggerThreads(fullName, null);
+        //return stopTriggerThreads(fullName, getComparisonThreads());
     }
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {

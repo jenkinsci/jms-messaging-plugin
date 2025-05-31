@@ -308,6 +308,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
         if (!Thread.currentThread().isInterrupted()) {
             try {
+                log.info("Job '" + jobname + "' waiting to receive message");
                 Message m = subscriber.receive(timeoutInMs); // In milliseconds!
                 if (m != null) {
                     if (provider.verify(getMessageBody(m), pd.getChecks(), jobname)) {
@@ -520,6 +521,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 int timeout = (pd.getTimeout() != null ? pd.getTimeout(): ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
                 Message message;
                 do {
+                    log.info("Job '" + jobname + "' waiting to receive message");
+                    listener.getLogger().println("Job '" + jobname + "' waiting to receive message");
                     message = consumer.receive(timeout);
                     if (message != null) {
                         String value = getMessageBody(message);
