@@ -4,6 +4,8 @@ import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 public class CITriggerThreadFactory {
@@ -13,6 +15,10 @@ public class CITriggerThreadFactory {
             return new ActiveMqTriggerThread(messagingProvider, providerData, jobname, cibt, instance);
         } else if (messagingProvider instanceof FedMsgMessagingProvider) {
             return new FedMsgTriggerThread(messagingProvider, providerData, jobname, cibt, instance);
+        } else if (messagingProvider instanceof KafkaMessagingProvider) {
+            return new KafkaTriggerThread(messagingProvider, providerData, jobname, cibt, instance);
+//        } else if (messagingProvider instanceof RabbitMQMessagingProvider) {
+//            return new RabbitMqTriggerThread(messagingProvider, providerData, jobname, cibt, instance);
         } else {
             return new CITriggerThread(messagingProvider, providerData, jobname, cibt, instance);
         }

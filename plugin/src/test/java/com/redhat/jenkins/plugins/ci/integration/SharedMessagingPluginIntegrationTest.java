@@ -15,20 +15,26 @@ import hudson.model.FreeStyleProject;
 import hudson.model.Job;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
+import hudson.model.Project;
 import hudson.model.Result;
+import hudson.model.Run;
 import hudson.model.StringParameterDefinition;
 import hudson.model.StringParameterValue;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tasks.Shell;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.test.acceptance.docker.Docker;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.LoggerRule;
 
@@ -38,6 +44,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -52,6 +59,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     @Rule public final JenkinsRule j = new JenkinsRule();
     @Rule public final LoggerRule logger = new LoggerRule();
+    @Rule public TestName testName = new TestName();
 
     public static String MESSAGE_CHECK_FIELD = "content";
     public static String MESSAGE_CHECK_VALUE = "catch me";
@@ -63,6 +71,70 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
     public abstract ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content);
 
+    @After
+    public void after() throws IOException, InterruptedException {
+        System.out.println("++++++++++++++++++ DELETING AFTER");
+        for (Project p: j.jenkins.getProjects()) {
+            System.out.println("++++++++++++++++++ DELETING " + p.getFullName());
+            p.delete();
+        }
+    }
+
+    protected boolean waitForProviderToBeReady(String cid, String tag) throws Exception {
+        ProviderDocker d = new ProviderDocker();
+        for (Integer i = 0; i < 150; i++) {
+            if (d.isContainerReady(cid, tag)) {
+                return true;
+            }
+            Thread.sleep(200);
+        }
+        return false;
+    }
+
+    protected boolean waitForProviderToStop(String cid) throws Exception {
+        ProviderDocker d = new ProviderDocker();
+        if (d.stopContainer(cid)) {
+            for (Integer i = 0; i < 150; i++) {
+                if (!d.isContainerRunning(cid)) {
+                    return true;
+                }
+                Thread.sleep(200);
+            }
+        }
+        return false;
+    }
+
+    protected void waitUntilTriggeredBuildCompletes(FreeStyleProject job) throws Exception {
+        waitUntilTriggeredBuildCompletes(job, 1);
+    }
+
+    protected void waitUntilTriggeredBuildCompletes(FreeStyleProject job, int number) throws Exception {
+        System.out.println("=================== WAITING FOR JOB");
+        for (Integer i = 0; i < 150; i++) {
+            System.out.println("=================== " + job.getBuildByNumber(number));
+            if (job.getBuildByNumber(number) != null && job.getBuildByNumber(number).getResult() != null) {
+                return;
+            }
+            System.out.println("=================== SLEEPING");
+            Thread.sleep(200);
+        }
+        throw new Exception("Triggered job '" + job.getFullName() + "' #" + number + " has not completed");
+    }
+
+    protected void waitUntilTriggeredBuildCompletes(WorkflowJob job) throws Exception {
+        waitUntilTriggeredBuildCompletes(job, 1);
+    }
+
+    protected void waitUntilTriggeredBuildCompletes(WorkflowJob job, int number) throws Exception {
+        for (Integer i = 0; i < 150; i++) {
+            if (job.getBuildByNumber(number) != null && job.getBuildByNumber(number).getResult() != null) {
+                return;
+            }
+            Thread.sleep(200);
+        }
+        throw new Exception("Triggered job '" + job.getFullName() + "' #" + number + " has not completed");
+    }
+
     protected MessagingProviderOverrides overrideTopic(String topic) {
         return topic == null ? null : new MessagingProviderOverrides(topic);
     }
@@ -73,9 +145,9 @@ public abstract class SharedMessagingPluginIntegrationTest {
         return trigger;
     }
 
-    private void startTrigger(CIBuildTrigger trigger, Job<?, ?> job) throws InterruptedException {
-        trigger.start(job, true); // Simulate config submit that always starts the trigger threads
-	Thread.sleep(5000);
+    private void startTrigger(CIBuildTrigger trigger, Job<?, ?> job) throws Exception {
+        trigger.start(job, true);
+        waitForReceiverToBeReady(job.getFullName(), trigger.getProviders().size());
     }
 
     protected CIBuildTrigger attachTrigger(CIBuildTrigger trigger, WorkflowJob job) throws Exception {
@@ -85,20 +157,60 @@ public abstract class SharedMessagingPluginIntegrationTest {
     }
 
     protected void scheduleAwaitStep(WorkflowJob job) throws Exception {
-        job.scheduleBuild2(0).waitForStart();
-        Thread.sleep(5000);
+        scheduleAwaitStep(job, 1);
+    }
+
+    protected void scheduleAwaitStep(WorkflowJob job, int occurrences) throws Exception {
+        WorkflowRun r = job.scheduleBuild2(0).waitForStart();
+        waitForReceiverToBeReady(job.getFullName(), occurrences);
     }
 
     protected void scheduleAwaitStep(AbstractProject<?, ?> job) throws Exception {
-        job.scheduleBuild2(0).waitForStart();
-        Thread.sleep(5000);
+        scheduleAwaitStep(job, 1);
+    }
+
+    protected void scheduleAwaitStep(AbstractProject<?, ?> job, int occurrences) throws Exception {
+        Run<?, ?> r = job.scheduleBuild2(0).waitForStart();
+        waitForReceiverToBeReady(job.getFullName(), occurrences);
+    }
+
+    protected boolean additionalWaitForReceiverToBeReadyCheck(String jobname, int occurrences) {
+        return true;
+    }
+
+    protected void waitForReceiverToBeReady(String jobname) throws Exception {
+        waitForReceiverToBeReady(jobname, 1);
+    }
+
+    protected void waitForReceiverToBeReady(String jobname, int occurrences) throws Exception, InterruptedException {
+        waitForReceiverToBeReady(jobname, occurrences, false);
+    }
+
+    protected void waitForReceiverToBeReady(String jobname, int occurrences, boolean skipCheck) throws Exception, InterruptedException {
+        String term = "Job '" + jobname + "' waiting to receive message";
+        for (Integer i = 0; i < 150; i++) {
+            Matcher<LoggerRule> m = logger.recorded(Level.INFO, Matchers.containsString(term));
+            System.out.println("++++++++++ MSG START");
+            for (String s : logger.getMessages()) {
+                System.out.println("++++++++++ MSG: " + s);
+            }
+            System.out.println("++++++++++ MSG END");
+            System.out.println("======================== FREQUENCY => " + Collections.frequency(logger.getMessages(), term) + ", WANT => " + occurrences);
+            if (m.matches(logger) && Collections.frequency(logger.getMessages(), term) >= occurrences &&
+                (skipCheck || additionalWaitForReceiverToBeReadyCheck(jobname, occurrences))) {
+                return;
+            }
+            System.out.println("----------------------- SLEEPING");
+            Thread.sleep(200);
+        }
+        throw new Exception("Receiver '" + jobname + "' is not ready");
     }
 
     public void _testVerifyModelUIPersistence() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n echo 'hello world' \n} ", true));
         CIBuildTrigger trigger = new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
-                "otopic", "HELLO", null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), "HELLO", null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         )));
         attachTrigger(trigger, jobA);
 
@@ -113,23 +225,26 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         assertThat(ciTrigger, equalTo(trigger));
 
-        WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
-        job.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
+        WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "jobB");
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
-                " overrides: [topic: 'otopic'], " +
+                " overrides: [topic: '" + testName.getMethodName() + "'], " +
                 " failOnError: true, " +
                 " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n", true));
-        j.buildAndAssertSuccess(job);
+        j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventSubscribe() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
                 //null, "HELLO", "CI_TYPE = 'code-quality-checks-done'"
-                null, "HELLO", null
+                testName.getMethodName(), "HELLO", null
         )));
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
@@ -138,14 +253,17 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("Hello World", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithDefaultValue() throws Exception {
@@ -156,22 +274,25 @@ public abstract class SharedMessagingPluginIntegrationTest {
                 new StringParameterDefinition("CI_MESSAGE", "", ""),
                 new StringParameterDefinition("DEFAULTPARAM", "world", "")
         ));
-        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(testName.getMethodName(), null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, "Hello World"
+                testName.getMethodName(), null, null, "Hello World"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("hello world", jobA.getLastBuild());
 
         FreeStyleBuild build = jobA.scheduleBuild2(0, new ParametersAction(new StringParameterValue("DEFAULTPARAM", "scott", ""))).get();
         j.assertBuildStatusSuccess(build);
         j.assertLogContains("hello scott", build);
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithTextArea(String body, String matchString) throws Exception {
@@ -181,18 +302,21 @@ public abstract class SharedMessagingPluginIntegrationTest {
         jobA.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition(
                 "CI_MESSAGE", "", ""
         )));
-        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(testName.getMethodName(), null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, body
+                testName.getMethodName(), null, null, body
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains(matchString, jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithChoiceParam(String properties, String body, String matchString) throws Exception {
@@ -202,19 +326,22 @@ public abstract class SharedMessagingPluginIntegrationTest {
                 new StringParameterDefinition("CI_MESSAGE", "", ""),
                 new StringParameterDefinition("mychoice", "scott\ntom", "")
         ));
-        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(testName.getMethodName(), null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, properties, body
+                testName.getMethodName(), null, properties, body
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
 
         j.assertLogContains(matchString, jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithBoolParam(String properties, String body, String matchString) throws Exception {
@@ -225,25 +352,28 @@ public abstract class SharedMessagingPluginIntegrationTest {
                 new BooleanParameterDefinition("dryrun", false, ""),
                 new StringParameterDefinition("scott", "", "")
         ));
-        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null, null))), jobA);
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(testName.getMethodName(), null, null))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, properties, body
+                testName.getMethodName(), null, properties, body
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains(matchString, jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventSubscribeWithCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
-                null, "HELLP", "", new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), "HELLP", "", new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         )));
 
         jobA.getBuildersList().add(new Shell("echo $HELLO"));
@@ -253,21 +383,23 @@ public abstract class SharedMessagingPluginIntegrationTest {
         FreeStyleProject jobB = j.createFreeStyleProject();
 
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("catch me", jobA.getLastBuild());
 
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventSubscribeWithTopicOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
-                "otopic", "MESSAGE_CONTENT", "CI_TYPE = 'code-quality-checks-done'"
+                testName.getMethodName(), "MESSAGE_CONTENT", "CI_TYPE = 'code-quality-checks-done'"
         )));
 
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_CONTENT"));
@@ -277,20 +409,23 @@ public abstract class SharedMessagingPluginIntegrationTest {
         FreeStyleProject jobB = j.createFreeStyleProject();
 
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                "otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "This is my content"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "This is my content"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("This is my content", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
-                "otopic", "MESSAGE_CONTENT", "CI_TYPE = 'code-quality-checks-done'", new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), "MESSAGE_CONTENT", "CI_TYPE = 'code-quality-checks-done'", new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         )));
 
         jobA.getBuildersList().add(new Shell("echo $MESSAGE_CONTENT"));
@@ -299,20 +434,23 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                "otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("catch me", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventSubscribeWithTopicOverrideAndVariableTopic() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition(
-                "MY_TOPIC", "my-topic", ""
+                "MY_TOPIC", testName.getMethodName(), ""
         )));
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
                 "$MY_TOPIC", "HELLO", "CI_TYPE = 'code-quality-checks-done'"
@@ -324,19 +462,22 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                "my-topic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
         )));
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("Hello World", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventSubscribeWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition(
-                "MY_TOPIC", "my-topic", ""
+                "MY_TOPIC", testName.getMethodName(), ""
         )));
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
                 "$MY_TOPIC", "HELLO", null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
@@ -348,14 +489,17 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                "my-topic", null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("catch me", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithPipelineSendMsg() throws Exception {
@@ -363,55 +507,66 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
 
-        WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
-        job.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
+        WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "job");
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+                " overrides: [topic: '" + testName.getMethodName() + "'], " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}\n", true));
 
-        j.buildAndAssertSuccess(job);
+        j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheckWithPipelineSendMsg() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
-        WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "job");
-        job.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
+        WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "job");
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+                " overrides: [topic: '" + testName.getMethodName() + "'], " +
                 " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n", true));
 
-        j.buildAndAssertSuccess(job);
+        j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTrigger() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = $CI_MESSAGE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "This is some great message."
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "This is some great message."
         )));
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_MESSAGE = This is some great message.", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheck() throws Exception {
@@ -419,20 +574,23 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         jobA.getBuildersList().add(new Shell("echo job ran"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheckNoSquash() throws Exception {
@@ -440,13 +598,13 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         jobA.getBuildersList().add(new Shell("sleep 3;"));
         attachTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData(
-                null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
@@ -455,84 +613,99 @@ public abstract class SharedMessagingPluginIntegrationTest {
         j.buildAndAssertSuccess(jobB);
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA, 5);
         assertThat(jobA.getLastBuild().getNumber(), is(equalTo(5)));
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithWildcardInSelector() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "compose LIKE '%compose_id\": \"Fedora-Atomic%'")
+                testName.getMethodName(), null, "compose LIKE '%compose_id\": \"Fedora-Atomic%'")
         )), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed\n compose = \"compose_id\": \"Fedora-Atomic-25-20170105.0\"", ""
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed\n compose = \"compose_id\": \"Fedora-Atomic-25-20170105.0\"", ""
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_TYPE = code-quality-checks-done", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithRegExpCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, null, new MsgCheck("$.compose.compose_id", "Fedora-Atomic.+")
+                testName.getMethodName(), null, null, new MsgCheck("$.compose.compose_id", "Fedora-Atomic.+")
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo job ran"));
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = $CI_MESSAGE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, "{ \"compose\": { \"compose_id\": \"Fedora-Atomic-25-20170105.0\" } }"
+                testName.getMethodName(), null, null, "{ \"compose\": { \"compose_id\": \"Fedora-Atomic-25-20170105.0\" } }"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithTopicOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                "otopic", null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = $CI_MESSAGE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                "otopic", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "This is a message"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "This is a message"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_MESSAGE = This is a message", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheckWithTopicOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new Shell("echo job ran"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                "otopic", null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                "otopic", null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     protected void waitUntilScheduledBuildCompletes() throws Exception {
@@ -543,45 +716,51 @@ public abstract class SharedMessagingPluginIntegrationTest {
     // TODO restart tests
 
     public void _testSimpleCIEventTriggerWithMultipleTopics() throws Exception {
+        String topic1 = testName.getMethodName() + "-1";
+        String topic2 = testName.getMethodName() + "-2";
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Arrays.asList(
-                getSubscriberProviderData("topic1", null, null, new MsgCheck("my-topic", "topic1")),
-                getSubscriberProviderData("topic2", null, null, new MsgCheck("my-topic", "topic2"))
+                getSubscriberProviderData(topic1, null, null, new MsgCheck("my-topic", topic1)),
+                getSubscriberProviderData(topic2, null, null, new MsgCheck("my-topic", topic2))
         )), jobA);
         jobA.getBuildersList().add(new Shell("echo $CI_MESSAGE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getBuildersList().add(new CIMessageBuilder(getPublisherProviderData(
-                "topic1", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "{ \"my-topic\" : \"topic1\" }"
+                topic1, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "{ \"my-topic\" : \"" + topic1 + "\" }"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        j.assertLogContains("topic1", jobA.getLastBuild());
+        j.assertLogContains(topic1, jobA.getLastBuild());
 
         FreeStyleProject jobC = j.createFreeStyleProject();
         jobC.getBuildersList().add(new CIMessageBuilder(getPublisherProviderData(
-                "topic2", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "{ \"my-topic\" : \"topic2\" }"
+                topic2, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "{ \"my-topic\" : \"" + topic2 + "\" }"
         )));
         j.buildAndAssertSuccess(jobC);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA, 2);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        j.assertLogContains("topic2", jobA.getLastBuild());
+        j.assertLogContains(topic2, jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
+        jobC.delete();
     }
 
     public void _testSimpleCIEventTriggerWithTopicOverrideAndVariableTopic() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                "org.fedoraproject.my-topic", null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = $CI_MESSAGE"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition(
-                "MY_TOPIC", "org.fedoraproject.my-topic", ""
+                "MY_TOPIC", testName.getMethodName(), ""
         )));
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "$MY_TOPIC", MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "this is my message"
@@ -589,21 +768,24 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo CI_MESSAGE = this is my message", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                "org.fedoraproject.my-topic", null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo job ran"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition(
-                "MY_TOPIC", "org.fedoraproject.my-topic", ""
+                "MY_TOPIC", testName.getMethodName(), ""
         )));
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
                 "$MY_TOPIC", null, null, MESSAGE_CHECK_CONTENT
@@ -611,15 +793,18 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo job ran", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithParamOverride() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done'"
         ))), jobA);
 
         jobA.addProperty(new ParametersDefinitionProperty(
@@ -632,36 +817,42 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "PARAMETER = my parameter\nstatus=${BUILD_STATUS}\nCOMPOUND = Z${PARAMETER}Z", "This is my content with ${COMPOUND} ${BUILD_STATUS}"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "PARAMETER = my parameter\nstatus=${BUILD_STATUS}\nCOMPOUND = Z${PARAMETER}Z", "This is my content with ${COMPOUND} ${BUILD_STATUS}"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         FreeStyleBuild lastBuild = jobA.getLastBuild();
         j.assertBuildStatusSuccess(lastBuild);
         j.assertLogContains("status::SUCCESS", lastBuild);
         j.assertLogContains("my parameter", lastBuild);
         j.assertLogContains("This is my content with Zmy parameterZ SUCCESS", lastBuild);
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerHeadersInEnv(FreeStyleProject jobB, String variable, String expected) throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done'"
         ))), jobA);
 
         // We are only checking that this shows up in the console output.
         jobA.getBuildersList().add(new Shell("echo $" + variable));
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "some irrelevant content"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, null, "some irrelevant content"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains(expected, jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventSubscribeWithNoParamOverride() throws Exception {
@@ -673,7 +864,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
 
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(
-                null, "MESSAGE_CONTENT", "CI_TYPE = 'code-quality-checks-done'"
+                testName.getMethodName(), "MESSAGE_CONTENT", "CI_TYPE = 'code-quality-checks-done'"
         )));
 
         jobA.getBuildersList().add(new Shell("echo $PARAMETER"));
@@ -683,58 +874,67 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "PARAMETER = my parameter", "This is my content"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "PARAMETER = my parameter", "This is my content"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("original parameter value", jobA.getLastBuild());
         j.assertLogContains("This is my content", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerOnPipelineJob() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n sleep 10\n}", true));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheckOnPipelineJob() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n sleep 10\n}", true));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
 
         j.jenkins.getGlobalNodeProperties().add(new EnvironmentVariablesNodeProperty(
-                new EnvironmentVariablesNodeProperty.Entry("MY_TOPIC_ID", "MY_UUID")
+                new EnvironmentVariablesNodeProperty.Entry("MY_TOPIC_ID", testName.getMethodName())
         ));
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
@@ -750,14 +950,17 @@ public abstract class SharedMessagingPluginIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
 
         j.jenkins.getGlobalNodeProperties().add(new EnvironmentVariablesNodeProperty(
-                new EnvironmentVariablesNodeProperty.Entry("MY_TOPIC_ID", "MY_UUID")
+                new EnvironmentVariablesNodeProperty.Entry("MY_TOPIC_ID", testName.getMethodName())
         ));
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
@@ -772,303 +975,327 @@ public abstract class SharedMessagingPluginIntegrationTest {
         )));
 
         j.buildAndAssertSuccess(jobB);
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
-        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+                " overrides: [topic: '" + testName.getMethodName() + "'], " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
 
-        scheduleAwaitStep(wait);
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "Hello World"
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
-        j.assertBuildStatusSuccess(wait.getLastBuild());
-        j.assertLogContains("Hello World", wait.getLastBuild());
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains("Hello World", jobA.getLastBuild());
+
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
-        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+                " overrides: [topic: '" + testName.getMethodName() + "'], " +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
 
-        scheduleAwaitStep(wait);
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
 
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
-        j.assertBuildStatusSuccess(wait.getLastBuild());
-        j.assertLogContains("catch me", wait.getLastBuild());
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains("catch me", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
-        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
+                " overrides: [topic: '" + testName.getMethodName() + "'], " +
                 " selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"," +
                 " checks: [[field: '" + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" +
                 "}", true));
-        scheduleAwaitStep(wait);
+        scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", MESSAGE_CHECK_CONTENT
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
-        j.assertBuildStatusSuccess(wait.getLastBuild());
-        j.assertLogContains("catch me", wait.getLastBuild());
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains("catch me", jobA.getLastBuild());
 
         FreeStyleProject jobC = j.createFreeStyleProject();
         jobC.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "{\"content\": \"uncaught\"}"
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", "{\"content\": \"uncaught\"}"
         )));
         j.buildAndAssertSuccess(jobC);
 
         Thread.sleep(3000); // Wait fixed ammount of time to make sure the build does NOT get scheduled
-        assertThat(wait.getLastBuild().getNumber(), is(equalTo(1)));
+        assertThat(jobA.getLastBuild().getNumber(), is(equalTo(1)));
+
+        jobA.delete();
+        jobB.delete();
+        jobC.delete();
     }
 
-    public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob send, String expected) throws Exception {
-        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
+    public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob jobB, String expected) throws Exception {
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
                 "selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",  " +
                 " overrides: [topic: 'org.fedoraproject.otopic']" +
                 "\necho \"scott = \" + scott}", true));
 
-        scheduleAwaitStep(wait);
+        scheduleAwaitStep(jobA);
 
-        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" +
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " overrides: [topic: 'org.fedoraproject.otopic']," +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}", true));
 
-        j.buildAndAssertSuccess(send);
+        j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
-        j.assertBuildStatusSuccess(wait.getLastBuild());
-        j.assertLogContains(expected, wait.getLastBuild());
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains(expected, jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
-    public void _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(WorkflowJob send, String selector,
+    public void _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(WorkflowJob jobB, String selector,
                                                                        String expected) throws Exception {
-        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
-                "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
+                "    env.MY_TOPIC = '" + testName.getMethodName() + "'\n" +
                 "    def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', selector:  \"" +
                 selector + "${env.MY_TOPIC}'\",        overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
                 "    echo \"scott = \" + scott\n" +
                 "}", true));
 
-        scheduleAwaitStep(wait);
+        scheduleAwaitStep(jobA);
 
-        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
-                " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
+                " env.MY_TOPIC = '" + testName.getMethodName() + "'\n" +
                 " sendCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: 'abcdefg', messageProperties: 'CI_STATUS = failed', messageType: 'CodeQualityChecksDone'\n" +
                 "}", true));
 
-        j.buildAndAssertSuccess(send);
+        j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
-        j.assertBuildStatusSuccess(wait.getLastBuild());
-        j.assertLogContains(expected, wait.getLastBuild());
-    }
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains(expected, jobA.getLastBuild());
 
-    public boolean isSubscribed(String job) {
-        return true;
-        // TODO reimplement
-//        try {
-//            JenkinsLogger logger = jenkins.getLogger("all");
-//            logger.waitForLogged(Pattern.compile("Successfully subscribed job \'" +
-//                    job + "\' to.*"));
-//            return true;
-//        } catch (Exception ex) {
-//            return false;
-//        }
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testJobRename() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
-
-        Thread.sleep(1000);
-
         jobA.renameTo("ABC");
-        Thread.sleep(3000);
-        assertThat("Trigger not subscribed", isSubscribed("ABC"));
+        waitForReceiverToBeReady(jobA.getFullName());
+
+        jobA.delete();
     }
 
     public void _testJobRenameWithCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
-
-        Thread.sleep(1000);
-
         jobA.renameTo("ABC");
-        Thread.sleep(3000);
-        assertThat("Trigger not subscribed", isSubscribed("ABC"));
+        waitForReceiverToBeReady(jobA.getFullName());
+
+        jobA.delete();
     }
 
     public void _testDisabledJobDoesNotGetTriggered() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new Shell("echo BUILD_NUMBER = $BUILD_NUMBER"));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
+        waitForReceiverToBeReady(jobA.getFullName(), 1);
         jobA.disable();
+        // Wait for trigger thread to be stopped.
+        Thread.sleep(3000);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
 
         j.buildAndAssertSuccess(jobB);
 
         jobA.enable();
-        Thread.sleep(3000); // Wait for trigger to kick in
+        //waitForReceiverToBeReady(jobA.getFullName(), 2);
+        waitForReceiverToBeReady(jobA.getFullName());
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo BUILD_NUMBER = 1", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testDisabledJobDoesNotGetTriggeredWithCheck() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
+                testName.getMethodName(), null, null, new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE)
         ))), jobA);
         jobA.getBuildersList().add(new Shell("echo BUILD_NUMBER = $BUILD_NUMBER"));
         jobA.disable();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, null, null, MESSAGE_CHECK_CONTENT
+                testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT
         )));
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(5000);
         assertThat(jobA.getBuilds(), Matchers.iterableWithSize(0));
 
         jobA.enable();
-        Thread.sleep(3000);
+        waitForReceiverToBeReady(jobA.getFullName(), 2);
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("echo BUILD_NUMBER = 1", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testDisabledWorkflowJobDoesNotGetTriggered() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("echo \"BUILD_NUMBER = ${env.BUILD_NUMBER}\"", true));
         attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(
-                null, null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
+                testName.getMethodName(), null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"
         ))), jobA);
         jobA.doDisable();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
 
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(5000);
         assertThat(jobA.getBuilds(), Matchers.iterableWithSize(0));
 
         jobA.doEnable();
-        Thread.sleep(3000);
+        waitForReceiverToBeReady(jobA.getFullName(), 2);
 
         j.buildAndAssertSuccess(jobB);
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("BUILD_NUMBER = 1", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
     }
 
     public void _testEnsureFailedSendingOfMessageFailsBuild() throws Exception {
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getBuildersList().add(new CIMessageBuilder(getPublisherProviderData(
-                null, MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
+                testName.getMethodName(), MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null
         )));
         FreeStyleBuild build = j.buildAndAssertStatus(Result.FAILURE, jobB);
         j.assertLogContains("Unhandled exception in perform: ", build);
+
+        jobB.delete();
     }
 
     public void _testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
-        WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
+        WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
 
-        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" +
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" +
                 " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " failOnError: true, " +
                 " messageContent: 'abcdefg', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}", true));
-        WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, send);
+        WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, jobB);
         j.assertLogContains("Unhandled exception in perform: ", build);
+
+        jobB.delete();
     }
 
     public void _testAbortWaitingForMessageWithPipelineBuild() throws Exception {
-        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \n}", true));
-        scheduleAwaitStep(wait);
-        WorkflowRun waitingBuild = wait.getLastBuild();
+        scheduleAwaitStep(jobA);
+        WorkflowRun waitingBuild = jobA.getLastBuild();
 
         System.out.println(waitingBuild.getLog()); // Diagnose what the build is doing when it does not get interrupted
         waitingBuild.getExecutor().interrupt();
 
-        waitUntilScheduledBuildCompletes();
+        waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatus(Result.ABORTED, waitingBuild);
+
+        jobA.delete();
     }
 
     public void _testPipelineInvalidProvider() throws Exception {
-        WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "send");
-        send.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
+        WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
                 " providerName: 'bogus', " +
                 " messageContent: '', " +
                 " messageProperties: 'CI_STATUS = failed'," +
                 " messageType: 'CodeQualityChecksDone'}\n", true));
 
-        WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, send);
+        WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, jobB);
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
 
-        WorkflowJob wait = j.jenkins.createProject(WorkflowJob.class, "wait");
-        wait.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: 'bogus', " +
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: 'bogus', " +
                 " selector: " +
                 " \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
-        build = j.buildAndAssertStatus(Result.FAILURE, wait);
+        build = j.buildAndAssertStatus(Result.FAILURE, jobA);
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
+
+        jobA.delete();
+        jobB.delete();
     }
 
     protected String stringFrom(Process proc) throws InterruptedException, IOException {
@@ -1101,22 +1328,6 @@ public abstract class SharedMessagingPluginIntegrationTest {
         return processToRun;
     }
 
-    protected void stopContainer(DockerContainer container) throws Exception {
-        System.out.println(Docker.cmd("stop", container.getCid())
-                .popen()
-                .verifyOrDieWith("Unable to stop container"));
-	Docker docker = new Docker();
-	while (docker.isContainerRunning(container.getCid())) {
-            System.out.println("Waiting for container to stop.");
-            Thread.sleep(500);
-        }
-        try {
-            container.assertRunning();
-        } catch (Error e) {
-            //This is ok
-        }
-    }
-
     protected void printThreadsWithName(String tName) {
         System.out.println("Looking for Threads with name that contains: " + tName);
         List<Thread> threads = getThreadsByName(tName);
@@ -1127,8 +1338,7 @@ public abstract class SharedMessagingPluginIntegrationTest {
     protected List<Thread> getThreadsByName(String tName) {
         return Thread.getAllStackTraces().keySet().stream()
                 .filter(thread -> Pattern.compile(tName).matcher(thread.getName()).matches())
-                .collect(Collectors.toList())
-        ;
+                .collect(Collectors.toList());
     }
 
     protected int getCurrentThreadCountForName(String name) {

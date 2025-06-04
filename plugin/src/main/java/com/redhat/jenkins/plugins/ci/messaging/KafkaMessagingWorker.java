@@ -152,6 +152,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
 	if (!Thread.currentThread().isInterrupted()) {
             int timeout = (pd.getTimeout() != null ? pd.getTimeout() : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
             try {
+                log.info("Job '" + jobname + "' waiting to receive message");
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMinutes(timeout));
                 Iterator<ConsumerRecord<String, String>> it = records.iterator();
                 if (it.hasNext()) {
@@ -274,8 +275,6 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     @Override
     public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
         KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData)pdata;
-        log.info("Waiting for message.");
-        listener.getLogger().println("Waiting for message.");
 
         String ltopic = getTopic(provider);
         try {
@@ -287,6 +286,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         try (KafkaConsumer<String, String> lconsumer = new KafkaConsumer<>(pd.mergeProperties(provider.getMergedConsumerProperties()))) {
             int timeout = (pd.getTimeout() != null ? pd.getTimeout() : KafkaSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
             lconsumer.subscribe(Collections.singletonList(ltopic));
+            log.info("Job '" + jobname + "' waiting to receive message");
+            listener.getLogger().println("Job '" + jobname + "' waiting to receive message");
             ConsumerRecords<String, String> records = lconsumer.poll(Duration.ofMinutes(timeout));
             Iterator<ConsumerRecord<String, String>> it = records.iterator();
             if (it.hasNext()) {

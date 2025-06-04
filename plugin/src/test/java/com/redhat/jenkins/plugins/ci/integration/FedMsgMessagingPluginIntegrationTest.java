@@ -50,6 +50,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.logging.Level;
 
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
@@ -70,6 +71,10 @@ public class FedMsgMessagingPluginIntegrationTest extends SharedMessagingPluginI
         GlobalCIConfiguration.get().setConfigs(Collections.singletonList(new FedMsgMessagingProvider(
                 DEFAULT_PROVIDER_NAME, fedmsgRelay.getHub(), fedmsgRelay.getPublisher(), "org.fedoraproject"
         )));
+
+        logger.record("com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker", Level.INFO);
+        logger.quiet();
+        logger.capture(5000);
     }
 
     @Override
