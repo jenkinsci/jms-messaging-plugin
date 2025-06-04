@@ -35,6 +35,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,6 @@ import org.jenkinsci.test.acceptance.docker.Docker;
 import org.jenkinsci.test.acceptance.docker.DockerClassRule;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
@@ -56,20 +56,16 @@ import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.utils.MessageUtils;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.tasks.Shell;
 import hudson.util.Secret;
 
-public class AmqMessagingPluginWithFailoverIntegrationTest {
+public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
     @ClassRule
     public static DockerClassRule<ActiveMQContainer> docker = new DockerClassRule<>(ActiveMQContainer.class);
     private ActiveMQContainer amq = null;
-
-    @Rule
-    public final JenkinsRule j = new JenkinsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -80,7 +76,9 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
                 SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, createFailoverUrl(amq.getBroker()), true,
                 "CI", null, new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")))));
 
-        // TODO test connection. WebClient? Rest?
+        logger.record("com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker", Level.INFO);
+        logger.quiet();
+        logger.capture(5000);
     }
 
     private String createFailoverUrl(String broker) {
@@ -93,12 +91,11 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
 
         for (int i = 0; i < 10; i++) {
             FreeStyleProject jobA = j.createFreeStyleProject("receiver" + i);
-            jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
+            jobA.getBuildersList().add(new Shell("echo CI_STATUS = ${CI_STATUS}"));
             jobA.addTrigger(new CIBuildTrigger(true,
                     Collections.singletonList(new ActiveMQSubscriberProviderData(
-                            SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, null,
-                            "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'", Collections.emptyList(),
-                            "CI_MESSAGE", 60))));
+                            SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, null, "CI_STATUS = 'failed'",
+                            Collections.emptyList(), "CI_MESSAGE", 60))));
         }
         waitForNoAMQTaskThreads();
 
@@ -109,24 +106,21 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject("sender");
         jobB.getPublishersList()
-                .add(new CIMessageNotifier(new ActiveMQPublisherProviderData(
-                        SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, null,
-                        MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null, true, 5000)));
+                .add(new CIMessageNotifier(
+                        new ActiveMQPublisherProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
+                                null, "CI_STATUS = failed", null, true, 5000)));
 
         j.buildAndAssertSuccess(jobB);
 
         for (FreeStyleProject job : jobs) {
+            waitUntilTriggeredBuildCompletes(job);
             FreeStyleBuild lastBuild = job.getLastBuild();
             j.assertBuildStatusSuccess(lastBuild);
-            j.assertLogContains("echo CI_TYPE = code-quality-checks-done", lastBuild);
+            j.assertLogContains("echo CI_STATUS = failed", lastBuild);
             lastBuild.delete();
         }
 
-        // Now stop AMQ
-        System.out.println("Stopping AMQ");
-        stopAMQ();
-        System.out.println("Waiting 60 secs");
-        Thread.sleep(60000);
+        waitForProviderToStop(amq.getCid());
 
         // Check for unconnection AMQ threads
         System.out.println(printAMQThreads());
@@ -136,8 +130,6 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         System.out.println("Starting AMQ");
         startAMQ();
 
-        System.out.println("Waiting 10 secs");
-        Thread.sleep(10000);
         waitForNoAMQTaskThreads();
 
         System.out.println(printAMQThreads());
@@ -145,17 +137,20 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
 
         j.buildAndAssertSuccess(jobB);
 
-        Thread.sleep(1000);
         for (FreeStyleProject job : jobs) {
+            waitUntilTriggeredBuildCompletes(job);
             FreeStyleBuild lastBuild = job.getLastBuild();
             j.assertBuildStatusSuccess(lastBuild);
-            j.assertLogContains("echo CI_TYPE = code-quality-checks-done", lastBuild);
+            j.assertLogContains("echo CI_STATUS = failed", lastBuild);
             lastBuild.delete();
         }
         System.out.println(printAMQThreads());
-        System.out.println("Waiting 10 secs");
-        Thread.sleep(10000);
         waitForNoAMQTaskThreads();
+
+        for (FreeStyleProject job : jobs) {
+            job.delete();
+        }
+        jobB.delete();
     }
 
     // Test setting a valid JMS selector, then fixing it, and make sure threads are handled correctly.
@@ -163,19 +158,23 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
     public void testInvalidJMSSelector() throws Exception {
 
         FreeStyleProject jobA = j.createFreeStyleProject("receiver");
-        jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
+        jobA.getBuildersList().add(new Shell("echo CI_STATUS = ${CI_STATUS}"));
 
         jobA.addTrigger(new CIBuildTrigger(true,
-                Collections.singletonList(
-                        new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_TYPE 'code-quality-checks-done' and CI_STATUS = 'failed'", // Missing '=';
-                                                                                                     // invalid syntax.
-                                Collections.emptyList(), "CI_MESSAGE", 60))));
+                Collections.singletonList(new ActiveMQSubscriberProviderData(
+                        SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, null, "CI_STATUS 'failed'", // Missing
+                                                                                                                // '=';
+                                                                                                                // invalid
+                                                                                                                // syntax.
+                        Collections.emptyList(), "CI_MESSAGE", 60))));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
-        Thread.sleep(5000); // Wait for connection to fail
+        for (int i = 0; i < 5 && getCurrentTriggerThreadIds("receive").size() > 0; i++) {
+            Thread.sleep(1000);
+        }
 
         List<Long> ids1 = getCurrentTriggerThreadIds("receiver");
+
         assertEquals("Trigger threads invalid size", 0, ids1.size());
 
         JenkinsRule.WebClient wc = j.createWebClient();
@@ -188,17 +187,19 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         jobA.addTrigger(new CIBuildTrigger(true,
                 Collections.singletonList(
                         new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'",
-                                Collections.emptyList(), "CI_MESSAGE", 60))));
+                                null, "CI_STATUS = 'failed'", Collections.emptyList(), "CI_MESSAGE", 60))));
         new CIBuildTrigger(true,
-                Collections.singletonList(
-                        new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_TYPE 'code-quality-checks-done' and CI_STATUS = 'failed'", // Missing '=';
-                                                                                                     // invalid syntax.
-                                Collections.emptyList(), "CI_MESSAGE", 60))).start(jobA, true);
+                Collections.singletonList(new ActiveMQSubscriberProviderData(
+                        SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, null, "CI_STATUS 'failed'", // Missing
+                                                                                                                // '=';
+                                                                                                                // invalid
+                                                                                                                // syntax.
+                        Collections.emptyList(), "CI_MESSAGE", 60))).start(jobA, true);
 
         List<Long> ids2 = getCurrentTriggerThreadIds("receiver");
         assertEquals("Trigger threads valid selector size", 1, ids2.size());
+
+        jobA.delete();
     }
 
     @Test
@@ -211,20 +212,22 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
                 + "                       providerData: activeMQSubscriber(name: '"
                 + SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME + "',\n"
                 + "                                                        overrides: [topic: \"CI\"],\n"
-                + "                                                        selector: \"CI_TYPE 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n"
+                + "                                                        selector: \"CI_STATUS 'failed'\",\n"
                 + "                                                       )\n" + "                      )\n" + "    }\n"
                 + "    stages {\n" + "        stage('foo') {\n" + "            steps {\n"
                 + "                echo 'Hello world!'\n" + "            }\n" + "        }\n" + "    }\n" + "}\n",
                 true));
         pipe.save();
-        Thread.sleep(5000);
 
         // No trigger threads created on save. Must run once.
         List<Long> ids = getCurrentTriggerThreadIds("pipeline");
         assertEquals("Trigger threads initial pipeline save", 0, ids.size());
 
         j.buildAndAssertSuccess(pipe);
-        Thread.sleep(5000);
+
+        for (int i = 0; i < 5 && getCurrentTriggerThreadIds("pipeline").size() > 0; i++) {
+            Thread.sleep(1000);
+        }
         // No trigger threads created because of bad syntax.
         List<Long> ids2 = getCurrentTriggerThreadIds("pipeline");
         assertEquals("Trigger threads invalid syntax size", 0, ids2.size());
@@ -240,18 +243,19 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
                 + "                       providerData: activeMQSubscriber(name: '"
                 + SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME + "',\n"
                 + "                                                        overrides: [topic: \"CI\"],\n"
-                + "                                                        selector: \"CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'\",\n"
+                + "                                                        selector: \"CI_STATUS = 'failed'\",\n"
                 + "                                                       )\n" + "                       )\n"
                 + "    }\n" + "    stages {\n" + "        stage('foo') {\n" + "            steps {\n"
                 + "                echo 'Hello world!'\n" + "            }\n" + "        }\n" + "    }\n" + "}\n",
                 true));
         pipe.save();
-        Thread.sleep(5000);
 
         // Let's start a build to get new selector activated.
         j.buildAndAssertSuccess(pipe);
-        Thread.sleep(5000);
+        waitForReceiverToBeReady(pipe.getFullName());
         assertEquals("Number of threads", 1, getCurrentTriggerThreadIds("pipeline").size());
+
+        pipe.delete();
     }
 
     @Test
@@ -259,13 +263,12 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         // Test changing a selector and make sure threads are handled correctly.
 
         FreeStyleProject jobA = j.createFreeStyleProject("receiver");
-        jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
+        jobA.getBuildersList().add(new Shell("echo CI_STATUS = ${CI_STATUS}"));
 
         jobA.addTrigger(new CIBuildTrigger(true,
                 Collections.singletonList(
                         new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'",
-                                Collections.emptyList(), "CI_MESSAGE", 60))));
+                                null, "CI_STATUS = 'failed'", Collections.emptyList(), "CI_MESSAGE", 60))));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         List<Long> ids1 = getCurrentTriggerThreadIds("receiver");
@@ -275,13 +278,14 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
         jobA.getTrigger(CIBuildTrigger.class)
                 .setProviderList(Collections.singletonList(
                         new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'success'",
-                                Collections.emptyList(), "CI_MESSAGE", 60)));
+                                null, "CI_STATUS = 'success'", Collections.emptyList(), "CI_MESSAGE", 60)));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         List<Long> ids2 = getCurrentTriggerThreadIds("receiver");
         assertEquals("Trigger threads changed selector size", 1, ids2.size());
         assertNotSame("Trigger threads new thread created", ids1.get(0), ids2.get(0));
+
+        jobA.delete();
     }
 
     private List<Long> getCurrentTriggerThreadIds(String name) {
@@ -303,7 +307,9 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
     private void startAMQ() throws Exception {
         System.out.println(Docker.cmd("restart", amq.getCid()));
         System.out.println(Docker.cmd("restart", amq.getCid()).popen().verifyOrDieWith("Unable to start container"));
-        Thread.sleep(3000);
+        if (!waitForProviderToBeReady(amq.getCid(), "INFO | ActiveMQ Jolokia REST API available at")) {
+            throw new Exception("AMQ provider container is not ready");
+        }
         amq.assertRunning();
     }
 
@@ -357,21 +363,5 @@ public class AmqMessagingPluginWithFailoverIntegrationTest {
             System.out.println(printAMQThreads());
         }
         assertTrue("abs(currentThreadCount - previousThreadCount) > 2", equal);
-    }
-
-    private void stopAMQ() throws Exception {
-        System.out.println(Docker.cmd("stop", amq.getCid()));
-        System.out.println(Docker.cmd("stop", amq.getCid()).popen().verifyOrDieWith("Unable to stop container"));
-        Thread.sleep(3000);
-        boolean running = false;
-        try {
-            amq.assertRunning();
-            running = false;
-        } catch (Error e) {
-            // This is ok
-        }
-        if (running) {
-            throw new Exception("Container " + amq.getCid() + " not stopped");
-        }
     }
 }

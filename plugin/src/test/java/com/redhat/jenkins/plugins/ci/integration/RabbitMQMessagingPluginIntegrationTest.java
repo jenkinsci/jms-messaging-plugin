@@ -46,7 +46,6 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
-import com.redhat.utils.MessageUtils;
 
 import hudson.Util;
 import hudson.model.FreeStyleBuild;
@@ -89,8 +88,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     }
 
     @Override
-    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties,
-            String content) {
+    public ProviderData getPublisherProviderData(String topic, String properties, String content) {
         return new RabbitMQPublisherProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true, true, 20,
                 "schema");
     }
@@ -240,10 +238,11 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Test
     public void testPipelineSendMsgReturnMessage() throws Exception {
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "job");
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage "
-                + " providerName: '" + DEFAULT_PROVIDER_NAME + "', " + " messageContent: '', "
-                + " messageProperties: 'CI_STATUS = failed'," + " messageType: 'CodeQualityChecksDone'\n"
-                + " echo message.getMessageId()\necho message.getMessageContent()\n}", true));
+        jobB.setDefinition(new CpsFlowDefinition(
+                "node('built-in') {\n def message = sendCIMessage " + " providerName: '" + DEFAULT_PROVIDER_NAME + "', "
+                        + " messageContent: '', " + " messageProperties: 'CI_STATUS = failed'\n"
+                        + " echo message.getMessageId()\necho message.getMessageContent()\n}",
+                true));
         j.buildAndAssertSuccess(jobB);
         // See https://github.com/jenkinsci/jms-messaging-plugin/issues/125
         // timestamp == 0 indicates timestamp was not set in message

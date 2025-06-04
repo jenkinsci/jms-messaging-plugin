@@ -30,7 +30,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.utils.MessageUtils;
 
 import hudson.ExtensionList;
 import hudson.model.Describable;
@@ -44,8 +43,6 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
     protected String name;
 
     protected transient JMSMessagingProvider provider;
-
-    public static final MessageUtils.MESSAGE_TYPE DEFAULT_MESSAGE_TYPE = MessageUtils.MESSAGE_TYPE.Custom;
 
     public ProviderData() {
     }

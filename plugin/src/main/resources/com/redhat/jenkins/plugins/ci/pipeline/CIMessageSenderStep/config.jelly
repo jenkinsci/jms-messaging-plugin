@@ -47,9 +47,6 @@
       </f:optionalBlock>
     </rh:blockWrapper>
   </f:nested>
-  <f:entry title="${%Message type}" field="messageType">
-    <f:select name="messageType"/>
-  </f:entry>
   <f:entry title="${%Message properties}" field="messageProperties">
     <f:textarea name="messageProperties"/>
   </f:entry>

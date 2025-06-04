@@ -30,16 +30,12 @@ import javax.annotation.Nonnull;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.utils.MessageUtils;
-import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
-import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
@@ -179,14 +175,6 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
             }
             return new RabbitMQPublisherProviderData(jo.getString("name"), mpo, jo.getString("messageContent"),
                     jo.getBoolean("failOnError"), fedoraMessaging, severity, schema);
-        }
-
-        public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
-            return MessageUtils.doFillMessageTypeItems(messageType);
-        }
-
-        public MESSAGE_TYPE getDefaultMessageType() {
-            return DEFAULT_MESSAGE_TYPE;
         }
 
         public String getConfigPage() {

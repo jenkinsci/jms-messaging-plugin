@@ -395,10 +395,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message.setStringProperty("CI_NAME", build.getParent().getName());
                 envVarParts.put("CI_NAME", build.getParent().getName());
 
-                if (pd.getMessageType() != null) {
-                    message.setStringProperty("CI_TYPE", pd.getMessageType().getMessage());
-                    envVarParts.put("CI_TYPE", pd.getMessageType().getMessage());
-                }
                 if (!build.isBuilding()) {
                     String ciStatus = (build.getResult() == Result.SUCCESS ? "passed" : "failed");
                     message.setStringProperty("CI_STATUS", ciStatus);
@@ -443,12 +439,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 mesgId = message.getJMSMessageID();
                 mesgContent = message.getText();
 
-                String messageType = "unknown type";
-                if (pd.getMessageType() != null) {
-                    messageType = pd.getMessageType().toString();
-                }
-                log.info("Sent " + messageType + " message for job '" + build.getParent().getName() + "' to topic '"
-                        + ltopic + "':\n" + formatMessage(message));
+                log.info("Sent message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
+                        + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
                 return new SendResult(false, mesgId, mesgContent);

@@ -13,14 +13,12 @@
     <concurrentBuild>false</concurrentBuild>
     <builders>
         <com.redhat.jenkins.plugins.ci.CIMessageBuilder plugin="jms-messaging@1.0.0-SNAPSHOT">
-            <messageType>CodeQualityChecksDone</messageType>
             <messageProperties>abc=def</messageProperties>
             <messageContent>abc</messageContent>
         </com.redhat.jenkins.plugins.ci.CIMessageBuilder>
     </builders>
     <publishers>
         <com.redhat.jenkins.plugins.ci.CIMessageNotifier plugin="jms-messaging@1.0.0-SNAPSHOT">
-            <messageType>CodeQualityChecksDone</messageType>
             <messageProperties>abc=def</messageProperties>
             <messageContent>abc</messageContent>
         </com.redhat.jenkins.plugins.ci.CIMessageNotifier>

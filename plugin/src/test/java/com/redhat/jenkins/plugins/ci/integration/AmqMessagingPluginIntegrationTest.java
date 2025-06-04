@@ -51,7 +51,6 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.MessageUtils;
 
 import hudson.Util;
 import hudson.model.FreeStyleBuild;
@@ -102,15 +101,13 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Override
-    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties,
-            String content) {
-        return getPublisherProviderData(topic, type, properties, content, 0);
+    public ProviderData getPublisherProviderData(String topic, String properties, String content) {
+        return getPublisherProviderData(topic, properties, content, 0);
     }
 
-    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties,
-            String content, int ttl) {
-        return new ActiveMQPublisherProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), type, properties, content,
-                true, ttl);
+    public ProviderData getPublisherProviderData(String topic, String properties, String content, int ttl) {
+        return new ActiveMQPublisherProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), properties, content, true,
+                ttl);
     }
 
     @Test
@@ -237,8 +234,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testSimpleCIEventTriggerHeadersInEnv() throws Exception {
         FreeStyleProject jobB = j.createFreeStyleProject();
-        String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"" + jobB.getName()
-                + "\",\"CI_TYPE\":\"code-quality-checks-done\"";
+        String expected = "{\"CI_STATUS\":\"passed\",\"CI_NAME\":\"" + jobB.getName() + "\"";
         _testSimpleCIEventTriggerHeadersInEnv(jobB, "CI_MESSAGE_HEADERS", expected);
     }
 
@@ -340,8 +336,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(null,
-                MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "TEST_PROPERTY = TEST_VALUE", "Hello World")));
+        jobB.getPublishersList().add(
+                new CIMessageNotifier(getPublisherProviderData(null, "TEST_PROPERTY = TEST_VALUE", "Hello World")));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -383,8 +379,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
         jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" + " providerName: '"
                 + DEFAULT_PROVIDER_NAME + "', " + " failOnError: true, " + " messageContent: '" + MESSAGE_CHECK_CONTENT
-                + "', " + " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}', "
-                + " messageType: 'CodeQualityChecksDone'}", true));
+                + "', " + " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}'}", true));
 
         // [expectedValue: number + '0.0234', field: 'CI_STATUS2']
         String pd = "providerList: [[$class: 'ActiveMQSubscriberProviderData', name: '" + DEFAULT_PROVIDER_NAME
@@ -467,24 +462,26 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testSimpleCIEventWithMessagePropertiesAsVariable() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
-        jobA.getBuildersList().add(new Shell("echo CI_TYPE = $CI_TYPE"));
+        jobA.getBuildersList().add(new Shell("echo CI_STATUS = ${CI_STATUS}"));
         jobA.getBuildersList().add(new Shell("echo TEST_PROP1 = $TEST_PROP1"));
         jobA.getBuildersList().add(new Shell("echo TEST_PROP2 = $TEST_PROP2"));
-        attachTrigger(new CIBuildTrigger(true, Collections.singletonList(getSubscriberProviderData("otopic",
-                "CI_MESSAGE", "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"))), jobA);
+        attachTrigger(
+                new CIBuildTrigger(true, Collections
+                        .singletonList(getSubscriberProviderData("otopic", "CI_MESSAGE", "CI_STATUS = 'failed'"))),
+                jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.addProperty(new ParametersDefinitionProperty(new TextParameterDefinition("MESSAGE_PROPERTIES",
                 "CI_STATUS = failed\nTEST_PROP1 = GOT 1\nTEST_PROP2 = GOT 2", "")));
-        jobB.getBuildersList().add(new CIMessageBuilder(getPublisherProviderData("otopic",
-                MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "${MESSAGE_PROPERTIES}", "")));
+        jobB.getBuildersList()
+                .add(new CIMessageBuilder(getPublisherProviderData("otopic", "${MESSAGE_PROPERTIES}", "")));
         j.buildAndAssertSuccess(jobB);
 
         waitUntilTriggeredBuildCompletes(jobA);
         FreeStyleBuild lastBuild = jobA.getLastBuild();
         j.assertBuildStatusSuccess(lastBuild);
 
-        j.assertLogContains("echo CI_TYPE = code-quality-checks-done", lastBuild);
+        j.assertLogContains("echo CI_STATUS = failed", lastBuild);
         j.assertLogContains("echo TEST_PROP1 = GOT 1", lastBuild);
         j.assertLogContains("echo TEST_PROP2 = GOT 2", lastBuild);
 
@@ -496,20 +493,21 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public void testTTL() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new Shell("echo $CI_MESSAGE_HEADERS"));
-        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(null, null,
-                "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"))), jobA);
+        attachTrigger(
+                new CIBuildTrigger(false,
+                        Collections.singletonList(getSubscriberProviderData(null, null, "CI_STATUS = 'failed'"))),
+                jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(null,
-                MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null)));
+        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(null, "CI_STATUS = failed", null)));
 
         j.buildAndAssertSuccess(jobB);
         waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("\"JMSExpiration\":0", jobA.getLastBuild());
 
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(null,
-                MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null, 10000)));
+        jobB.getPublishersList()
+                .add(new CIMessageNotifier(getPublisherProviderData(null, "CI_STATUS = failed", null, 10000)));
 
         j.buildAndAssertSuccess(jobB);
         waitUntilTriggeredBuildCompletes(jobA, 2);

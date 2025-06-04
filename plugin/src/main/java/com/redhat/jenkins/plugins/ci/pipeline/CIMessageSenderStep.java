@@ -23,8 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci.pipeline;
 
-import static com.redhat.jenkins.plugins.ci.provider.data.ProviderData.DEFAULT_MESSAGE_TYPE;
-
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -38,7 +36,6 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
 import com.google.common.collect.ImmutableSet;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
@@ -55,7 +52,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.utils.MessageUtils;
-import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
 import hudson.Extension;
 import hudson.model.Run;
@@ -67,31 +63,28 @@ public class CIMessageSenderStep extends Step {
 
     private String providerName;
     private MessagingProviderOverrides overrides;
-    private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
     private boolean failOnError;
     private Integer timeToLiveMinutes;
 
     public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
-            final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent) {
-        this(providerName, overrides, messageType, messageProperties, messageContent, false, 0);
+            final String messageProperties, final String messageContent) {
+        this(providerName, overrides, messageProperties, messageContent, false, 0);
     }
 
     public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
-            final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent,
-            final Integer timeToLiveMinutes) {
-        this(providerName, overrides, messageType, messageProperties, messageContent, false, timeToLiveMinutes);
+            final String messageProperties, final String messageContent, final Integer timeToLiveMinutes) {
+        this(providerName, overrides, messageProperties, messageContent, false, timeToLiveMinutes);
     }
 
     @DataBoundConstructor
     public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
-            final MESSAGE_TYPE messageType, final String messageProperties, final String messageContent,
-            Boolean failOnError, Integer timeToLiveMinutes) {
+            final String messageProperties, final String messageContent, Boolean failOnError,
+            Integer timeToLiveMinutes) {
         super();
         this.providerName = providerName;
         this.overrides = overrides;
-        this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
         if (failOnError == null) {
@@ -118,14 +111,6 @@ public class CIMessageSenderStep extends Step {
 
     public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
-    }
-
-    public MESSAGE_TYPE getMessageType() {
-        return messageType;
-    }
-
-    public void setMessageType(MESSAGE_TYPE messageType) {
-        this.messageType = messageType;
     }
 
     public String getMessageProperties() {
@@ -194,7 +179,6 @@ public class CIMessageSenderStep extends Step {
                     if (p instanceof ActiveMqMessagingProvider) {
                         ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(step.getProviderName());
                         apd.setOverrides(step.getOverrides());
-                        apd.setMessageType(step.getMessageType());
                         apd.setMessageProperties(step.getMessageProperties());
                         apd.setMessageContent(step.getMessageContent());
                         apd.setFailOnError(step.getFailOnError());
@@ -259,17 +243,8 @@ public class CIMessageSenderStep extends Step {
             return Messages.MessageNotifier();
         }
 
-        public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
-            return MessageUtils.doFillMessageTypeItems(messageType);
-        }
-
         public ListBoxModel doFillProviderNameItems() {
             return MessageUtils.doFillProviderNameItems();
         }
-
-        public MESSAGE_TYPE getDefaultMessageType() {
-            return DEFAULT_MESSAGE_TYPE;
-        }
-
     }
 }

@@ -41,72 +41,12 @@ public class MessageUtils {
 
     public static final String JSON_TYPE = "application/json";
 
-    public static ListBoxModel doFillMessageTypeItems(String messageType) {
-        MESSAGE_TYPE current = MESSAGE_TYPE.fromString(messageType);
-        ListBoxModel items = new ListBoxModel();
-        for (MESSAGE_TYPE t : MESSAGE_TYPE.values()) {
-            items.add(new ListBoxModel.Option(t.toDisplayName(), t.name(), (t == current) || items.size() == 0));
-        }
-        return items;
-    }
-
     public static ListBoxModel doFillProviderNameItems() {
         ListBoxModel items = new ListBoxModel();
         for (JMSMessagingProvider provider : GlobalCIConfiguration.get().getConfigs()) {
             items.add(provider.getName());
         }
         return items;
-    }
-
-    public enum MESSAGE_TYPE {
-        CodeQualityChecksDone("code-quality-checks-done"), ComponentBuildDone("component-build-done"), Custom("custom"),
-        EarlyPerformanceTestingDone("early-performance-testing-done"),
-        EarlySecurityTestingDone("early-security-testing-done"), ImageUploaded("image-uploaded"),
-        FunctionalTestCoverageDone("functional-test-coverage-done"), FunctionalTestingDone("functional-testing-done"),
-        NonfunctionalTestingDone("nonfunctional-testing-done"), OotbTestingDone("ootb-testing-done"),
-        PeerReviewDone("peer-review-done"), ProductAcceptedForReleaseTesting("product-accepted-for-release-testing"),
-        ProductBuildDone("product-build-done"), ProductBuildInStaging("product-build-in-staging"),
-        ProductTestCoverageDone("product-test-coverage-done"), PullRequest("pull-request"),
-        SecurityChecksDone("security-checks-done"), TestingStarted("testing-started"),
-        TestingCompleted("testing-completed"), Tier0TestingDone("tier-0-testing-done"),
-        Tier1TestingDone("tier-1-testing-done"), Tier2IntegrationTestingDone("tier-2-integration-testing-done"),
-        Tier2ValidationTestingDone("tier-2-validation-testing-done"), Tier3TestingDone("tier-3-testing-done"),
-        UnitTestCoverageDone("unit-test-coverage-done"), UpdateDefectStatus("update-defect-status");
-
-        private final String message;
-
-        MESSAGE_TYPE(String value) {
-            this.message = value;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public static MESSAGE_TYPE fromString(String value) {
-            for (MESSAGE_TYPE t : MESSAGE_TYPE.values()) {
-                if (value.equalsIgnoreCase(t.name())) {
-                    return t;
-                }
-            }
-            return null;
-        }
-
-        public String toDisplayName() {
-            String v = name();
-            if (v.isEmpty())
-                return v;
-
-            StringBuilder result = new StringBuilder();
-            result.append(v.charAt(0));
-            for (int i = 1; i < v.length(); i++) {
-                if (Character.isUpperCase(v.charAt(i))) {
-                    result.append(" ");
-                }
-                result.append(v.charAt(i));
-            }
-            return result.toString();
-        }
     }
 
     public static SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
