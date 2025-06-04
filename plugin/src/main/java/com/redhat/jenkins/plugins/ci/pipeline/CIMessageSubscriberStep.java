@@ -44,14 +44,12 @@ import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
@@ -169,13 +167,6 @@ public class CIMessageSubscriberStep extends Step {
                         apd.setTimeout(step.getTimeout());
                         apd.setVariable(step.getVariable());
                         pd = apd;
-                    } else if (p instanceof FedMsgMessagingProvider) {
-                        FedMsgSubscriberProviderData fpd = new FedMsgSubscriberProviderData(step.getProviderName());
-                        fpd.setOverrides(step.getOverrides());
-                        fpd.setChecks(step.getChecks());
-                        fpd.setTimeout(step.getTimeout());
-                        fpd.setVariable(step.getVariable());
-                        pd = fpd;
                     } else if (p instanceof RabbitMQMessagingProvider) {
                         RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(step.getProviderName());
                         rpd.setOverrides(step.getOverrides());

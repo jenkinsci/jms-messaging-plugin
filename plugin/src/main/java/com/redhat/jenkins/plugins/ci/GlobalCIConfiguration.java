@@ -38,7 +38,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest2;
 
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
@@ -46,8 +45,6 @@ import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
@@ -229,8 +226,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             for (JMSMessagingProvider p : getConfigs()) {
                 if (p instanceof ActiveMqMessagingProvider) {
                     pds.add(new ActiveMQSubscriberProviderData(p.getName()));
-                } else if (p instanceof FedMsgMessagingProvider) {
-                    pds.add(new FedMsgSubscriberProviderData(p.getName()));
                 } else if (p instanceof RabbitMQMessagingProvider) {
                     pds.add(new RabbitMQSubscriberProviderData(p.getName()));
                 } else if (p instanceof KafkaMessagingProvider) {
@@ -249,8 +244,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             for (JMSMessagingProvider p : getConfigs()) {
                 if (p instanceof ActiveMqMessagingProvider) {
                     pds.add(new ActiveMQPublisherProviderData(p.getName()));
-                } else if (p instanceof FedMsgMessagingProvider) {
-                    pds.add(new FedMsgPublisherProviderData(p.getName()));
                 } else if (p instanceof RabbitMQMessagingProvider) {
                     pds.add(new RabbitMQPublisherProviderData(p.getName()));
                 } else if (p instanceof KafkaMessagingProvider) {
