@@ -23,8 +23,9 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
-import hudson.model.Cause;
 import org.kohsuke.stapler.export.Exported;
+
+import hudson.model.Cause;
 
 public class CIBuildCause extends Cause {
 

@@ -23,21 +23,24 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.utils.MessageUtils;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.util.ListBoxModel;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.utils.MessageUtils;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 
 public class FedMsgPublisherProviderData extends FedMsgProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
@@ -57,7 +60,8 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
         super(name, overrides);
     }
 
-    public FedMsgPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent, Boolean failOnError) {
+    public FedMsgPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent,
+            Boolean failOnError) {
         this(name, overrides);
         this.messageContent = messageContent;
         this.failOnError = failOnError;
@@ -93,10 +97,9 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
         }
 
         FedMsgPublisherProviderData thatp = (FedMsgPublisherProviderData) that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.messageContent, thatp.messageContent) &&
-                Objects.equals(this.failOnError, thatp.failOnError);
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+                && Objects.equals(this.messageContent, thatp.messageContent)
+                && Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Override
@@ -119,10 +122,7 @@ public class FedMsgPublisherProviderData extends FedMsgProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new FedMsgPublisherProviderData(
-                    jo.getString("name"),
-                    mpo,
-                    jo.getString("messageContent"),
+            return new FedMsgPublisherProviderData(jo.getString("name"), mpo, jo.getString("messageContent"),
                     jo.getBoolean("failOnError"));
         }
 

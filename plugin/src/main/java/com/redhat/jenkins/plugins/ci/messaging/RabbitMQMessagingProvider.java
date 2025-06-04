@@ -1,20 +1,23 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.RabbitMQAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.RabbitMQAuthenticationMethod.AuthenticationMethodDescriptor;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQProviderData;
+
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import javax.annotation.Nonnull;
-import java.util.logging.Logger;
 
 public class RabbitMQMessagingProvider extends JMSMessagingProvider {
 
@@ -31,10 +34,8 @@ public class RabbitMQMessagingProvider extends JMSMessagingProvider {
     private final String queue;
 
     @DataBoundConstructor
-    public RabbitMQMessagingProvider(String name, String virtualHost,
-                                     String hostname, Integer portNumber,
-                                     String topic, String exchange, String queue,
-                                     RabbitMQAuthenticationMethod authenticationMethod) {
+    public RabbitMQMessagingProvider(String name, String virtualHost, String hostname, Integer portNumber, String topic,
+            String exchange, String queue, RabbitMQAuthenticationMethod authenticationMethod) {
         this.name = name;
         this.virtualHost = virtualHost;
         this.hostname = hostname;

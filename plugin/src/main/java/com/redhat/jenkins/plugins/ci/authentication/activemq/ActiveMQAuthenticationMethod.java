@@ -23,19 +23,22 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.activemq;
 
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
-import hudson.ExtensionList;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import jenkins.model.Jenkins;
-import org.apache.activemq.ActiveMQConnectionFactory;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod implements Describable<ActiveMQAuthenticationMethod> {
+import org.apache.activemq.ActiveMQConnectionFactory;
+
+import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+
+import hudson.ExtensionList;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
+
+public abstract class ActiveMQAuthenticationMethod extends AuthenticationMethod
+        implements Describable<ActiveMQAuthenticationMethod> {
 
     private static final long serialVersionUID = -6077120270692721571L;
     private transient static final Logger log = Logger.getLogger(AuthenticationMethod.class.getName());

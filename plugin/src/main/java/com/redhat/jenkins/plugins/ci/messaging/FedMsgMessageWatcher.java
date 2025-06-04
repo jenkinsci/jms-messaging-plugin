@@ -23,19 +23,20 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.utils.PluginUtils;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
+import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_TOPIC;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingWorker.DEFAULT_TOPIC;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.utils.PluginUtils;
 
 public class FedMsgMessageWatcher extends JMSMessageWatcher {
 
@@ -74,7 +75,8 @@ public class FedMsgMessageWatcher extends JMSMessageWatcher {
         lpoller = lcontext.poller(1);
         lsocket = lcontext.socket(ZMQ.SUB);
 
-        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_TOPIC), environment);
+        topic = PluginUtils.getSubstitutedValue(getTopic(overrides, fedMsgMessagingProvider.getTopic(), DEFAULT_TOPIC),
+                environment);
 
         lsocket.subscribe(topic.getBytes(StandardCharsets.UTF_8));
         lsocket.setLinger(0);

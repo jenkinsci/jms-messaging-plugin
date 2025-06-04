@@ -23,11 +23,12 @@
  */
 package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.io.IOException;
+
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-import java.io.IOException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @DockerFixture(id = "jbossamq", ports = 61616)
 public class JBossAMQContainer extends DockerContainer {

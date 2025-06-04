@@ -23,10 +23,20 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.StaplerRequest2;
+
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.MessageUtils;
 import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -35,13 +45,6 @@ import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import net.sf.json.JSONObject;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest2;
-
-import javax.annotation.Nonnull;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Send message build step.
@@ -50,12 +53,18 @@ public class CIMessageBuilder extends Builder {
     private static final Logger log = Logger.getLogger(CIMessageBuilder.class.getName());
 
     // All replaced by ProviderData
-    @Deprecated private transient String providerName;
-    @Deprecated private transient MessagingProviderOverrides overrides;
-    @Deprecated private transient MESSAGE_TYPE messageType;
-    @Deprecated private transient String messageProperties;
-    @Deprecated private transient String messageContent;
-    @Deprecated private transient boolean failOnError = false;
+    @Deprecated
+    private transient String providerName;
+    @Deprecated
+    private transient MessagingProviderOverrides overrides;
+    @Deprecated
+    private transient MESSAGE_TYPE messageType;
+    @Deprecated
+    private transient String messageProperties;
+    @Deprecated
+    private transient String messageContent;
+    @Deprecated
+    private transient boolean failOnError = false;
 
     private ProviderData providerData;
 
@@ -68,51 +77,63 @@ public class CIMessageBuilder extends Builder {
         this.providerData = providerData;
     }
 
-    @Deprecated public String getProviderName() {
+    @Deprecated
+    public String getProviderName() {
         return providerName;
     }
 
-    @Deprecated public void setProviderName(String providerName) {
+    @Deprecated
+    public void setProviderName(String providerName) {
         this.providerName = providerName;
     }
 
-    @Deprecated public MessagingProviderOverrides getOverrides() {
+    @Deprecated
+    public MessagingProviderOverrides getOverrides() {
         return overrides;
     }
 
-    @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
+    @Deprecated
+    public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
 
-    @Deprecated public MESSAGE_TYPE getMessageType() {
+    @Deprecated
+    public MESSAGE_TYPE getMessageType() {
         return messageType;
     }
 
-    @Deprecated public void setMessageType(MESSAGE_TYPE messageType) {
+    @Deprecated
+    public void setMessageType(MESSAGE_TYPE messageType) {
         this.messageType = messageType;
     }
 
-    @Deprecated public String getMessageProperties() {
+    @Deprecated
+    public String getMessageProperties() {
         return messageProperties;
     }
 
-    @Deprecated public void setMessageProperties(String messageProperties) {
+    @Deprecated
+    public void setMessageProperties(String messageProperties) {
         this.messageProperties = messageProperties;
     }
 
-    @Deprecated public String getMessageContent() {
+    @Deprecated
+    public String getMessageContent() {
         return messageContent;
     }
 
-    @Deprecated public void setMessageContent(String messageContent) {
+    @Deprecated
+    public void setMessageContent(String messageContent) {
         this.messageContent = messageContent;
     }
 
-    @Deprecated public boolean isFailOnError() {
+    @Deprecated
+    public boolean isFailOnError() {
         return failOnError;
     }
 
-    @Deprecated public void setFailOnError(boolean failOnError) {
+    @Deprecated
+    public void setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
     }
 

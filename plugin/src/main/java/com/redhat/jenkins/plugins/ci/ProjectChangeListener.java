@@ -1,14 +1,15 @@
 package com.redhat.jenkins.plugins.ci;
 
+import java.util.List;
+import java.util.logging.Logger;
+
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
+
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.listeners.ItemListener;
 import jenkins.model.ParameterizedJobMixIn;
-
-import java.util.List;
-import java.util.logging.Logger;
 
 @Extension
 public class ProjectChangeListener extends ItemListener {
@@ -50,14 +51,14 @@ public class ProjectChangeListener extends ItemListener {
                 }
                 if (triggerThreads != null && triggerThreads.size() > 0 && project.isDisabled()) {
                     // there is a trigger thread AND it is disabled. we stop it.
-                    log.info("Job " + item.getFullName() + " may have been previously been enabled" +
-                            " but is now disabled. Attempting to stop trigger thread(s)...");
+                    log.info("Job " + item.getFullName() + " may have been previously been enabled"
+                            + " but is now disabled. Attempting to stop trigger thread(s)...");
                     cibt.force(item.getFullName());
                 } else {
                     if ((triggerThreads == null || triggerThreads.size() == 0) && !project.isDisabled()) {
                         // Job may have been enabled. Let's start the trigger thread.
-                        log.info("Job " + item.getFullName() + " may have been previously been disabled." +
-                                " Attempting to start trigger thread(s)...");
+                        log.info("Job " + item.getFullName() + " may have been previously been disabled."
+                                + " Attempting to start trigger thread(s)...");
                         cibt.start((Job<?, ?>) item, false);
                     }
                 }

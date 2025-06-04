@@ -23,6 +23,30 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import static com.redhat.utils.MessageUtils.JSON_TYPE;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.sql.Time;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,17 +58,12 @@ import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderDat
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
+
 import hudson.EnvVars;
 import hudson.Util;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import javax.annotation.Nonnull;
 import jakarta.jms.BytesMessage;
 import jakarta.jms.Connection;
 import jakarta.jms.DeliveryMode;
@@ -60,23 +79,7 @@ import jakarta.jms.Queue;
 import jakarta.jms.Session;
 import jakarta.jms.TextMessage;
 import jakarta.jms.Topic;
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.sql.Time;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.Objects;
-
-import static com.redhat.utils.MessageUtils.JSON_TYPE;
+import jenkins.model.Jenkins;
 
 public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private static final Logger log = Logger.getLogger(ActiveMqMessagingWorker.class.getName());
@@ -89,7 +92,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private MessageConsumer subscriber;
     private final String uuid = UUID.randomUUID().toString();
 
-    public ActiveMqMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+    public ActiveMqMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
+            String jobname) {
         super(messagingProvider, overrides, jobname);
         this.provider = (ActiveMqMessagingProvider) messagingProvider;
     }
@@ -114,9 +118,11 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                             Topic destination = session.createTopic(this.topic);
                             subscriber = session.createDurableSubscriber(destination, jobname, selector, false);
                         }
-                        log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' " + kind + " with selector: " + selector);
+                        log.info("Successfully subscribed job '" + jobname + "' to '" + this.topic + "' " + kind
+                                + " with selector: " + selector);
                     } else {
-                        log.fine("Already subscribed to '" + this.topic + "' " + kind + " with selector: " + selector + " for job '" + jobname);
+                        log.fine("Already subscribed to '" + this.topic + "' " + kind + " with selector: " + selector
+                                + " for job '" + jobname);
                     }
                     return true;
                 } catch (JMSSecurityException | InvalidSelectorException exc) {
@@ -130,7 +136,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     // then we just unsubscribe here, sleep, so that we may
                     // try again on the next iteration.
 
-                    log.log(Level.SEVERE, "JMS exception raised while subscribing job '" + jobname + "', retrying in " + RETRY_MINUTES + " minutes.", ex);
+                    log.log(Level.SEVERE, "JMS exception raised while subscribing job '" + jobname + "', retrying in "
+                            + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
 
                         unsubscribe(jobname);
@@ -289,7 +296,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public void receive(String jobname, ProviderData pdata) {
         ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData) pdata;
-        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout(): ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        int timeoutInMs = (pd.getTimeout() != null ? pd.getTimeout()
+                : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
         while (!subscribe(jobname, pd.getSelector()) && !Thread.currentThread().isInterrupted()) {
             try {
                 int WAIT_SECONDS = 2;
@@ -315,14 +323,16 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         process(jobname, pd, m);
                     }
                 } else {
-                    log.info("No message received for the past " + timeoutInMs + " ms, unsubscribing job '" + jobname + "'.");
+                    log.info("No message received for the past " + timeoutInMs + " ms, unsubscribing job '" + jobname
+                            + "'.");
                     unsubscribe(jobname);
                 }
             } catch (JMSException e) {
                 if (!Thread.currentThread().isInterrupted()) {
                     // Something other than an interrupt causes this.
                     // Unsubscribe, but stay in our loop and try to reconnect..
-                    log.log(Level.WARNING, "JMS exception raised while receiving, unsubscribing job '" + jobname + "'.", e);
+                    log.log(Level.WARNING, "JMS exception raised while receiving, unsubscribing job '" + jobname + "'.",
+                            e);
                     unsubscribe(jobname); // Try again next time.
                 }
             }
@@ -390,7 +400,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     envVarParts.put("CI_TYPE", pd.getMessageType().getMessage());
                 }
                 if (!build.isBuilding()) {
-                    String ciStatus = (build.getResult() == Result.SUCCESS ? "passed": "failed");
+                    String ciStatus = (build.getResult() == Result.SUCCESS ? "passed" : "failed");
                     message.setStringProperty("CI_STATUS", ciStatus);
                     envVarParts.put("CI_STATUS", ciStatus);
                     envVarParts.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
@@ -408,7 +418,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     Enumeration<String> e = p.propertyNames();
                     while (e.hasMoreElements()) {
                         String key = e.nextElement();
-                        if (!key.toLowerCase().startsWith("jms") || !setMessageHeader(message, key, p.getProperty(key), session)) {
+                        if (!key.toLowerCase().startsWith("jms")
+                                || !setMessageHeader(message, key, p.getProperty(key), session)) {
                             EnvVars envVars2 = new EnvVars();
                             envVars2.putAll(baseEnvVars);
                             envVars2.putAll(envVarParts);
@@ -427,7 +438,6 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
                 message.setText(PluginUtils.getSubstitutedValue(pd.getMessageContent(), envVars2));
 
-
                 publisher.send(message, publisher.getDeliveryMode(), publisher.getPriority(), pd.getTimeToLiveMillis());
 
                 mesgId = message.getJMSMessageID();
@@ -437,8 +447,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 if (pd.getMessageType() != null) {
                     messageType = pd.getMessageType().toString();
                 }
-                log.info("Sent " + messageType + " message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
-                        + formatMessage(message));
+                log.info("Sent " + messageType + " message for job '" + build.getParent().getName() + "' to topic '"
+                        + ltopic + "':\n" + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
                 return new SendResult(false, mesgId, mesgContent);
@@ -498,7 +508,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             log.warning(e.getMessage());
         }
 
-        if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
+        if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null
+                && provider.getBroker() != null) {
             log.info("Waiting for message with selector: " + pd.getSelector());
             listener.getLogger().println("Waiting for message with selector: " + pd.getSelector());
             Connection connection = null;
@@ -518,7 +529,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 }
 
                 long startTime = new Date().getTime();
-                int timeout = (pd.getTimeout() != null ? pd.getTimeout(): ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+                int timeout = (pd.getTimeout() != null ? pd.getTimeout()
+                        : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
                 Message message;
                 do {
                     log.info("Job '" + jobname + "' waiting to receive message");
@@ -533,8 +545,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                                 vars.put(pd.getHeadersVariable(), getMessageHeaders(message));
                                 build.addAction(new CIEnvironmentContributingAction(vars));
                             }
-                            log.info("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
-                            listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n" + formatMessage(message));
+                            log.info("Received message with selector: " + pd.getSelector() + "\n"
+                                    + formatMessage(message));
+                            listener.getLogger().println("Received message with selector: " + pd.getSelector() + "\n"
+                                    + formatMessage(message));
                             return value;
                         }
                     }

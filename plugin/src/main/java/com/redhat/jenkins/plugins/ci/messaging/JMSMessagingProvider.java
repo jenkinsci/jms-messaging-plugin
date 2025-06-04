@@ -23,24 +23,26 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.InvalidJsonException;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import hudson.ExtensionList;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.InvalidJsonException;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
+import hudson.ExtensionList;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
 
 public abstract class JMSMessagingProvider implements Describable<JMSMessagingProvider>, Serializable {
 
@@ -113,9 +115,11 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o)
+            return true;
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         JMSMessagingProvider that = (JMSMessagingProvider) o;
         return Objects.equals(name, that.name);

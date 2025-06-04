@@ -23,16 +23,11 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import com.redhat.jenkins.plugins.ci.Messages;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.util.FormValidation;
-import hudson.util.Secret;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -40,9 +35,17 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
-import javax.annotation.Nonnull;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.redhat.jenkins.plugins.ci.Messages;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 
 public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod {
     private static final long serialVersionUID = 452156745621333923L;
@@ -111,17 +114,16 @@ public class UsernameAuthenticationMethod extends RabbitMQAuthenticationMethod {
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("hostname") String hostname,
-                                               @QueryParameter("portNumber") Integer portNumber,
-                                               @QueryParameter("virtualHost") String virtualHost,
-                                               @QueryParameter("username") String username,
-                                               @QueryParameter("password") String password) {
+                @QueryParameter("portNumber") Integer portNumber, @QueryParameter("virtualHost") String virtualHost,
+                @QueryParameter("username") String username, @QueryParameter("password") String password) {
 
             checkAdmin();
 
             Connection connection = null;
             Channel channel = null;
             try {
-                UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
+                UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username,
+                        Secret.fromString(password));
                 ConnectionFactory connectionFactory = uam.getConnectionFactory(hostname, portNumber, virtualHost);
                 connection = connectionFactory.newConnection();
                 channel = connection.createChannel();

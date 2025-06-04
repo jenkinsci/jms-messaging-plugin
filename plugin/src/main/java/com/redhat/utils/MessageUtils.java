@@ -23,17 +23,17 @@
  */
 package com.redhat.utils;
 
+import java.util.logging.Logger;
+
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class MessageUtils {
 
@@ -59,32 +59,19 @@ public class MessageUtils {
     }
 
     public enum MESSAGE_TYPE {
-        CodeQualityChecksDone("code-quality-checks-done"),
-        ComponentBuildDone("component-build-done"),
-        Custom("custom"),
+        CodeQualityChecksDone("code-quality-checks-done"), ComponentBuildDone("component-build-done"), Custom("custom"),
         EarlyPerformanceTestingDone("early-performance-testing-done"),
-        EarlySecurityTestingDone("early-security-testing-done"),
-        ImageUploaded("image-uploaded"),
-        FunctionalTestCoverageDone("functional-test-coverage-done"),
-        FunctionalTestingDone("functional-testing-done"),
-        NonfunctionalTestingDone("nonfunctional-testing-done"),
-        OotbTestingDone("ootb-testing-done"),
-        PeerReviewDone("peer-review-done"),
-        ProductAcceptedForReleaseTesting("product-accepted-for-release-testing"),
-        ProductBuildDone("product-build-done"),
-        ProductBuildInStaging("product-build-in-staging"),
-        ProductTestCoverageDone("product-test-coverage-done"),
-        PullRequest("pull-request"),
-        SecurityChecksDone("security-checks-done"),
-        TestingStarted("testing-started"),
-        TestingCompleted("testing-completed"),
-        Tier0TestingDone("tier-0-testing-done"),
-        Tier1TestingDone("tier-1-testing-done"),
-        Tier2IntegrationTestingDone("tier-2-integration-testing-done"),
-        Tier2ValidationTestingDone("tier-2-validation-testing-done"),
-        Tier3TestingDone("tier-3-testing-done"),
-        UnitTestCoverageDone("unit-test-coverage-done"),
-        UpdateDefectStatus("update-defect-status");
+        EarlySecurityTestingDone("early-security-testing-done"), ImageUploaded("image-uploaded"),
+        FunctionalTestCoverageDone("functional-test-coverage-done"), FunctionalTestingDone("functional-testing-done"),
+        NonfunctionalTestingDone("nonfunctional-testing-done"), OotbTestingDone("ootb-testing-done"),
+        PeerReviewDone("peer-review-done"), ProductAcceptedForReleaseTesting("product-accepted-for-release-testing"),
+        ProductBuildDone("product-build-done"), ProductBuildInStaging("product-build-in-staging"),
+        ProductTestCoverageDone("product-test-coverage-done"), PullRequest("pull-request"),
+        SecurityChecksDone("security-checks-done"), TestingStarted("testing-started"),
+        TestingCompleted("testing-completed"), Tier0TestingDone("tier-0-testing-done"),
+        Tier1TestingDone("tier-1-testing-done"), Tier2IntegrationTestingDone("tier-2-integration-testing-done"),
+        Tier2ValidationTestingDone("tier-2-validation-testing-done"), Tier3TestingDone("tier-3-testing-done"),
+        UnitTestCoverageDone("unit-test-coverage-done"), UpdateDefectStatus("update-defect-status");
 
         private final String message;
 
@@ -148,5 +135,5 @@ public class MessageUtils {
             return null;
         }
 
-     }
+    }
 }

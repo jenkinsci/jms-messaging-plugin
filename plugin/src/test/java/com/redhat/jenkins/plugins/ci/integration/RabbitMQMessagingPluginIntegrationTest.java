@@ -23,6 +23,20 @@
  */
 package com.redhat.jenkins.plugins.ci.integration;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.logging.Level;
+
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.test.acceptance.docker.DockerClassRule;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.UsernameAuthenticationMethod;
@@ -33,24 +47,11 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.utils.MessageUtils;
+
 import hudson.Util;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.test.acceptance.docker.DockerClassRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.logging.Level;
 
 public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
     @ClassRule
@@ -65,10 +66,10 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         }
         System.out.println("######################### CONTAINER STARTED");
 
-        GlobalCIConfiguration.get().setConfigs(Collections.singletonList(new RabbitMQMessagingProvider(
-                DEFAULT_PROVIDER_NAME, "/", rabbitmq.getIpAddress(), rabbitmq.getPort(), "CI", "amq.fanout", "",
-                new UsernameAuthenticationMethod("guest", Secret.fromString("guest"))
-        )));
+        GlobalCIConfiguration.get()
+                .setConfigs(Collections.singletonList(new RabbitMQMessagingProvider(DEFAULT_PROVIDER_NAME, "/",
+                        rabbitmq.getIpAddress(), rabbitmq.getPort(), "CI", "amq.fanout", "",
+                        new UsernameAuthenticationMethod("guest", Secret.fromString("guest")))));
 
         logger.record("com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingWorker", Level.INFO);
         logger.quiet();
@@ -81,21 +82,17 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     }
 
     @Override
-    public ProviderData getSubscriberProviderData(String topic, String variableName, String selector, MsgCheck... msgChecks) {
-        return new RabbitMQSubscriberProviderData(
-                DEFAULT_PROVIDER_NAME,
-                overrideTopic(topic),
-                Arrays.asList(msgChecks),
-                Util.fixNull(variableName, "CI_MESSAGE"),
-                60
-        );
+    public ProviderData getSubscriberProviderData(String topic, String variableName, String selector,
+            MsgCheck... msgChecks) {
+        return new RabbitMQSubscriberProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), Arrays.asList(msgChecks),
+                Util.fixNull(variableName, "CI_MESSAGE"), 60);
     }
 
     @Override
-    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties, String content) {
-        return new RabbitMQPublisherProviderData(
-                DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true, true, 20, "schema"
-        );
+    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties,
+            String content) {
+        return new RabbitMQPublisherProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), content, true, true, 20,
+                "schema");
     }
 
     @Test
@@ -166,16 +163,16 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Test
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "'," +
-                " overrides: [topic: 'org.fedoraproject.otopic']" +
-                "\necho \"scott = \" + scott}", true));
+        jobA.setDefinition(new CpsFlowDefinition(
+                "node('built-in') {\n def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "',"
+                        + " overrides: [topic: 'org.fedoraproject.otopic']" + "\necho \"scott = \" + scott}",
+                true));
         scheduleAwaitStep(jobA);
 
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" +
-                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
-                " overrides: [topic: 'org.fedoraproject.otopic']," +
-                " messageContent: '{\"content\":\"abcdefg\"}'}", true));
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" + " providerName: '"
+                + DEFAULT_PROVIDER_NAME + "', " + " overrides: [topic: 'org.fedoraproject.otopic'],"
+                + " messageContent: '{\"content\":\"abcdefg\"}'}", true));
         j.buildAndAssertSuccess(jobB);
 
         waitUntilScheduledBuildCompletes();
@@ -190,18 +187,19 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Test
     public void testSimpleCIEventSendAndWaitPipelineWithVariableTopic() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
-                "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
-                "    def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"]\n" +
-                "    echo \"scott = \" + scott\n" +
-                "}", true));
+        jobA.setDefinition(new CpsFlowDefinition(
+                "node('built-in') {\n" + "    env.MY_TOPIC = 'org.fedoraproject.my-topic'\n"
+                        + "    def scott = waitForCIMessage providerName: '" + DEFAULT_PROVIDER_NAME
+                        + "', overrides: [topic: \"${env.MY_TOPIC}\"]\n" + "    echo \"scott = \" + scott\n" + "}",
+                true));
         scheduleAwaitStep(jobA);
 
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n" +
-                " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n" +
-                " sendCIMessage providerName: '" + DEFAULT_PROVIDER_NAME + "', overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: '{ \"content\" : \"abcdef\" }'\n" +
-                "}", true));
+        jobB.setDefinition(
+                new CpsFlowDefinition("node('built-in') {\n" + " env.MY_TOPIC = 'org.fedoraproject.my-topic'\n"
+                        + " sendCIMessage providerName: '" + DEFAULT_PROVIDER_NAME
+                        + "', overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: '{ \"content\" : \"abcdef\" }'\n"
+                        + "}", true));
         jobB.save();
         j.buildAndAssertSuccess(jobB);
 
@@ -234,7 +232,6 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         _testAbortWaitingForMessageWithPipelineBuild();
     }
 
-
     @Test
     public void testPipelineInvalidProvider() throws Exception {
         _testPipelineInvalidProvider();
@@ -243,12 +240,10 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Test
     public void testPipelineSendMsgReturnMessage() throws Exception {
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "job");
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " +
-                " providerName: '" + DEFAULT_PROVIDER_NAME + "', " +
-                " messageContent: '', " +
-                " messageProperties: 'CI_STATUS = failed'," +
-                " messageType: 'CodeQualityChecksDone'\n" +
-                " echo message.getMessageId()\necho message.getMessageContent()\n}", true));
+        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage "
+                + " providerName: '" + DEFAULT_PROVIDER_NAME + "', " + " messageContent: '', "
+                + " messageProperties: 'CI_STATUS = failed'," + " messageType: 'CodeQualityChecksDone'\n"
+                + " echo message.getMessageId()\necho message.getMessageContent()\n}", true));
         j.buildAndAssertSuccess(jobB);
         // See https://github.com/jenkinsci/jms-messaging-plugin/issues/125
         // timestamp == 0 indicates timestamp was not set in message
@@ -260,9 +255,8 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     @Test
     public void testFedoraMessagingHeaders() throws Exception {
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(new RabbitMQPublisherProviderData(
-                "test", null, "", true, true, 20, "schema"
-        )));
+        jobB.getPublishersList().add(
+                new CIMessageNotifier(new RabbitMQPublisherProviderData("test", null, "", true, true, 20, "schema")));
         FreeStyleBuild lastBuild = j.buildAndAssertSuccess(jobB);
 
         j.assertLogContains("fedora_messaging_severity=20, fedora_messaging_schema=schema}", lastBuild);

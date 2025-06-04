@@ -23,13 +23,11 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.activemq;
 
-import com.redhat.jenkins.plugins.ci.Messages;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.util.FormValidation;
-import hudson.util.Secret;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
@@ -39,12 +37,17 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
-import javax.annotation.Nonnull;
+import com.redhat.jenkins.plugins.ci.Messages;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
+import hudson.util.Secret;
 import jakarta.jms.Connection;
 import jakarta.jms.JMSException;
 import jakarta.jms.Session;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 
 public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
     private static final long serialVersionUID = 452156745621333923L;
@@ -107,8 +110,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
-                                               @QueryParameter("username") String username,
-                                               @QueryParameter("password") String password) {
+                @QueryParameter("username") String username, @QueryParameter("password") String password) {
 
             checkAdmin();
 
@@ -117,7 +119,8 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
             Connection connection = null;
             if (broker != null && isValidURL(broker)) {
                 try {
-                    UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username, Secret.fromString(password));
+                    UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username,
+                            Secret.fromString(password));
                     ActiveMQConnectionFactory connectionFactory = uam.getConnectionFactory(broker);
                     connection = connectionFactory.createConnection();
                     connection.start();

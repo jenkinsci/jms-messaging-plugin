@@ -23,20 +23,22 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.SSLCertificateAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
+
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
 
 public class JcascTest {
 

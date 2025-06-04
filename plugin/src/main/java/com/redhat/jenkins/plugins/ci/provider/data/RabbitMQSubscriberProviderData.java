@@ -23,13 +23,12 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.util.FormValidation;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -37,10 +36,14 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 
 public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
@@ -75,14 +78,15 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         super(name, overrides);
     }
 
-    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, @Nonnull List<MsgCheck> checks, String variable, Integer timeout) {
+    public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides,
+            @Nonnull List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
-        if (checks == null) throw new IllegalArgumentException("checks are null");
+        if (checks == null)
+            throw new IllegalArgumentException("checks are null");
         this.checks = checks;
         this.variable = variable;
         this.timeout = timeout;
     }
-
 
     public @Nonnull List<MsgCheck> getChecks() {
         return checks;
@@ -90,7 +94,8 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
 
     @DataBoundSetter
     public void setChecks(@Nonnull List<MsgCheck> checks) {
-        if (checks == null) throw new IllegalArgumentException("checks are null");
+        if (checks == null)
+            throw new IllegalArgumentException("checks are null");
         this.checks = checks;
     }
 
@@ -128,11 +133,9 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         }
 
         RabbitMQSubscriberProviderData thatp = (RabbitMQSubscriberProviderData) that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.checks, thatp.checks) &&
-                Objects.equals(this.variable, thatp.variable) &&
-                Objects.equals(this.timeout, thatp.timeout);
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+                && Objects.equals(this.checks, thatp.checks) && Objects.equals(this.variable, thatp.variable)
+                && Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Override

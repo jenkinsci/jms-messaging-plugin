@@ -25,12 +25,14 @@ package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+
 import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 
-public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod implements Describable<RabbitMQAuthenticationMethod> {
+public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod
+        implements Describable<RabbitMQAuthenticationMethod> {
 
     private static final long serialVersionUID = -6077120270692721571L;
 
@@ -40,6 +42,5 @@ public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod 
         }
     }
 
-    public abstract ConnectionFactory getConnectionFactory(String hostname, Integer portNumber,
-                                                           String VirtualHost);
+    public abstract ConnectionFactory getConnectionFactory(String hostname, Integer portNumber, String VirtualHost);
 }

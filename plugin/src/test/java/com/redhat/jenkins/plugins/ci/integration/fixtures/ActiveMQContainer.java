@@ -26,7 +26,7 @@ package com.redhat.jenkins.plugins.ci.integration.fixtures;
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-@DockerFixture(id = "activeamq", ports = {ActiveMQContainer.TCP_PORT, ActiveMQContainer.CONSOLE_PORT})
+@DockerFixture(id = "activeamq", ports = { ActiveMQContainer.TCP_PORT, ActiveMQContainer.CONSOLE_PORT })
 public class ActiveMQContainer extends DockerContainer {
 
     public static final int TCP_PORT = 61616;

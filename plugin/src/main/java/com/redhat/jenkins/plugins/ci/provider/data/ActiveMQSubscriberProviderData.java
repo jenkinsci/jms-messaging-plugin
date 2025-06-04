@@ -23,13 +23,12 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.util.FormValidation;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -37,10 +36,14 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 
 public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
@@ -66,7 +69,8 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
         super(name, overrides);
     }
 
-    public ActiveMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, String selector, List<MsgCheck> checks, String variable, Integer timeout) {
+    public ActiveMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, String selector,
+            List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
         this.selector = selector;
         this.checks = checks;
@@ -131,14 +135,10 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
         }
 
         ActiveMQSubscriberProviderData thatp = (ActiveMQSubscriberProviderData) that;
-        return Objects.equals(this.name, thatp.name) &&
-                Objects.equals(this.selector, thatp.selector) &&
-                Objects.equals(this.overrides, thatp.overrides) &&
-                Objects.equals(this.checks, thatp.checks) &&
-                Objects.equals(this.variable, thatp.variable) &&
-                Objects.equals(this.timeout, thatp.timeout);
+        return Objects.equals(this.name, thatp.name) && Objects.equals(this.selector, thatp.selector)
+                && Objects.equals(this.overrides, thatp.overrides) && Objects.equals(this.checks, thatp.checks)
+                && Objects.equals(this.variable, thatp.variable) && Objects.equals(this.timeout, thatp.timeout);
     }
-
 
     @Override
     public int hashCode() {
@@ -147,14 +147,9 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
 
     @Override
     public String toString() {
-        return "ActiveMQSubscriberProviderData{" +
-                "overrides=" + overrides +
-                ", selector='" + selector + '\'' +
-                ", checks=" + checks +
-                ", variable='" + variable + '\'' +
-                ", timeout=" + timeout +
-                ", name='" + name + '\'' +
-                '}';
+        return "ActiveMQSubscriberProviderData{" + "overrides=" + overrides + ", selector='" + selector + '\''
+                + ", checks=" + checks + ", variable='" + variable + '\'' + ", timeout=" + timeout + ", name='" + name
+                + '\'' + '}';
     }
 
     @Extension
@@ -181,7 +176,8 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
             if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
-            return new ActiveMQSubscriberProviderData(jo.getString("name"), mpo, jo.getString("selector"), checks, variable, timeout);
+            return new ActiveMQSubscriberProviderData(jo.getString("name"), mpo, jo.getString("selector"), checks,
+                    variable, timeout);
         }
 
         public String getDefaultVariable() {

@@ -23,17 +23,18 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.Nonnull;
+
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.EnvironmentContributingAction;
 import hudson.model.ParameterValue;
 import hudson.model.Run;
-
-import javax.annotation.Nonnull;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class CIEnvironmentContributingAction implements EnvironmentContributingAction {
 

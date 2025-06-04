@@ -23,9 +23,9 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication;
 
-import jenkins.model.Jenkins;
-
 import java.io.Serializable;
+
+import jenkins.model.Jenkins;
 
 public abstract class AuthenticationMethod implements Serializable {
 
@@ -36,7 +36,7 @@ public abstract class AuthenticationMethod implements Serializable {
      */
     public static void checkAdmin() {
         final Jenkins jenkins = Jenkins.get();
-        //If Jenkins is not alive then we are not started, so no unauthorised user might do anything
+        // If Jenkins is not alive then we are not started, so no unauthorised user might do anything
         jenkins.checkPermission(Jenkins.ADMINISTER);
     }
 }
