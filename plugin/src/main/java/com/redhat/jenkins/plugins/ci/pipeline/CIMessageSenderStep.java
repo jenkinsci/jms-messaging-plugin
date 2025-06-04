@@ -45,14 +45,12 @@ import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
@@ -202,12 +200,6 @@ public class CIMessageSenderStep extends Step {
                         apd.setFailOnError(step.getFailOnError());
                         apd.setTimeToLiveMillis(step.getTimeToLiveMinutes() * 60 * 1000);
                         pd = apd;
-                    } else if (p instanceof FedMsgMessagingProvider) {
-                        FedMsgPublisherProviderData fpd = new FedMsgPublisherProviderData(step.getProviderName());
-                        fpd.setOverrides(step.getOverrides());
-                        fpd.setMessageContent(step.getMessageContent());
-                        fpd.setFailOnError(step.getFailOnError());
-                        pd = fpd;
                     } else if (p instanceof RabbitMQMessagingProvider) {
                         RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(step.getProviderName());
                         rpd.setOverrides(step.getOverrides());

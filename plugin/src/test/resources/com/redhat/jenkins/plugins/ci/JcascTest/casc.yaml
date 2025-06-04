@@ -1,11 +1,6 @@
 unclassified:
   jmsProviders:
     configs:
-      - fedMsg:
-          name: "Fedora messages"
-          hubAddr: "tcp://example.com:5678"
-          pubAddr: "tcp://example.com:6789"
-          topic: "org.fedora.bar"
       - activeMq:
           name: "Active MQ"
           broker: "foo.com:4242"

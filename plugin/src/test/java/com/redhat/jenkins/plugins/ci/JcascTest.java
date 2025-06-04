@@ -33,7 +33,6 @@ import org.junit.Test;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.SSLCertificateAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 
@@ -49,11 +48,6 @@ public class JcascTest {
     @ConfiguredWithCode("JcascTest/casc.yaml")
     public void load() {
         GlobalCIConfiguration gc = GlobalCIConfiguration.get();
-        FedMsgMessagingProvider fedMsg = (FedMsgMessagingProvider) gc.getProvider("Fedora messages");
-        assertEquals("org.fedora.bar", fedMsg.getTopic());
-        assertEquals("tcp://example.com:5678", fedMsg.getHubAddr());
-        assertEquals("tcp://example.com:6789", fedMsg.getPubAddr());
-
         ActiveMqMessagingProvider amq = (ActiveMqMessagingProvider) gc.getProvider("Active MQ");
         assertEquals("foo.com:4242", amq.getBroker());
         assertEquals("active.mq.com", amq.getTopic());
