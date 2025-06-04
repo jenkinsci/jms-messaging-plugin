@@ -35,7 +35,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.ActiveMQAuthenticationMethod.AuthenticationMethodDescriptor;
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.TopicProvider.TopicProviderDescriptor;
@@ -45,7 +44,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Descriptor;
-import hudson.util.Secret;
 import jenkins.model.Jenkins;
 
 public class ActiveMqMessagingProvider extends JMSMessagingProvider {
@@ -54,8 +52,6 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     private String broker;
     private Boolean useQueues;
-    private transient @Deprecated String user;
-    private transient @Deprecated Secret password;
     private transient boolean migrationInProgress = false;
     private TopicProvider topicProvider = new DefaultTopicProvider();
     private ActiveMQAuthenticationMethod authenticationMethod;
@@ -73,12 +69,6 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     }
 
     protected Object readResolve() {
-        if (user != null) {
-            log.info("Legacy Message Provider username value is not null.");
-            authenticationMethod = new UsernameAuthenticationMethod(user, password);
-            log.info("Added default username/password authentication method using deprecated configuration.");
-            setMigrationInProgress(true);
-        }
         if (topicProvider == null) {
             topicProvider = new DefaultTopicProvider();
             setMigrationInProgress(true);

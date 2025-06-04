@@ -37,7 +37,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest2;
 
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
@@ -60,7 +59,6 @@ import hudson.ExtensionList;
 import hudson.PluginManager;
 import hudson.PluginWrapper;
 import hudson.model.Failure;
-import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
@@ -72,10 +70,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     public static final String DEFAULT_PROVIDER = "default";
 
-    private transient @Deprecated String broker;
-    private transient @Deprecated String topic;
-    private transient @Deprecated String user;
-    private transient @Deprecated Secret password;
     private transient boolean migrationInProgress = false;
 
     private List<JMSMessagingProvider> configs = new ArrayList<>();
@@ -101,21 +95,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     protected Object readResolve() {
-        if (broker != null) {
-            log.info("Legacy Message Provider Broker value is not null.");
-            if (configs.size() == 0) {
-                log.info("Current Message Provider size is 0.");
-                if (getProvider(DEFAULT_PROVIDER) == null) {
-                    log.info("There is no default Message Provider.");
-                    configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER, broker, false, topic,
-                            new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
-                    log.info("Added default Message Provider using deprecated configuration.");
-                    setMigrationInProgress(true);
-                } else {
-                    log.info("Default (" + DEFAULT_PROVIDER + ") Message Provider already exists.");
-                }
-            }
-        }
         // Examine providers
         if (configs != null) {
             for (JMSMessagingProvider config : configs) {
