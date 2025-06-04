@@ -23,16 +23,18 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
-import com.redhat.jenkins.plugins.ci.provider.data.FedMsgProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import jenkins.model.Jenkins;
+import javax.annotation.Nonnull;
+
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
+import com.redhat.jenkins.plugins.ci.messaging.data.FedmsgMessage;
+import com.redhat.jenkins.plugins.ci.provider.data.FedMsgProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
 
 public class FedMsgMessagingProvider extends JMSMessagingProvider {
 
@@ -43,8 +45,7 @@ public class FedMsgMessagingProvider extends JMSMessagingProvider {
     private final String topic;
 
     @DataBoundConstructor
-    public FedMsgMessagingProvider(String name, String hubAddr,
-                                   String pubAddr, String topic) {
+    public FedMsgMessagingProvider(String name, String hubAddr, String pubAddr, String topic) {
         this.name = name;
         this.hubAddr = hubAddr;
         this.pubAddr = pubAddr;

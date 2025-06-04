@@ -23,15 +23,11 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.activemq;
 
-import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.utils.PluginUtils;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.util.FormValidation;
-import hudson.util.Secret;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
 import org.apache.activemq.ActiveMQSslConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
@@ -40,12 +36,19 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
-import javax.annotation.Nonnull;
+import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.utils.PluginUtils;
+
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
+import hudson.util.Secret;
 import jakarta.jms.Connection;
 import jakarta.jms.JMSException;
 import jakarta.jms.Session;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 
 public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMethod {
     private static final long serialVersionUID = -5934219869726669459L;
@@ -133,8 +136,9 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("keystore"), Secret.fromString(jo.getString("keypwd")),
-                    jo.getString("truststore"), Secret.fromString(jo.getString("trustpwd")));
+            return new SSLCertificateAuthenticationMethod(jo.getString("keystore"),
+                    Secret.fromString(jo.getString("keypwd")), jo.getString("truststore"),
+                    Secret.fromString(jo.getString("trustpwd")));
         }
 
         public String getConfigPage() {
@@ -143,10 +147,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
         @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
-                                               @QueryParameter("keystore") String keystore,
-                                               @QueryParameter("keypwd") String keypwd,
-                                               @QueryParameter("truststore") String truststore,
-                                               @QueryParameter("trustpwd") String trustpwd) {
+                @QueryParameter("keystore") String keystore, @QueryParameter("keypwd") String keypwd,
+                @QueryParameter("truststore") String truststore, @QueryParameter("trustpwd") String trustpwd) {
 
             checkAdmin();
 
@@ -155,7 +157,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             Session session = null;
             if (broker != null && isValidURL(broker)) {
                 try {
-                    SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore, Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
+                    SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore,
+                            Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
                     ActiveMQSslConnectionFactory connectionFactory = sam.getConnectionFactory(broker);
                     connection = connectionFactory.createConnection();
                     connection.start();
@@ -164,7 +167,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
                     connection.close();
                     return FormValidation.ok(Messages.SuccessBrokerConnect(broker));
                 } catch (Exception e) {
-                    log.log(Level.SEVERE, "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
+                    log.log(Level.SEVERE,
+                            "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
                     return FormValidation.error(Messages.Error() + ": " + e);
                 } finally {
                     try {

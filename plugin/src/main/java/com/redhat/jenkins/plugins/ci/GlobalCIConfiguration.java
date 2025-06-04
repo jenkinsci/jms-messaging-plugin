@@ -23,6 +23,20 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.logging.Logger;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.StaplerRequest2;
+
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
@@ -40,6 +54,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
+
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.PluginManager;
@@ -50,18 +65,6 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest2;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.logging.Logger;
 
 @Extension
 @Symbol("jmsProviders")
@@ -74,7 +77,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     private transient @Deprecated String user;
     private transient @Deprecated Secret password;
     private transient boolean migrationInProgress = false;
-
 
     private List<JMSMessagingProvider> configs = new ArrayList<>();
 
@@ -105,8 +107,8 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
                 log.info("Current Message Provider size is 0.");
                 if (getProvider(DEFAULT_PROVIDER) == null) {
                     log.info("There is no default Message Provider.");
-                    configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER,
-                            broker, false, topic, new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
+                    configs.add(new ActiveMqMessagingProvider(DEFAULT_PROVIDER, broker, false, topic,
+                            new DefaultTopicProvider(), new UsernameAuthenticationMethod(user, password)));
                     log.info("Added default Message Provider using deprecated configuration.");
                     setMigrationInProgress(true);
                 } else {
@@ -139,7 +141,8 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     public boolean addMessageProvider(JMSMessagingProvider provider) {
-        if (configs == null) configs = new ArrayList<>();
+        if (configs == null)
+            configs = new ArrayList<>();
         if (configs.contains(provider)) {
             throw new Failure("Attempt to add a duplicate message provider");
         }
@@ -200,7 +203,8 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     public Boolean getFirstProviderOverrides() {
         if (configs != null && configs.size() > 0) {
             JMSMessagingProvider prov = configs.get(0);
-            return prov instanceof ActiveMqMessagingProvider && !(((ActiveMqMessagingProvider) prov).getTopicProvider() instanceof DefaultTopicProvider);
+            return prov instanceof ActiveMqMessagingProvider
+                    && !(((ActiveMqMessagingProvider) prov).getTopicProvider() instanceof DefaultTopicProvider);
         }
         return false;
     }
@@ -217,7 +221,8 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         if (configs != null && configs.size() > 0) {
             JMSMessagingProvider prov = configs.get(0);
             if (prov instanceof ActiveMqMessagingProvider) {
-                TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider) prov).getTopicProvider().getDescriptor();
+                TopicProviderDescriptor tpd = (TopicProviderDescriptor) ((ActiveMqMessagingProvider) prov)
+                        .getTopicProvider().getDescriptor();
                 if (type.equals("subscriber")) {
                     return tpd.generateSubscriberTopic();
                 } else if (type.equals("publisher")) {

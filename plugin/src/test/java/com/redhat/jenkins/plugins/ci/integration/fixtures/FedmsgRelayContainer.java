@@ -1,10 +1,11 @@
 package com.redhat.jenkins.plugins.ci.integration.fixtures;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.io.IOException;
+
 import org.jenkinsci.test.acceptance.docker.DockerContainer;
 import org.jenkinsci.test.acceptance.docker.DockerFixture;
 
-import java.io.IOException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /*
  * The MIT License
@@ -29,7 +30,7 @@ import java.io.IOException;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@DockerFixture(id = "fedmsg-relay", ports = {4001, 2003, 22})
+@DockerFixture(id = "fedmsg-relay", ports = { 4001, 2003, 22 })
 public class FedmsgRelayContainer extends DockerContainer {
 
     public String getPublisher() throws IOException {

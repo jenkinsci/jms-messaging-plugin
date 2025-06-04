@@ -23,18 +23,20 @@
  */
 package com.redhat.jenkins.plugins.ci.threads;
 
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import hudson.security.ACL;
-import hudson.security.ACLContext;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import static java.util.logging.Level.SEVERE;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.util.logging.Level.SEVERE;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+
+import hudson.security.ACL;
+import hudson.security.ACLContext;
 
 public class CITriggerThread extends Thread {
     private static final Logger log = Logger.getLogger(CITriggerThread.class.getName());
@@ -45,7 +47,8 @@ public class CITriggerThread extends Thread {
     private final ProviderData providerData;
     protected final JMSMessagingWorker messagingWorker;
 
-    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
+    public CITriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname,
+            CIBuildTrigger cibt, int instance) {
         this.messagingProvider = messagingProvider;
         this.providerData = providerData;
         this.jobname = jobname;
@@ -104,24 +107,23 @@ public class CITriggerThread extends Thread {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o)
+            return true;
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         CITriggerThread thread = (CITriggerThread) o;
 
-        return new EqualsBuilder()
-                .append(messagingProvider, thread.messagingProvider)
-                .append(providerData, thread.providerData)
-                .append(jobname, thread.jobname)
-                .isEquals();
+        return new EqualsBuilder().append(messagingProvider, thread.messagingProvider)
+                .append(providerData, thread.providerData).append(jobname, thread.jobname).isEquals();
     }
 
     @Override
     public int hashCode() {
-        int result = messagingWorker != null ? messagingWorker.hashCode(): 0;
-        result = 31 * result + (providerData != null ? providerData.hashCode(): 0);
-        result = 31 * result + (jobname != null ? jobname.hashCode(): 0);
+        int result = messagingWorker != null ? messagingWorker.hashCode() : 0;
+        result = 31 * result + (providerData != null ? providerData.hashCode() : 0);
+        result = 31 * result + (jobname != null ? jobname.hashCode() : 0);
         return result;
     }
 

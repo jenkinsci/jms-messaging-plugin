@@ -1,14 +1,15 @@
 package com.redhat.jenkins.plugins.ci.messaging.topics;
 
+import java.io.IOException;
+import java.io.Serializable;
+
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
+
 import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.StaplerRequest2;
-import org.kohsuke.stapler.StaplerResponse2;
-
-import java.io.IOException;
-import java.io.Serializable;
 
 public abstract class TopicProvider implements Describable<TopicProvider>, Serializable {
 
@@ -28,12 +29,12 @@ public abstract class TopicProvider implements Describable<TopicProvider>, Seria
         // Web methods.
         public void doGeneratePublisherTopic(StaplerRequest2 req, StaplerResponse2 resp) throws IOException {
             String topic = generatePublisherTopic();
-            resp.getWriter().write((topic != null ? topic: ""));
+            resp.getWriter().write((topic != null ? topic : ""));
         }
 
         public void doGenerateSubscriberTopic(StaplerRequest2 req, StaplerResponse2 resp) throws IOException {
             String topic = generateSubscriberTopic();
-            resp.getWriter().write((topic != null ? topic: ""));
+            resp.getWriter().write((topic != null ? topic : ""));
         }
 
         public static ExtensionList<TopicProviderDescriptor> all() {

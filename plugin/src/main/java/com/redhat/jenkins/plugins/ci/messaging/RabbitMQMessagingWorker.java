@@ -1,5 +1,21 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
@@ -14,26 +30,12 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 import com.redhat.utils.PluginUtils;
+
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.ZonedDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.Objects;
 
 public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
@@ -51,7 +53,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     private String queueName;
     private final String exchangeName;
 
-    public RabbitMQMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+    public RabbitMQMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
+            String jobname) {
         super(messagingProvider, overrides, jobname);
         this.provider = (RabbitMQMessagingProvider) messagingProvider;
         this.connection = provider.getConnection();
@@ -91,9 +94,10 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         // Create deliver callback to listen for messages
                         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                             String json = new String(delivery.getBody(), StandardCharsets.UTF_8);
-                            log.info(
-                                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
-                            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getProperties().getMessageId());
+                            log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '"
+                                    + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
+                            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json,
+                                    delivery.getProperties().getMessageId());
                             message.setTimestamp(new Date().getTime());
                             message.setDeliveryTag(delivery.getEnvelope().getDeliveryTag());
                             messageQueue.add(message);
@@ -113,7 +117,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     // then we just unsubscribe here, sleep, so that we may
                     // try again on the next iteration.
 
-                    log.log(Level.SEVERE, "Eexception raised while subscribing job '" + jobname + "', retrying in " + RETRY_MINUTES + " minutes.", ex);
+                    log.log(Level.SEVERE, "Eexception raised while subscribing job '" + jobname + "', retrying in "
+                            + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
 
                         unsubscribe(jobname);
@@ -139,17 +144,18 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void unsubscribe(String jobname) {
-        //if (interrupt) {
-        //    log.info("We are being interrupted. Skipping unsubscribe...");
-        //    return;
-        //}
+        // if (interrupt) {
+        // log.info("We are being interrupted. Skipping unsubscribe...");
+        // return;
+        // }
         disconnect();
     }
 
     @Override
     public void receive(String jobname, ProviderData pdata) {
         RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData) pdata;
-        int timeout = (pd.getTimeout() != null ? pd.getTimeout(): RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
+        int timeout = (pd.getTimeout() != null ? pd.getTimeout()
+                : RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
 
         if (interrupt) {
             log.info("we have been interrupted at start of receive");
@@ -228,7 +234,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             }
             connectiontmp.setId(provider.getName() + "_" + url + "_" + uuid + "_" + jobname);
         } catch (Exception e) {
-            log.severe("Unable to connect to " + provider.getHostname() + ":" + provider.getPortNumber() + " " + e.getMessage());
+            log.severe("Unable to connect to " + provider.getHostname() + ":" + provider.getPortNumber() + " "
+                    + e.getMessage());
             return false;
         }
         log.info("Connection created");
@@ -289,11 +296,12 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             env.putAll(build.getEnvironment(listener));
             env.put("CI_NAME", build.getParent().getName());
             if (!build.isBuilding()) {
-                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed": "failed"));
+                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed" : "failed"));
                 env.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
             }
 
-            RabbitMQMessage msg = new RabbitMQMessage(PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
+            RabbitMQMessage msg = new RabbitMQMessage(
+                    PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
                     PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
             msg.setTimestamp(System.currentTimeMillis() / 1000L);
@@ -303,8 +311,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             try {
                 channel.exchangeDeclarePassive(exchangeName);
                 channel.basicPublish(exchangeName, msg.getTopic(),
-                        new AMQP.BasicProperties.Builder().headers(headers)
-                                .messageId(msgId).build(), body.getBytes(StandardCharsets.UTF_8));
+                        new AMQP.BasicProperties.Builder().headers(headers).messageId(msgId).build(),
+                        body.getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
                 if (pd.isFailOnError()) {
                     log.severe("Unhandled exception in perform: Failed to send message!");
@@ -371,19 +379,20 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             log.info(" with check: " + msgCheck.toString());
             listener.getLogger().println(" with check: " + msgCheck);
         }
-        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout(): RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
+        Integer timeout = (pd.getTimeout() != null ? pd.getTimeout()
+                : RabbitMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES);
         log.info(" with timeout: " + timeout + " minutes");
         listener.getLogger().println(" with timeout: " + timeout + " minutes");
-
 
         // Create deliver callback to listen for messages
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String json = new String(delivery.getBody(), StandardCharsets.UTF_8);
-            listener.getLogger().println(
-                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
-            log.info(
-                    "Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
-            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json, delivery.getProperties().getMessageId());
+            listener.getLogger().println("Received '" + delivery.getEnvelope().getRoutingKey() + "':\n"
+                    + "Message id: '" + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
+            log.info("Received '" + delivery.getEnvelope().getRoutingKey() + "':\n" + "Message id: '"
+                    + delivery.getProperties().getMessageId() + "'\n'" + json + "'");
+            RabbitMQMessage message = new RabbitMQMessage(delivery.getEnvelope().getRoutingKey(), json,
+                    delivery.getProperties().getMessageId());
             message.setTimestamp(new Date().getTime());
             message.setDeliveryTag(delivery.getEnvelope().getDeliveryTag());
             messageQueue.add(message);
@@ -409,8 +418,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         channel.basicAck(message.getDeliveryTag(), false);
                         continue;
                     }
-                    listener.getLogger().println(
-                            "Message: '" + message.getMsgId() + "' was succesfully checked.");
+                    listener.getLogger().println("Message: '" + message.getMsgId() + "' was succesfully checked.");
 
                     if (build != null) {
                         if (StringUtils.isNotEmpty(pd.getMessageVariable())) {

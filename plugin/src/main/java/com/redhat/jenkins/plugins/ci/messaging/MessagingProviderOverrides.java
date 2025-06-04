@@ -1,16 +1,18 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import hudson.Extension;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import jenkins.model.Jenkins;
+import java.io.Serializable;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.Nonnull;
-import java.io.Serializable;
-import java.util.Objects;
+import hudson.Extension;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
 
 public class MessagingProviderOverrides implements Describable<MessagingProviderOverrides>, Serializable {
     private static final long serialVersionUID = -8815444484948038651L;
@@ -28,7 +30,6 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
         return topic;
     }
 
-
     public String getQueue() {
         return queue;
     }
@@ -45,8 +46,10 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         MessagingProviderOverrides that = (MessagingProviderOverrides) o;
 

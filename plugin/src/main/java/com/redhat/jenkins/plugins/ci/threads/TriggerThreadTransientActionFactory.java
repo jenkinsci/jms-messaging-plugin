@@ -1,14 +1,16 @@
 package com.redhat.jenkins.plugins.ci.threads;
 
+import java.util.Collection;
+import java.util.Collections;
+
+import javax.annotation.Nonnull;
+
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+
 import hudson.Extension;
 import hudson.model.Job;
 import jenkins.model.ParameterizedJobMixIn;
 import jenkins.model.TransientActionFactory;
-
-import javax.annotation.Nonnull;
-import java.util.Collection;
-import java.util.Collections;
 
 @SuppressWarnings("rawtypes")
 @Extension

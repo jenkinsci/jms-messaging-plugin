@@ -23,12 +23,12 @@
  */
 package com.redhat.utils;
 
-import org.apache.commons.io.IOCase;
-import org.apache.commons.io.filefilter.AbstractFileFilter;
-
 import java.io.File;
 import java.io.Serializable;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.IOCase;
+import org.apache.commons.io.filefilter.AbstractFileFilter;
 
 public class RegexFullPathnameFileFilter extends AbstractFileFilter implements Serializable {
 

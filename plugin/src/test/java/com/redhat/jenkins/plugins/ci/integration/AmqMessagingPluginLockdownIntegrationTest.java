@@ -23,13 +23,13 @@
  */
 package com.redhat.jenkins.plugins.ci.integration;
 
-import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
-import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
-import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
-import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
-import hudson.security.Permission;
-import hudson.util.Secret;
-import jenkins.model.Jenkins;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
@@ -52,12 +52,14 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.MockAuthorizationStrategy;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
+import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import hudson.security.Permission;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
 
 public class AmqMessagingPluginLockdownIntegrationTest {
 
@@ -80,14 +82,9 @@ public class AmqMessagingPluginLockdownIntegrationTest {
         ActiveMQContainer amq = docker.create();
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
-        gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(
-                "name",
-                createFailoverUrl(amq.getBroker()),
-                true,
-                "CI",
-                null,
-                new UsernameAuthenticationMethod("admin", Secret.fromString("redhat"))
-        )));
+        gcc.setConfigs(
+                Collections.singletonList(new ActiveMqMessagingProvider("name", createFailoverUrl(amq.getBroker()),
+                        true, "CI", null, new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")))));
 
         String adminUser = "admin";
         String user = "user";
@@ -101,10 +98,9 @@ public class AmqMessagingPluginLockdownIntegrationTest {
     }
 
     /**
-     * This test first configures a JMS message provider as an admin user
-     * and ensures that a test connection is successful.
-     * Then we login in a regular user and attempt to probe the testConnection actions
-     * to make sure we are blocked.
+     * This test first configures a JMS message provider as an admin user and ensures that a test connection is
+     * successful. Then we login in a regular user and attempt to probe the testConnection actions to make sure we are
+     * blocked.
      */
     @Test
     public void testBlockNonAdminAccess() throws Exception {
@@ -118,17 +114,18 @@ public class AmqMessagingPluginLockdownIntegrationTest {
         String errorString = "user is missing the Overall/Administer permission";
 
         HashMap<String, String> rMap = performPOST(userAuthUrl, "user", "user");
-        assertThat("code is " + rMap.get("statuscode") + " should be 403; url was " + userAuthUrl, rMap.get("statuscode").equals("403"));
-        assertThat(warning + rMap.get("responsebody"),
-                rMap.get("responsebody").indexOf(errorString) > 0);
+        assertThat("code is " + rMap.get("statuscode") + " should be 403; url was " + userAuthUrl,
+                rMap.get("statuscode").equals("403"));
+        assertThat(warning + rMap.get("responsebody"), rMap.get("responsebody").indexOf(errorString) > 0);
 
         rMap = performPOST(sslAuthUrl, "user", "user");
-        assertThat("code is " + rMap.get("statuscode") + " should be 403; url was " + sslAuthUrl, rMap.get("statuscode").equals("403"));
-        assertThat(warning + rMap.get("responsebody"),
-                rMap.get("responsebody").indexOf(errorString) > 0);
+        assertThat("code is " + rMap.get("statuscode") + " should be 403; url was " + sslAuthUrl,
+                rMap.get("statuscode").equals("403"));
+        assertThat(warning + rMap.get("responsebody"), rMap.get("responsebody").indexOf(errorString) > 0);
 
         rMap = performPOST(userAuthUrl, "admin", "admin");
-        assertThat("code is " + rMap.get("statuscode") + " should be 200; url was " + userAuthUrl, rMap.get("statuscode").equals("200"));
+        assertThat("code is " + rMap.get("statuscode") + " should be 200; url was " + userAuthUrl,
+                rMap.get("statuscode").equals("200"));
     }
 
     private HashMap<String, String> performPOST(String url, String username, String password) throws IOException {
@@ -136,7 +133,8 @@ public class AmqMessagingPluginLockdownIntegrationTest {
         URI uri = URI.create(url);
         HttpHost host = new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
-        credsProvider.setCredentials(new AuthScope(uri.getHost(), uri.getPort()), new UsernamePasswordCredentials(username, password));
+        credsProvider.setCredentials(new AuthScope(uri.getHost(), uri.getPort()),
+                new UsernamePasswordCredentials(username, password));
         // Create AuthCache instance
         AuthCache authCache = new BasicAuthCache();
         // Generate BASIC scheme object and add it to the local auth cache

@@ -30,7 +30,8 @@ import org.jenkinsci.test.acceptance.docker.DockerFixture;
 public class RabbitMQRelayContainer extends DockerContainer {
     public static final int INNER_PORT_NUMBER = 5672;
 
-    @Override public String getIpAddress() {
+    @Override
+    public String getIpAddress() {
         return ipBound(INNER_PORT_NUMBER);
     }
 

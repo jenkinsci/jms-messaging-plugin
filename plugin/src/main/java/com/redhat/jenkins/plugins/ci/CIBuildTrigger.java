@@ -23,6 +23,29 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.FedMsgMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
@@ -38,6 +61,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderDat
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThread;
 import com.redhat.jenkins.plugins.ci.threads.CITriggerThreadFactory;
 import com.redhat.jenkins.plugins.ci.threads.TriggerThreadProblemAction;
+
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractProject;
@@ -60,36 +84,19 @@ import hudson.triggers.TriggerDescriptor;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import jenkins.model.ParameterizedJobMixIn;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     public static final Logger RESOURCE_LOGGER = Logger.getLogger(CIBuildTrigger.class.getName());
     private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
-    @Deprecated private transient String providerName;
-    @Deprecated private transient String selector;
-    @Deprecated private transient List<MsgCheck> checks = new ArrayList<>();
-    @Deprecated private transient MessagingProviderOverrides overrides;
+    @Deprecated
+    private transient String providerName;
+    @Deprecated
+    private transient String selector;
+    @Deprecated
+    private transient List<MsgCheck> checks = new ArrayList<>();
+    @Deprecated
+    private transient MessagingProviderOverrides overrides;
     private Boolean noSquash;
     @Deprecated // Replaced by providers collection
     private transient ProviderData providerData;
@@ -110,35 +117,43 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         this.providers = providers;
     }
 
-    @Deprecated public String getProviderName() {
+    @Deprecated
+    public String getProviderName() {
         return providerName;
     }
 
-    @Deprecated public void setProviderName(String providerName) {
+    @Deprecated
+    public void setProviderName(String providerName) {
         this.providerName = providerName;
     }
 
-    @Deprecated public String getSelector() {
+    @Deprecated
+    public String getSelector() {
         return selector;
     }
 
-    @Deprecated public void setSelector(String selector) {
+    @Deprecated
+    public void setSelector(String selector) {
         this.selector = selector;
     }
 
-    @Deprecated public List<MsgCheck> getChecks() {
+    @Deprecated
+    public List<MsgCheck> getChecks() {
         return checks;
     }
 
-    @Deprecated public void setChecks(List<MsgCheck> checks) {
+    @Deprecated
+    public void setChecks(List<MsgCheck> checks) {
         this.checks = checks;
     }
 
-    @Deprecated public MessagingProviderOverrides getOverrides() {
+    @Deprecated
+    public MessagingProviderOverrides getOverrides() {
         return overrides;
     }
 
-    @Deprecated public void setOverrides(MessagingProviderOverrides overrides) {
+    @Deprecated
+    public void setOverrides(MessagingProviderOverrides overrides) {
         this.overrides = overrides;
     }
 
@@ -167,8 +182,10 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         CIBuildTrigger that = (CIBuildTrigger) o;
         return Objects.equals(noSquash, that.noSquash) && Objects.equals(providers, that.providers);
     }
@@ -217,15 +234,15 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         final Job<?, ?> p = jenkins.getItemByFullName(fullname, Job.class);
         if (p != null) {
             CIBuildTrigger cibt = ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
-	    if (cibt != null) {
-	        log.warning("Trigger for job '" + fullname + "' is: " + cibt.toString());
+            if (cibt != null) {
+                log.warning("Trigger for job '" + fullname + "' is: " + cibt.toString());
             } else {
-	        log.warning("Trigger for job '" + fullname + "' is: NULL");
+                log.warning("Trigger for job '" + fullname + "' is: NULL");
             }
             return cibt;
-            //return ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
+            // return ParameterizedJobMixIn.getTrigger(p, CIBuildTrigger.class);
         }
-	log.warning("Unable to find job '" + fullname + "'");
+        log.warning("Unable to find job '" + fullname + "'");
         return null;
     }
 
@@ -248,7 +265,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerName);
                 if (provider != null) {
                     if (provider instanceof ActiveMqMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
+                                + "'.");
                         ActiveMQSubscriberProviderData a = new ActiveMQSubscriberProviderData(providerName);
                         a.setSelector(selector);
                         a.setOverrides(overrides);
@@ -257,7 +275,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                         providerUpdated = true;
                         saveJob();
                     } else if (provider instanceof FedMsgMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
+                                + "'.");
                         FedMsgSubscriberProviderData f = new FedMsgSubscriberProviderData(providerName);
                         f.setOverrides(overrides);
                         f.setChecks(checks);
@@ -265,7 +284,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                         providerUpdated = true;
                         saveJob();
                     } else if (provider instanceof RabbitMQMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
+                                + "'.");
                         RabbitMQSubscriberProviderData r = new RabbitMQSubscriberProviderData(providerName);
                         r.setOverrides(overrides);
                         r.setChecks(checks);
@@ -273,7 +293,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                         providerUpdated = true;
                         saveJob();
                     } else if (provider instanceof KafkaMessagingProvider) {
-                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName() + "'.");
+                        log.info("Creating '" + providerName + "' trigger provider data for job '" + getJobName()
+                                + "'.");
                         KafkaSubscriberProviderData k = new KafkaSubscriberProviderData(providerName);
                         k.setOverrides(overrides);
                         k.setChecks(checks);
@@ -281,7 +302,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                         providerUpdated = true;
                         saveJob();
                     } else {
-                        log.info("Unknown instance for provider '" + providerName + "' for job '" + getJobName() + "'.");
+                        log.info(
+                                "Unknown instance for provider '" + providerName + "' for job '" + getJobName() + "'.");
                     }
                 } else {
                     log.warning("Unable to find provider '" + providerName + "', so unable to upgrade job.");
@@ -321,7 +343,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private void startTriggerThreads() {
-        if (job == null) return;
+        if (job == null)
+            return;
 
         if (providerUpdated) {
             log.info("Saving job since messaging provider was migrated...");
@@ -346,12 +369,14 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                     for (ProviderData pd : providers) {
                         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
                         if (provider == null) {
-                            log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name "
-                                    + pd.getName() + ". You must update the job configuration. Trigger not started.");
+                            log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name " + pd.getName()
+                                    + ". You must update the job configuration. Trigger not started.");
                             return;
                         }
-                        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(), this, instance);
-                        log.info("Starting thread (" + thread.getId() + ") for '" + Objects.requireNonNull(job).getFullName() + "'.");
+                        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd,
+                                job.getFullName(), this, instance);
+                        log.info("Starting thread (" + thread.getId() + ") for '"
+                                + Objects.requireNonNull(job).getFullName() + "'.");
                         thread.start();
                         threads.add(thread);
                         instance++;
@@ -365,7 +390,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     private List<CITriggerThread> stopTriggerThreads(String fullName) {
         return stopTriggerThreads(fullName, null);
-        //return stopTriggerThreads(fullName, getComparisonThreads());
+        // return stopTriggerThreads(fullName, getComparisonThreads());
     }
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
@@ -374,8 +399,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             // If threads are the same we have start/stop sequence, so don't bother stopping.
             if (comparisonThreads != null && threads.size() == comparisonThreads.size()) {
                 for (CITriggerThread thread : threads) {
-		    ListIterator<CITriggerThread> iter = comparisonThreads.listIterator();
-		    while (iter.hasNext()) {
+                    ListIterator<CITriggerThread> iter = comparisonThreads.listIterator();
+                    while (iter.hasNext()) {
                         Thread t = iter.next();
                         if (thread.equals(t)) {
                             log.info("Already have thread " + thread.getId() + "...");
@@ -414,9 +439,9 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 // We create a new thread here only to be able to
                 // use .equals() to compare.
                 // The thread is never started.
-                if (provider == null) throw new NullPointerException(
-                        "No such provider configured for name: '" + pd.getName() + "' on job named '" + job.getFullName() + "'"
-                );
+                if (provider == null)
+                    throw new NullPointerException("No such provider configured for name: '" + pd.getName()
+                            + "' on job named '" + job.getFullName() + "'");
                 CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), null, instance);
                 threads.add(thread);
                 instance++;
@@ -442,8 +467,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     /**
-     * Inspects {@link ParametersAction} to see what kind of capabilities it has in regards to SECURITY-170.
-     * Assuming the safeParameters constructor could not be found.
+     * Inspects {@link ParametersAction} to see what kind of capabilities it has in regards to SECURITY-170. Assuming
+     * the safeParameters constructor could not be found.
      *
      * @return the inspection result
      */
@@ -477,11 +502,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             try {
                 for (Field field : KLASS.getDeclaredFields()) {
                     if (Modifier.isStatic(field.getModifiers())
-                            && (
-                            field.getName().equals("KEEP_UNDEFINED_PARAMETERS_SYSTEM_PROPERTY_NAME")
-                                    || field.getName().equals("SAFE_PARAMETERS_SYSTEM_PROPERTY_NAME")
-                    )
-                    ) {
+                            && (field.getName().equals("KEEP_UNDEFINED_PARAMETERS_SYSTEM_PROPERTY_NAME")
+                                    || field.getName().equals("SAFE_PARAMETERS_SYSTEM_PROPERTY_NAME"))) {
                         this.hasSafeParameterConfig = true;
                         break;
                     }
@@ -534,10 +556,11 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         } catch (NoSuchMethodException e) {
             ParametersActionInspection inspection = getParametersInspection();
             if (inspection.isInspectionFailure()) {
-                log.log(Level.WARNING, "Failed to inspect ParametersAction to determine "
-                        + "if we can behave normally around SECURITY-170.\nSee "
-                        + "https://wiki.jenkins-ci.org/display/SECURITY/Jenkins+Security+Advisory+2016-05-11"
-                        + " for information.");
+                log.log(Level.WARNING,
+                        "Failed to inspect ParametersAction to determine "
+                                + "if we can behave normally around SECURITY-170.\nSee "
+                                + "https://wiki.jenkins-ci.org/display/SECURITY/Jenkins+Security+Advisory+2016-05-11"
+                                + " for information.");
             } else if (inspection.isHasSafeParameterConfig()) {
                 StringBuilder txt = new StringBuilder(
                         "Running on a core with SECURITY-170 fixed but no direct way for Gerrit Trigger"
@@ -556,7 +579,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 log.log(Level.FINE, "Running on an old core before safe parameters, we should be safe.");
             }
         } catch (IllegalAccessException e) {
-            log.log(Level.WARNING, "Running on a core with safe parameters fix available, but not allowed to specify them");
+            log.log(Level.WARNING,
+                    "Running on a core with safe parameters fix available, but not allowed to specify them");
         } catch (Exception e) {
             log.log(Level.WARNING, "Running on a core with safe parameters fix available, but failed to provide them");
         }
@@ -577,15 +601,13 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             }
         };
 
-        jobMixIn.scheduleBuild2(0,
-                new CauseAction(new CIBuildCause()),
-                parameters,
+        jobMixIn.scheduleBuild2(0, new CauseAction(new CIBuildCause()), parameters,
                 new CIEnvironmentContributingAction(messageParams, buildParameters),
-                new CIShouldScheduleQueueAction(noSquash)
-        );
+                new CIShouldScheduleQueueAction(noSquash));
     }
 
-    private List<ParameterValue> getUpdatedParameters(Map<String, String> messageParams, List<ParameterValue> definedParams) {
+    private List<ParameterValue> getUpdatedParameters(Map<String, String> messageParams,
+            List<ParameterValue> definedParams) {
         // Update any build parameters that may have values from the triggering message.
         HashMap<String, ParameterValue> newParams = new HashMap<>();
         for (ParameterValue def : definedParams) {
@@ -599,7 +621,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                     TextParameterValue tpv = new TextParameterValue(key, messageParams.get(key));
                     newParams.put(key, tpv);
                 } else if (newParams.get(key) instanceof BooleanParameterValue) {
-                    BooleanParameterValue bpv = new BooleanParameterValue(key, Boolean.parseBoolean(messageParams.get(key)));
+                    BooleanParameterValue bpv = new BooleanParameterValue(key,
+                            Boolean.parseBoolean(messageParams.get(key)));
                     newParams.put(key, bpv);
                 } else {
                     StringParameterValue spv = new StringParameterValue(key, messageParams.get(key));
@@ -618,13 +641,17 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {
                 ParameterValue param = null;
                 if (paramDef instanceof StringParameterDefinition) {
-                    param = new StringParameterValue(paramDef.getName(), ((StringParameterDefinition) paramDef).getDefaultValue());
+                    param = new StringParameterValue(paramDef.getName(),
+                            ((StringParameterDefinition) paramDef).getDefaultValue());
                 } else if (paramDef instanceof TextParameterDefinition) {
-                    param = new TextParameterValue(paramDef.getName(), ((TextParameterDefinition) paramDef).getDefaultValue());
+                    param = new TextParameterValue(paramDef.getName(),
+                            ((TextParameterDefinition) paramDef).getDefaultValue());
                 } else if (paramDef instanceof BooleanParameterDefinition) {
-                    BooleanParameterValue defaultParameterValue = ((BooleanParameterDefinition) paramDef).getDefaultParameterValue();
+                    BooleanParameterValue defaultParameterValue = ((BooleanParameterDefinition) paramDef)
+                            .getDefaultParameterValue();
                     if (defaultParameterValue != null) {
-                        param = new BooleanParameterValue(paramDef.getName(), Boolean.TRUE.equals(Objects.requireNonNull(defaultParameterValue).getValue()));
+                        param = new BooleanParameterValue(paramDef.getName(),
+                                Boolean.TRUE.equals(Objects.requireNonNull(defaultParameterValue).getValue()));
                     }
                 } else if (paramDef instanceof ChoiceParameterDefinition) {
                     param = ((ChoiceParameterDefinition) paramDef).getDefaultParameterValue();
@@ -649,7 +676,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private String getJobName() {
-        return (job != null) ? job.getName(): "<unknown>";
+        return (job != null) ? job.getName() : "<unknown>";
     }
 
     @Override

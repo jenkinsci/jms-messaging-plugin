@@ -23,17 +23,19 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import java.io.Serializable;
+import java.util.Objects;
+
+import org.kohsuke.stapler.DataBoundSetter;
+
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.utils.MessageUtils;
+
 import hudson.ExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import java.io.Serializable;
-import java.util.Objects;
 
 public abstract class ProviderData implements Describable<ProviderData>, Serializable {
 

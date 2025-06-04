@@ -23,18 +23,19 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
-import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
-import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.PluginUtils;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
 
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
+import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
+import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
+import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.PluginUtils;
+
+import hudson.model.Run;
+import hudson.model.TaskListener;
 
 public abstract class JMSMessagingWorker {
     public static final String MESSAGECONTENTFIELD = "message-content";
@@ -59,7 +60,8 @@ public abstract class JMSMessagingWorker {
 
     public abstract void disconnect();
 
-    public JMSMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides, String jobname) {
+    public JMSMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
+            String jobname) {
         this.overrides = overrides;
         this.jobname = jobname;
     }
@@ -68,8 +70,7 @@ public abstract class JMSMessagingWorker {
 
     public abstract String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
 
-    public void trigger(String jobname, String messageSummary,
-                        Map<String, String> params) {
+    public void trigger(String jobname, String messageSummary, Map<String, String> params) {
         CIBuildTrigger trigger = findTrigger(jobname);
         if (trigger != null) {
             log.info("Scheduling job '" + jobname + "' based on message:\n" + messageSummary);
@@ -93,4 +94,3 @@ public abstract class JMSMessagingWorker {
         return PluginUtils.getSubstitutedValue(ltopic, null);
     }
 }
-

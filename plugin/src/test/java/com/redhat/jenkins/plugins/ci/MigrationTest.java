@@ -4,11 +4,6 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import hudson.matrix.MatrixProject;
-import hudson.model.Item;
-import hudson.model.AbstractProject;
-import hudson.model.FreeStyleProject;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -19,6 +14,11 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+
+import hudson.matrix.MatrixProject;
+import hudson.model.AbstractProject;
+import hudson.model.FreeStyleProject;
+import hudson.model.Item;
 
 /**
  * Created by shebert on 07/12/16.
@@ -33,8 +33,7 @@ public class MigrationTest {
     public void testUpgradeFromOnlyUserBaseAuth() {
         assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
 
-        JMSMessagingProvider config =
-                GlobalCIConfiguration.get().getConfigs().get(0);
+        JMSMessagingProvider config = GlobalCIConfiguration.get().getConfigs().get(0);
         ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
         assertNotNull(aconfig.getAuthenticationMethod());
         assertTrue(aconfig.getAuthenticationMethod() instanceof UsernameAuthenticationMethod);
@@ -53,14 +52,12 @@ public class MigrationTest {
     public void testOtherJobTypes() {
         assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
         assertNotNull(j.getInstance().getItem("maven"));
-        Item matrixItem = j.getInstance().getItem
-                ("matrix");
+        Item matrixItem = j.getInstance().getItem("matrix");
         assertNotNull(matrixItem);
         MatrixProject matrixJob = (MatrixProject) matrixItem;
         CIMessageBuilder builder = matrixJob.getBuildersList().get(CIMessageBuilder.class);
         assertNotNull(builder);
-        assertEquals("Message Provider name should be default",
-                "default", builder.getProviderName());
+        assertEquals("Message Provider name should be default", "default", builder.getProviderName());
     }
 
     @LocalData
@@ -68,8 +65,7 @@ public class MigrationTest {
     public void testConfig() {
         assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
 
-        JMSMessagingProvider config =
-                GlobalCIConfiguration.get().getConfigs().get(0);
+        JMSMessagingProvider config = GlobalCIConfiguration.get().getConfigs().get(0);
         ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
         String topic = aconfig.getTopic();
         assertEquals("topic is not TOM", "TOM", topic);
@@ -94,8 +90,8 @@ public class MigrationTest {
         assertNotNull(notifierPublisher.getProviderName());
 
         FreeStyleProject subscriberJob = (FreeStyleProject) j.getInstance().getItem("ci-message-subscriber");
-        CIMessageSubscriberBuilder subscriberBuilder =
-                subscriberJob.getBuildersList().get(CIMessageSubscriberBuilder.class);
+        CIMessageSubscriberBuilder subscriberBuilder = subscriberJob.getBuildersList()
+                .get(CIMessageSubscriberBuilder.class);
         assertNotNull(subscriberBuilder);
         assertNotNull(subscriberBuilder.getProviderName());
 
@@ -110,8 +106,7 @@ public class MigrationTest {
     public void testAlreadyMigratedConfig() {
         assertEquals("config is not 1", 1, GlobalCIConfiguration.get().getConfigs().size());
 
-        JMSMessagingProvider config =
-                GlobalCIConfiguration.get().getConfigs().get(0);
+        JMSMessagingProvider config = GlobalCIConfiguration.get().getConfigs().get(0);
         ActiveMqMessagingProvider aconfig = (ActiveMqMessagingProvider) config;
         String topic = aconfig.getTopic();
         assertEquals("topic is not CI", "CI", topic);
@@ -135,8 +130,8 @@ public class MigrationTest {
         assertNotNull(notifierPublisher.getProviderName());
 
         FreeStyleProject subscriberJob = (FreeStyleProject) j.getInstance().getItem("ci-message-subscriber");
-        CIMessageSubscriberBuilder subscriberBuilder =
-                subscriberJob.getBuildersList().get(CIMessageSubscriberBuilder.class);
+        CIMessageSubscriberBuilder subscriberBuilder = subscriberJob.getBuildersList()
+                .get(CIMessageSubscriberBuilder.class);
         assertNotNull(subscriberBuilder);
         assertNotNull(subscriberBuilder.getProviderName());
     }

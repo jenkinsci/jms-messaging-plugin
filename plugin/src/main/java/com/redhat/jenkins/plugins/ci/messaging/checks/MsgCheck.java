@@ -23,10 +23,10 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging.checks;
 
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.io.Serializable;
 import java.util.Objects;
+
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MsgCheck implements Serializable {
     private final String field;
@@ -34,13 +34,14 @@ public class MsgCheck implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         MsgCheck msgCheck = (MsgCheck) o;
 
-        return Objects.equals(expectedValue, msgCheck.expectedValue)
-                && Objects.equals(field, msgCheck.field);
+        return Objects.equals(expectedValue, msgCheck.expectedValue) && Objects.equals(field, msgCheck.field);
     }
 
     @Override

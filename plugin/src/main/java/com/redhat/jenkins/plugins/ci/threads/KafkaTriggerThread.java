@@ -6,7 +6,8 @@ import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 public class KafkaTriggerThread extends CITriggerThread {
 
-    public KafkaTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname, CIBuildTrigger cibt, int instance) {
+    public KafkaTriggerThread(JMSMessagingProvider messagingProvider, ProviderData providerData, String jobname,
+            CIBuildTrigger cibt, int instance) {
         super(messagingProvider, providerData, jobname, cibt, instance);
     }
 }
