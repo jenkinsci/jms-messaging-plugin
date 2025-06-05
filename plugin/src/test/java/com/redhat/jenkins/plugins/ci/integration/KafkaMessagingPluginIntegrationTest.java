@@ -51,7 +51,6 @@ import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.utils.MessageUtils;
 
 import hudson.Util;
 import hudson.model.FreeStyleProject;
@@ -99,8 +98,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     }
 
     @Override
-    public ProviderData getPublisherProviderData(String topic, MessageUtils.MESSAGE_TYPE type, String properties,
-            String content) {
+    public ProviderData getPublisherProviderData(String topic, String properties, String content) {
         return new KafkaPublisherProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), "", content, true);
     }
 
@@ -290,15 +288,16 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new Shell("echo BUILD_NUMBER = $BUILD_NUMBER"));
         attachTrigger(
-                new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(testName.getMethodName(),
-                        null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"))),
+                new CIBuildTrigger(false,
+                        Collections.singletonList(
+                                getSubscriberProviderData(testName.getMethodName(), null, "CI_STATUS = 'failed'"))),
                 jobA);
         waitForReceiverToBeReady(jobA.getFullName(), 1);
         jobA.disable();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(),
-                MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null)));
+        jobB.getPublishersList().add(
+                new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), "CI_STATUS = failed", null)));
         j.buildAndAssertSuccess(jobB);
 
         // Wait to make sure job doesn't run.
@@ -331,8 +330,8 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         jobA.disable();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(
-                getPublisherProviderData(testName.getMethodName(), null, null, MESSAGE_CHECK_CONTENT)));
+        jobB.getPublishersList().add(
+                new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), null, MESSAGE_CHECK_CONTENT)));
         j.buildAndAssertSuccess(jobB);
 
         // Wait to make sure job doesn't run.
@@ -359,14 +358,15 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("echo \"BUILD_NUMBER = ${env.BUILD_NUMBER}\"", true));
         attachTrigger(
-                new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData(testName.getMethodName(),
-                        null, "CI_TYPE = 'code-quality-checks-done' and CI_STATUS = 'failed'"))),
+                new CIBuildTrigger(false,
+                        Collections.singletonList(
+                                getSubscriberProviderData(testName.getMethodName(), null, "CI_STATUS = 'failed'"))),
                 jobA);
         jobA.doDisable();
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(),
-                MessageUtils.MESSAGE_TYPE.CodeQualityChecksDone, "CI_STATUS = failed", null)));
+        jobB.getPublishersList().add(
+                new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), "CI_STATUS = failed", null)));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -417,8 +417,8 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        jobB.getPublishersList().add(
-                new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), null, null, "Hello World")));
+        jobB.getPublishersList()
+                .add(new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), null, "Hello World")));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -459,8 +459,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
         jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" + " providerName: '"
                 + DEFAULT_PROVIDER_NAME + "', " + " failOnError: true, " + " messageContent: '" + MESSAGE_CHECK_CONTENT
-                + "', " + " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}', "
-                + " messageType: 'CodeQualityChecksDone'}", true));
+                + "', " + " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}'}", true));
 
         // [expectedValue: number + '0.0234', field: 'CI_STATUS2']
         String pd = "providerList: [[$class: 'KafkaSubscriberProviderData', name: '" + DEFAULT_PROVIDER_NAME + "']]";

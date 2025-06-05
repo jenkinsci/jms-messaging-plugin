@@ -14,7 +14,6 @@
     <axes/>
     <builders>
         <com.redhat.jenkins.plugins.ci.CIMessageBuilder plugin="jms-messaging@1.0.1-SNAPSHOT">
-            <messageType>CodeQualityChecksDone</messageType>
             <messageProperties></messageProperties>
             <messageContent></messageContent>
         </com.redhat.jenkins.plugins.ci.CIMessageBuilder>

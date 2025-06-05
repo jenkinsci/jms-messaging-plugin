@@ -30,23 +30,18 @@ import javax.annotation.Nonnull;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
-import com.redhat.utils.MessageUtils;
-import com.redhat.utils.MessageUtils.MESSAGE_TYPE;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
-import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     private static final long serialVersionUID = -2179136605130421113L;
 
-    private MESSAGE_TYPE messageType;
     private String messageProperties;
     private String messageContent;
     private Boolean failOnError = false;
@@ -64,23 +59,13 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         super(name, overrides);
     }
 
-    public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, MESSAGE_TYPE messageType,
-            String messageProperties, String messageContent, Boolean failOnError, Integer timeToLiveMillis) {
+    public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageProperties,
+            String messageContent, Boolean failOnError, Integer timeToLiveMillis) {
         this(name, overrides);
-        this.messageType = messageType;
         this.messageProperties = messageProperties;
         this.messageContent = messageContent;
         this.failOnError = failOnError;
         this.timeToLiveMillis = timeToLiveMillis;
-    }
-
-    public MESSAGE_TYPE getMessageType() {
-        return messageType;
-    }
-
-    @DataBoundSetter
-    public void setMessageType(MESSAGE_TYPE messageType) {
-        this.messageType = messageType;
     }
 
     public String getMessageProperties() {
@@ -132,7 +117,6 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
 
         ActiveMQPublisherProviderData thatp = (ActiveMQPublisherProviderData) that;
         return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
-                && Objects.equals(this.messageType, thatp.messageType)
                 && Objects.equals(this.messageProperties, thatp.messageProperties)
                 && Objects.equals(this.messageContent, thatp.messageContent)
                 && Objects.equals(this.failOnError, thatp.failOnError)
@@ -141,8 +125,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), messageType, messageProperties, messageContent, failOnError,
-                timeToLiveMillis);
+        return Objects.hash(super.hashCode(), messageProperties, messageContent, failOnError, timeToLiveMillis);
     }
 
     @Extension
@@ -160,18 +143,9 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new ActiveMQPublisherProviderData(jo.getString("name"), mpo,
-                    MESSAGE_TYPE.fromString(jo.getString("messageType")), jo.getString("messageProperties"),
+            return new ActiveMQPublisherProviderData(jo.getString("name"), mpo, jo.getString("messageProperties"),
                     jo.getString("messageContent"), jo.getBoolean("failOnError"),
                     jo.getInt("timeToLiveMinutes") * 60 * 1000);
-        }
-
-        public ListBoxModel doFillMessageTypeItems(@QueryParameter String messageType) {
-            return MessageUtils.doFillMessageTypeItems(messageType);
-        }
-
-        public MESSAGE_TYPE getDefaultMessageType() {
-            return DEFAULT_MESSAGE_TYPE;
         }
 
         public String getConfigPage() {
