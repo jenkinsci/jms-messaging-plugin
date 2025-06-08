@@ -23,6 +23,8 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -102,6 +104,29 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     @DataBoundSetter
     public void setTimeToLiveMillis(Integer timeToLiveMillis) {
         this.timeToLiveMillis = timeToLiveMillis;
+    }
+
+    @Override
+    public String toPipelineScript() {
+        List<String> script = new ArrayList<>();
+        script.add("$class: \"ActiveMQPublisherProviderData\"");
+        script.add("name: \"" + getName() + "\"");
+        if (getOverrides() != null) {
+            script.add("overrides: [topic: \"" + getOverrides().getTopic() + "\"]");
+        }
+        if (getMessageProperties() != null) {
+            script.add("messageProperties: \"" + getMessageProperties() + "\"");
+        }
+        if (getMessageContent() != null) {
+            script.add("messageContent: \"" + getMessageContent().replace("\"", "\\\"") + "\"");
+        }
+        if (isFailOnError() != null) {
+            script.add("failOnError: " + isFailOnError());
+        }
+        if (getTimeToLiveMillis() != null) {
+            script.add("timeToLiveMillis: " + getTimeToLiveMillis());
+        }
+        return "[\n    " + String.join(",\n    ", script) + "\n]";
     }
 
     @Override

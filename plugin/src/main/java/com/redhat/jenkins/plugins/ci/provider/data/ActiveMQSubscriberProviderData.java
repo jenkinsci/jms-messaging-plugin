@@ -124,6 +124,34 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     }
 
     @Override
+    public String toPipelineScript() {
+        List<String> script = new ArrayList<>();
+        script.add("$class: \"ActiveMQSubscriberProviderData\"");
+        script.add("name: \"" + getName() + "\"");
+        if (getOverrides() != null) {
+            script.add("overrides: [topic: \"" + getOverrides().getTopic() + "\"]");
+        }
+        if (!StringUtils.isEmpty(getSelector())) {
+            script.add("selector: \"" + getSelector() + "\"");
+        }
+        if (getChecks() != null && getChecks().size() > 0) {
+            List<String> checks = new ArrayList<>();
+            for (MsgCheck check : getChecks()) {
+                checks.add("[field: \"" + check.getField() + "\", expectedValue: \""
+                        + check.getExpectedValue().replace("\"", "\\\"") + "\"]");
+            }
+            script.add("checks: [" + String.join(",", checks) + "]");
+        }
+        if (!StringUtils.isEmpty(getVariable())) {
+            script.add("variable: \"" + getVariable() + "\"");
+        }
+        if (getTimeout() != null) {
+            script.add("timeout: " + getTimeout());
+        }
+        return "[\n    " + String.join(",\n    ", script) + "\n]";
+    }
+
+    @Override
     public Descriptor<ProviderData> getDescriptor() {
         return Jenkins.get().getDescriptorByType(ActiveMQSubscriberProviderDataDescriptor.class);
     }

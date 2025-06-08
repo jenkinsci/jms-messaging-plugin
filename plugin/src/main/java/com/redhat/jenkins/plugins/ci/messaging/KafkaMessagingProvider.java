@@ -35,6 +35,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -162,6 +163,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
     }
 
     @Extension
+    @Symbol("kafka")
     public static class KafkaMessagingProviderDescriptor extends MessagingProviderDescriptor {
         @Override
         public String getDisplayName() {

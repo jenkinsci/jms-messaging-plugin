@@ -23,6 +23,8 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -124,6 +126,32 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
     @DataBoundSetter
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    @Override
+    public String toPipelineScript() {
+        List<String> script = new ArrayList<>();
+        script.add("$class: \"RabbitMQPublisherProviderData\"");
+        script.add("name: \"" + getName() + "\"");
+        if (getOverrides() != null) {
+            script.add("overrides: [topic: \"" + getOverrides().getTopic() + "\"]");
+        }
+        if (getMessageContent() != null) {
+            script.add("messageContent: \"" + getMessageContent().replace("\"", "\\\"") + "\"");
+        }
+        if (isFailOnError() != null) {
+            script.add("failOnError: " + isFailOnError());
+        }
+        if (isFedoraMessaging() != null) {
+            script.add("fedoraMessaging: " + isFedoraMessaging());
+        }
+        if (getSeverity() != null) {
+            script.add("severity: " + getSeverity());
+        }
+        if (getSchema() != null) {
+            script.add("schema: \"" + getSchema() + "\"");
+        }
+        return "[\n    " + String.join(",\n    ", script) + "\n]";
     }
 
     @Override

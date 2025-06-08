@@ -49,10 +49,58 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public static String DEFAULT_TOPIC_NAME = "topic";
     public static String DEFAULT_PROVIDER_NAME = "test";
 
-    public abstract ProviderData getSubscriberProviderData(String topic, String variableName, String selector,
-            MsgCheck... msgChecks);
+    public abstract ProviderData getSubscriberProviderData(String provider, String topic, String variableName,
+            String selector, MsgCheck... msgChecks);
 
-    public abstract ProviderData getPublisherProviderData(String topic, String properties, String content);
+    public ProviderData getSubscriberProviderData(String topic, String variableName, String selector,
+            MsgCheck... msgChecks) {
+        return getSubscriberProviderData(DEFAULT_PROVIDER_NAME, topic, variableName, selector, msgChecks);
+    }
+
+    public abstract ProviderData getPublisherProviderData(String provider, String topic, String properties,
+            String content);
+
+    public ProviderData getPublisherProviderData(String topic, String properties, String content) {
+        return getPublisherProviderData(DEFAULT_PROVIDER_NAME, topic, properties, content);
+    }
+
+    public String buildWaitForCIMessageScript(ProviderData pd) {
+        return buildWaitForCIMessageScript(pd, null, null);
+    }
+
+    public String buildWaitForCIMessageScript(ProviderData pd, String preStatements) {
+        return buildWaitForCIMessageScript(pd, preStatements, null);
+    }
+
+    public String buildWaitForCIMessageScript(ProviderData pd, String preStatements, String postStatements) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("node(\"built-in\") {\n");
+        if (preStatements != null) {
+            sb.append("    " + preStatements + "\n");
+        }
+        sb.append("    def message = waitForCIMessage  providerData: " + pd.toPipelineScript() + "\n");
+        sb.append("    echo \"message = \" + message\n");
+        if (postStatements != null) {
+            sb.append("    " + postStatements + "\n");
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    public String buildSendCIMessageScript(ProviderData pd) {
+        return buildSendCIMessageScript(pd, null);
+    }
+
+    public String buildSendCIMessageScript(ProviderData pd, String preStatements) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("node(\"built-in\") {\n");
+        if (preStatements != null) {
+            sb.append("    " + preStatements + "\n");
+        }
+        sb.append("    def message = sendCIMessage providerData: " + pd.toPipelineScript() + "\n");
+        sb.append("}");
+        return sb.toString();
+    }
 
     public void _testVerifyModelUIPersistence() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
@@ -70,12 +118,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         assertThat(ciTrigger, equalTo(trigger));
 
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "jobB");
-        jobB.setDefinition(
-                new CpsFlowDefinition(
-                        "node('built-in') {\n def message = sendCIMessage " + " providerName: '" + DEFAULT_PROVIDER_NAME
-                                + "', " + " overrides: [topic: '" + testName.getMethodName() + "'], "
-                                + " failOnError: true, " + " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n",
-                        true));
+        ProviderData pd = getPublisherProviderData(testName.getMethodName(), null, MESSAGE_CHECK_CONTENT);
+        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
         j.buildAndAssertSuccess(jobB);
 
         waitUntilTriggeredBuildCompletes(jobA);
@@ -346,10 +390,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
                 jobA);
 
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "job");
-        jobB.setDefinition(
-                new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " + " providerName: '"
-                        + DEFAULT_PROVIDER_NAME + "', " + " overrides: [topic: '" + testName.getMethodName() + "'], "
-                        + " messageContent: '', " + " messageProperties: 'CI_STATUS = failed'}\n", true));
+        ProviderData pd = getPublisherProviderData(testName.getMethodName(), "CI_STATUS = failed", "");
+        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -368,9 +410,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
                 jobA);
 
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "job");
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage "
-                + " providerName: '" + DEFAULT_PROVIDER_NAME + "', " + " overrides: [topic: '"
-                + testName.getMethodName() + "'], " + " messageContent: '" + MESSAGE_CHECK_CONTENT + "'}\n", true));
+        ProviderData pd = getPublisherProviderData(testName.getMethodName(), null, MESSAGE_CHECK_CONTENT);
+        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -813,9 +854,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
     public void _testSimpleCIEventTriggerWithPipelineWaitForMsg() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '"
-                + DEFAULT_PROVIDER_NAME + "', " + " overrides: [topic: '" + testName.getMethodName() + "'], "
-                + " selector: " + " \"CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
+        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_STATUS = 'failed'");
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd)));
 
         scheduleAwaitStep(jobA);
 
@@ -834,11 +874,9 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
     public void _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition(
-                "node('built-in') {\n def scott = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME + "', "
-                        + " overrides: [topic: '" + testName.getMethodName() + "'], " + " checks: [[field: '"
-                        + MESSAGE_CHECK_FIELD + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" + "}",
-                true));
+        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), null, null,
+                new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE));
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd), true));
 
         scheduleAwaitStep(jobA);
 
@@ -859,10 +897,9 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
     public void _testSimpleCIEventTriggerWithSelectorWithCheckWithPipelineWaitForMsg() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '"
-                + DEFAULT_PROVIDER_NAME + "'," + " overrides: [topic: '" + testName.getMethodName() + "'], "
-                + " selector: \"CI_STATUS = 'failed'\"," + " checks: [[field: '" + MESSAGE_CHECK_FIELD
-                + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']]\n" + "}", true));
+        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_STATUS = 'failed'",
+                new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE));
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd)));
         scheduleAwaitStep(jobA);
 
         FreeStyleProject jobB = j.createFreeStyleProject();
@@ -890,15 +927,13 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
     public void _testSimpleCIEventSendAndWaitPipeline(WorkflowJob jobB, String expected) throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage providerName: '"
-                + DEFAULT_PROVIDER_NAME + "'," + "selector: " + " \"CI_STATUS = 'failed'\",  "
-                + " overrides: [topic: 'org.fedoraproject.otopic']" + "\necho \"scott = \" + scott}", true));
+        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_STATUS = 'failed'");
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd)));
 
         scheduleAwaitStep(jobA);
 
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" + " providerName: '"
-                + DEFAULT_PROVIDER_NAME + "', " + " overrides: [topic: 'org.fedoraproject.otopic'],"
-                + " messageContent: 'abcdefg', " + " messageProperties: 'CI_STATUS = failed'}", true));
+        pd = getPublisherProviderData(testName.getMethodName(), "CI_STATUS = failed", "abcdefg");
+        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -913,18 +948,15 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public void _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(WorkflowJob jobB, String selector,
             String expected) throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n" + "    env.MY_TOPIC = '"
-                + testName.getMethodName() + "'\n" + "    def scott = waitForCIMessage providerName: '"
-                + DEFAULT_PROVIDER_NAME + "', selector:  \"" + selector
-                + "${env.MY_TOPIC}'\",        overrides: [topic: \"${env.MY_TOPIC}\"]\n"
-                + "    echo \"scott = \" + scott\n" + "}", true));
+        ProviderData pd = getSubscriberProviderData("${env.MY_TOPIC}", null, selector + "${env.MY_TOPIC}'");
+        jobA.setDefinition(new CpsFlowDefinition(
+                buildWaitForCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
 
         scheduleAwaitStep(jobA);
 
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n" + " env.MY_TOPIC = '" + testName.getMethodName()
-                + "'\n" + " sendCIMessage providerName: '" + DEFAULT_PROVIDER_NAME
-                + "', overrides: [topic: \"${env.MY_TOPIC}\"], messageContent: 'abcdefg', messageProperties: 'CI_STATUS = failed'\n"
-                + "}", true));
+        pd = getPublisherProviderData("${env.MY_TOPIC}", "CI_STATUS = failed", "abcdefg");
+        jobB.setDefinition(new CpsFlowDefinition(
+                buildSendCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -1069,9 +1101,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public void _testEnsureFailedSendingOfMessageFailsPipelineBuild() throws Exception {
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
 
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" + " providerName: '"
-                + DEFAULT_PROVIDER_NAME + "', " + " failOnError: true, " + " messageContent: 'abcdefg', "
-                + " messageProperties: 'CI_STATUS = failed'}", true));
+        ProviderData pd = getPublisherProviderData(testName.getMethodName(), "CI_STATUS = failed", "abcdefg");
+        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
         WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, jobB);
         j.assertLogContains("Unhandled exception in perform: ", build);
 
@@ -1080,8 +1111,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
     public void _testAbortWaitingForMessageWithPipelineBuild() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: '"
-                + DEFAULT_PROVIDER_NAME + "', " + " selector: " + " \"CI_STATUS = 'failed'\"  \n}", true));
+        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_STATUS = 'failed'");
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd)));
         scheduleAwaitStep(jobA);
         WorkflowRun waitingBuild = jobA.getLastBuild();
 
@@ -1096,17 +1127,15 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
     public void _testPipelineInvalidProvider() throws Exception {
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
-        jobB.setDefinition(
-                new CpsFlowDefinition("node('built-in') {\n def message = sendCIMessage " + " providerName: 'bogus', "
-                        + " messageContent: '', " + " messageProperties: 'CI_STATUS = failed'}\n", true));
+        ProviderData pd = getPublisherProviderData("bogus", testName.getMethodName(), "CI_STATUS = failed", "");
+        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
 
         WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, jobB);
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(
-                new CpsFlowDefinition("node('built-in') {\n def scott = waitForCIMessage  providerName: 'bogus', "
-                        + " selector: " + " \"CI_STATUS = 'failed'\"  \necho \"scott = \" + scott}", true));
+        pd = getSubscriberProviderData("bogus", testName.getMethodName(), null, "CI_STATUS = 'failed'");
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd)));
         build = j.buildAndAssertStatus(Result.FAILURE, jobA);
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
 

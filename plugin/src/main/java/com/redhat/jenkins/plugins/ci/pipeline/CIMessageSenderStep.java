@@ -44,7 +44,6 @@ import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQPublisherProviderData;
@@ -61,88 +60,20 @@ import jenkins.util.Timer;
 
 public class CIMessageSenderStep extends Step {
 
-    private String providerName;
-    private MessagingProviderOverrides overrides;
-    private String messageProperties;
-    private String messageContent;
-    private boolean failOnError;
-    private Integer timeToLiveMinutes;
-
-    public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
-            final String messageProperties, final String messageContent) {
-        this(providerName, overrides, messageProperties, messageContent, false, 0);
-    }
-
-    public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
-            final String messageProperties, final String messageContent, final Integer timeToLiveMinutes) {
-        this(providerName, overrides, messageProperties, messageContent, false, timeToLiveMinutes);
-    }
+    private ProviderData providerData;
 
     @DataBoundConstructor
-    public CIMessageSenderStep(final String providerName, final MessagingProviderOverrides overrides,
-            final String messageProperties, final String messageContent, Boolean failOnError,
-            Integer timeToLiveMinutes) {
+    public CIMessageSenderStep(final ProviderData providerData) {
         super();
-        this.providerName = providerName;
-        this.overrides = overrides;
-        this.messageProperties = messageProperties;
-        this.messageContent = messageContent;
-        if (failOnError == null) {
-            failOnError = false;
-        }
-        this.failOnError = failOnError;
-        if (timeToLiveMinutes == null) {
-            timeToLiveMinutes = 0;
-        }
-        this.timeToLiveMinutes = timeToLiveMinutes;
+        this.providerData = providerData;
     }
 
-    public String getProviderName() {
-        return providerName;
+    public ProviderData getProviderData() {
+        return providerData;
     }
 
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
-    }
-
-    public MessagingProviderOverrides getOverrides() {
-        return overrides;
-    }
-
-    public void setOverrides(MessagingProviderOverrides overrides) {
-        this.overrides = overrides;
-    }
-
-    public String getMessageProperties() {
-        return messageProperties;
-    }
-
-    public void setMessageProperties(String messageProperties) {
-        this.messageProperties = messageProperties;
-    }
-
-    public String getMessageContent() {
-        return messageContent;
-    }
-
-    public void setMessageContent(String messageContent) {
-        this.messageContent = messageContent;
-    }
-
-    public boolean getFailOnError() {
-        return failOnError;
-    }
-
-    public void setFailOnError(boolean failOnError) {
-        this.failOnError = failOnError;
-    }
-
-    public Integer getTimeToLiveMinutes() {
-        return timeToLiveMinutes;
-    }
-
-    public void setTimeToLiveMinutes(Integer timeToLiveMinutes) {
-        this.timeToLiveMinutes = timeToLiveMinutes;
+    public void setProviderDaa(ProviderData providerData) {
+        this.providerData = providerData;
     }
 
     @Override
@@ -166,36 +97,22 @@ public class CIMessageSenderStep extends Step {
 
         @Override
         public boolean start() throws Exception {
-            if (step.getProviderName() == null) {
-                throw new Exception("Provider name not specified!");
-            } else if (GlobalCIConfiguration.get().getProvider(step.getProviderName()) == null) {
-                throw new Exception("Unrecognized provider name: " + step.getProviderName());
+            if (step.getProviderData() == null) {
+                throw new Exception("Provider data not specified!");
+            } else if (GlobalCIConfiguration.get().getProvider(step.getProviderData().getName()) == null) {
+                throw new Exception("Unrecognized provider name: " + step.getProviderData().getName());
             }
 
             task = Timer.get().submit(() -> {
                 try {
                     ProviderData pd = null;
-                    JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
+                    JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderData().getName());
                     if (p instanceof ActiveMqMessagingProvider) {
-                        ActiveMQPublisherProviderData apd = new ActiveMQPublisherProviderData(step.getProviderName());
-                        apd.setOverrides(step.getOverrides());
-                        apd.setMessageProperties(step.getMessageProperties());
-                        apd.setMessageContent(step.getMessageContent());
-                        apd.setFailOnError(step.getFailOnError());
-                        apd.setTimeToLiveMillis(step.getTimeToLiveMinutes() * 60 * 1000);
-                        pd = apd;
-                    } else if (p instanceof RabbitMQMessagingProvider) {
-                        RabbitMQPublisherProviderData rpd = new RabbitMQPublisherProviderData(step.getProviderName());
-                        rpd.setOverrides(step.getOverrides());
-                        rpd.setMessageContent(step.getMessageContent());
-                        rpd.setFailOnError(step.getFailOnError());
-                        pd = rpd;
+                        pd = (ActiveMQPublisherProviderData) step.getProviderData();
                     } else if (p instanceof KafkaMessagingProvider) {
-                        KafkaPublisherProviderData kpd = new KafkaPublisherProviderData(step.getProviderName());
-                        kpd.setOverrides(step.getOverrides());
-                        kpd.setMessageContent(step.getMessageContent());
-                        kpd.setFailOnError(step.getFailOnError());
-                        pd = kpd;
+                        pd = (KafkaPublisherProviderData) step.getProviderData();
+                    } else if (p instanceof RabbitMQMessagingProvider) {
+                        pd = (RabbitMQPublisherProviderData) step.getProviderData();
                     }
                     CIMessageNotifier notifier = new CIMessageNotifier(pd);
                     StepContext c = getContext();
