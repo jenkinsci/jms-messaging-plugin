@@ -90,16 +90,15 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     }
 
     @Override
-    public ProviderData getSubscriberProviderData(String topic, String variableName, String selector,
+    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, String selector,
             MsgCheck... msgChecks) {
-        return new KafkaSubscriberProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic),
-                "group.id=" + testName.getMethodName(), Arrays.asList(msgChecks),
-                Util.fixNull(variableName, "CI_MESSAGE"), 60);
+        return new KafkaSubscriberProviderData(provider, overrideTopic(topic), "group.id=" + testName.getMethodName(),
+                Arrays.asList(msgChecks), Util.fixNull(variableName, "CI_MESSAGE"), 60);
     }
 
     @Override
-    public ProviderData getPublisherProviderData(String topic, String properties, String content) {
-        return new KafkaPublisherProviderData(DEFAULT_PROVIDER_NAME, overrideTopic(topic), "", content, true);
+    public ProviderData getPublisherProviderData(String provider, String topic, String properties, String content) {
+        return new KafkaPublisherProviderData(provider, overrideTopic(topic), "", content, true);
     }
 
     @Override
@@ -111,10 +110,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
             }
         }
         if (count >= occurrences) {
-            System.out.println("----------------------- REALLY GOT IT");
             return true;
-        } else {
-            System.out.println("----------------------- NO, STILL LOOKING");
         }
         return false;
     }
@@ -260,14 +256,14 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     @Test
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "foo");
-        String expected = "scott = abcdefg";
+        String expected = "message = abcdefg";
         _testSimpleCIEventSendAndWaitPipeline(send, expected);
     }
 
     @Test
     public void testSimpleCIEventSendAndWaitPipelineWithVariableTopic() throws Exception {
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "foo");
-        String expected = "scott = abcdefg";
+        String expected = "message = abcdefg";
         String selector = "JMSDestination = 'topic://";
         _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(send, selector, expected);
     }
@@ -403,16 +399,14 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     @Test
     public void testEnvVariablesWithPipelineWaitForMsg() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n"
-                + "  def messageContent = waitForCIMessage  providerName: '" + DEFAULT_PROVIDER_NAME
-                + "', variable: \"CI_MESSAGE_TEST\"," + "  overrides: [topic: '" + testName.getMethodName() + "']\n"
-                + "  echo \"messageContent = \" + messageContent  \n"
-                + "  echo \"CI_MESSAGE_TEST = \" + CI_MESSAGE_TEST  \n" + "  if (env.CI_MESSAGE_TEST == null) {\n"
-                + "    error(\"CI_MESSAGE_TEST not set\")\n" + "  }\n"
+        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), "CI_MESSAGE_TEST", null);
+        String postStatements = "echo \"CI_MESSAGE_TEST = \" + CI_MESSAGE_TEST  \n"
+                + "  if (env.CI_MESSAGE_TEST == null) {\n" + "    error(\"CI_MESSAGE_TEST not set\")\n" + "  }\n"
                 + "  echo \"CI_MESSAGE_TEST_RECORD = \" + env.CI_MESSAGE_TEST_RECORD  \n"
                 + "  if (env.CI_MESSAGE_TEST_RECORD == null) {\n" + "    error(\"CI_MESSAGE_TEST_RECORD not set\")\n"
                 + "  }\n" + "  if (!env.CI_MESSAGE_TEST_RECORD.contains(\"topic\")) {\n"
-                + "    error(\"topic not found\")\n" + "  }\n" + "}", true));
+                + "    error(\"topic not found\")\n" + "  }\n";
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd, null, postStatements), true));
 
         scheduleAwaitStep(jobA);
 
@@ -445,40 +439,41 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic();
     }
 
-    // @Test
+    @Test
     public void testPipelineJobProperties() throws Exception {
         List<Thread> leftoverFromPreviousRuns = getThreadsByName("CIBuildTrigger.*");
         for (Thread thread : leftoverFromPreviousRuns) {
             thread.interrupt();
 
-            for (int i = 0; getCurrentThreadCountForName(thread.getName()) != 0 && i < 10; i++) {
-                Thread.sleep(1000);
+            for (int i = 0; getCurrentThreadCountForName(thread.getName()) != 0 && i < 50; i++) {
+                Thread.sleep(200);
             }
         }
 
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
-        jobB.setDefinition(new CpsFlowDefinition("node('built-in') {\n sendCIMessage" + " providerName: '"
-                + DEFAULT_PROVIDER_NAME + "', " + " failOnError: true, " + " messageContent: '" + MESSAGE_CHECK_CONTENT
-                + "', " + " messageProperties: 'CI_STATUS2 = ${CI_STATUS2}'}", true));
+        jobB.addProperty(new ParametersDefinitionProperty(new TextParameterDefinition("CI_STATUS2", "", "")));
+        ProviderData pd = getPublisherProviderData(testName.getMethodName(), "CI_STATUS2 = ${CI_STATUS2}",
+                MESSAGE_CHECK_CONTENT);
+        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
 
         // [expectedValue: number + '0.0234', field: 'CI_STATUS2']
-        String pd = "providerList: [[$class: 'KafkaSubscriberProviderData', name: '" + DEFAULT_PROVIDER_NAME + "']]";
-        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "receive-new");
+        pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_NAME = '" + jobB.getName() + "'");
+        String plist = "providerList: [" + pd.toPipelineScript() + "]";
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "receive");
         jobA.addProperty(new ParametersDefinitionProperty(new TextParameterDefinition("CI_MESSAGE", "", "")));
         jobA.setDefinition(
                 new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n" + "properties(\n" + "    [\n"
                         + "        pipelineTriggers(\n" + "            [[$class: 'CIBuildTrigger', noSquash: false, "
-                        + pd + "]]\n" + "        )\n" + "    ]\n" + ")\nnode('built-in') {\n sleep 1\n}", true));
+                        + plist + "]]\n" + "        )\n" + "    ]\n" + ")\nnode('built-in') {\n sleep 1\n}", true));
 
         j.buildAndAssertSuccess(jobA);
-        // Allow some time for trigger thread stop/start.
-        Thread.sleep(2000);
+        waitForReceiverToBeReady(jobA.getDisplayName());
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
         j.configRoundtrip(jobA);
 
         j.buildAndAssertSuccess(jobA);
-        Thread.sleep(2000);
+        waitForReceiverToBeReady(jobA.getDisplayName(), 3, true);
         printThreadsWithName("CIBuildTrigger.*");
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
@@ -490,24 +485,28 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
             j.assertBuildStatusSuccess(build);
         }
 
-        Thread.sleep(5000);
+        waitUntilTriggeredBuildCompletes(jobA, 5);
         assertEquals("there are not 5 builds", 5, jobA.getLastBuild().getNumber());
 
         printThreadsWithName("CIBuildTrigger.*");
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
-        pd = "providerList: [[$class: 'KafkaSubscriberProviderData', checks: [[field: '" + MESSAGE_CHECK_FIELD
-                + "', expectedValue: '" + MESSAGE_CHECK_VALUE + "']], name: 'test']]";
-        scheduleAwaitStep(jobA);
+        pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_NAME = '" + jobB.getName() + "'",
+                new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE));
+        plist = "providerList: [" + pd.toPipelineScript() + "]";
+        jobA.setDefinition(
+                new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n" + "properties(\n" + "    [\n"
+                        + "        pipelineTriggers(\n" + "            [[$class: 'CIBuildTrigger', noSquash: false, "
+                        + plist + "]]\n" + "        )\n" + "    ]\n" + ")\nnode('built-in') {\n sleep 1\n}", false));
+        scheduleAwaitStep(jobA, 8, true);
 
         for (int i = 0; i < 3; i++) {
             QueueTaskFuture<WorkflowRun> build = jobB.scheduleBuild2(0,
                     new ParametersAction(new TextParameterValue("CI_STATUS2", randomNumber, "")));
             j.assertBuildStatusSuccess(build);
-            Thread.sleep(1000);
         }
 
-        Thread.sleep(2000);
+        waitUntilTriggeredBuildCompletes(jobA, 9);
         assertEquals("there are not 9 builds", 9, jobA.getLastBuild().getNumber());
 
         for (int i = 1; i < 8; i++) {

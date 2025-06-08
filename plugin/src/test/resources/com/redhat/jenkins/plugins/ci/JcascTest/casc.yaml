@@ -25,3 +25,8 @@ unclassified:
               keypwd: "keypwd" # User, encrypt secrets
               truststore: "/tmp/trust"
               trustpwd: "trustpwd" # User, encrypt secrets
+      - kafka:
+          name: "Kafka"
+          topic: "default.topic"
+          producerProperties: "bootstrap.servers=localhost:9092"
+          consumerProperties: "bootstrap.servers=localhost:9092"

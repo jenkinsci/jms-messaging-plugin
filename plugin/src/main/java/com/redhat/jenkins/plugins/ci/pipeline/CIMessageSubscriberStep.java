@@ -24,8 +24,6 @@
 package com.redhat.jenkins.plugins.ci.pipeline;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -46,9 +44,7 @@ import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
@@ -65,67 +61,20 @@ import jenkins.util.Timer;
 
 public class CIMessageSubscriberStep extends Step {
 
-    private String providerName;
-    private MessagingProviderOverrides overrides;
-    private String selector;
-    private String variable;
-    private final List<MsgCheck> checks;
-    private Integer timeout;
+    private ProviderData providerData;
 
     @DataBoundConstructor
-    public CIMessageSubscriberStep(final String providerName, final MessagingProviderOverrides overrides,
-            final String selector, final String variable, final Integer timeout, List<MsgCheck> checks) {
+    public CIMessageSubscriberStep(final ProviderData providerData) {
         super();
-        this.providerName = providerName;
-        this.overrides = overrides;
-        this.selector = selector;
-        this.variable = variable;
-        this.timeout = timeout;
-        this.checks = checks == null ? Collections.emptyList() : checks;
+        this.providerData = providerData;
     }
 
-    public String getProviderName() {
-        return providerName;
+    public ProviderData getProviderData() {
+        return providerData;
     }
 
-    public void setProviderName(String providerName) {
-        this.providerName = providerName;
-    }
-
-    public MessagingProviderOverrides getOverrides() {
-        return overrides;
-    }
-
-    public void setOverrides(MessagingProviderOverrides overrides) {
-        this.overrides = overrides;
-    }
-
-    public String getSelector() {
-        return selector;
-    }
-
-    public void setSelector(String selector) {
-        this.selector = selector;
-    }
-
-    public String getVariable() {
-        return variable;
-    }
-
-    public void setVariable(String variable) {
-        this.variable = variable;
-    }
-
-    public Integer getTimeout() {
-        return timeout;
-    }
-
-    public void setTimeout(Integer timeout) {
-        this.timeout = timeout;
-    }
-
-    public List<MsgCheck> getChecks() {
-        return checks;
+    public void setProviderData(ProviderData providerData) {
+        this.providerData = providerData;
     }
 
     @Override
@@ -149,38 +98,22 @@ public class CIMessageSubscriberStep extends Step {
 
         @Override
         public boolean start() throws Exception {
-            if (step.getProviderName() == null) {
-                throw new Exception("Provider name not specified!");
-            } else if (GlobalCIConfiguration.get().getProvider(step.getProviderName()) == null) {
-                throw new Exception("Unrecognized provider name: " + step.getProviderName());
+            if (step.getProviderData() == null) {
+                throw new Exception("Provider data not specified!");
+            } else if (GlobalCIConfiguration.get().getProvider(step.getProviderData().getName()) == null) {
+                throw new Exception("Unrecognized provider name: " + step.getProviderData().getName());
             }
 
             task = Timer.get().submit(() -> {
                 try {
                     ProviderData pd = null;
-                    JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderName());
+                    JMSMessagingProvider p = GlobalCIConfiguration.get().getProvider(step.getProviderData().getName());
                     if (p instanceof ActiveMqMessagingProvider) {
-                        ActiveMQSubscriberProviderData apd = new ActiveMQSubscriberProviderData(step.getProviderName());
-                        apd.setOverrides(step.getOverrides());
-                        apd.setSelector(step.getSelector());
-                        apd.setChecks(step.getChecks());
-                        apd.setTimeout(step.getTimeout());
-                        apd.setVariable(step.getVariable());
-                        pd = apd;
-                    } else if (p instanceof RabbitMQMessagingProvider) {
-                        RabbitMQSubscriberProviderData rpd = new RabbitMQSubscriberProviderData(step.getProviderName());
-                        rpd.setOverrides(step.getOverrides());
-                        rpd.setChecks(step.getChecks());
-                        rpd.setTimeout(step.getTimeout());
-                        rpd.setVariable(step.getVariable());
-                        pd = rpd;
+                        pd = (ActiveMQSubscriberProviderData) step.getProviderData();
                     } else if (p instanceof KafkaMessagingProvider) {
-                        KafkaSubscriberProviderData kpd = new KafkaSubscriberProviderData(step.getProviderName());
-                        kpd.setOverrides(step.getOverrides());
-                        kpd.setChecks(step.getChecks());
-                        kpd.setTimeout(step.getTimeout());
-                        kpd.setVariable(step.getVariable());
-                        pd = kpd;
+                        pd = (KafkaSubscriberProviderData) step.getProviderData();
+                    } else if (p instanceof RabbitMQMessagingProvider) {
+                        pd = (RabbitMQSubscriberProviderData) step.getProviderData();
                     }
                     CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
                     StepContext c = getContext();
@@ -236,6 +169,5 @@ public class CIMessageSubscriberStep extends Step {
         public @Nonnull String getDisplayName() {
             return Messages.SubscriberBuilder();
         }
-
     }
 }

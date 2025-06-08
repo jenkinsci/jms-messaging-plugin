@@ -117,8 +117,12 @@ public abstract class BaseTest {
     }
 
     protected void scheduleAwaitStep(WorkflowJob job, int occurrences) throws Exception {
+        scheduleAwaitStep(job, 1, false);
+    }
+
+    protected void scheduleAwaitStep(WorkflowJob job, int occurrences, boolean skipCheck) throws Exception {
         WorkflowRun r = job.scheduleBuild2(0).waitForStart();
-        waitForReceiverToBeReady(job.getFullName(), occurrences);
+        waitForReceiverToBeReady(job.getFullName(), occurrences, skipCheck);
     }
 
     protected void scheduleAwaitStep(AbstractProject<?, ?> job) throws Exception {

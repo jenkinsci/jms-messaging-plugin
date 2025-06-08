@@ -33,6 +33,7 @@ import org.junit.Test;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.SSLCertificateAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 
@@ -48,6 +49,7 @@ public class JcascTest {
     @ConfiguredWithCode("JcascTest/casc.yaml")
     public void load() {
         GlobalCIConfiguration gc = GlobalCIConfiguration.get();
+
         ActiveMqMessagingProvider amq = (ActiveMqMessagingProvider) gc.getProvider("Active MQ");
         assertEquals("foo.com:4242", amq.getBroker());
         assertEquals("active.mq.com", amq.getTopic());
@@ -56,6 +58,11 @@ public class JcascTest {
         UsernameAuthenticationMethod amqam = (UsernameAuthenticationMethod) amq.getAuthenticationMethod();
         assertEquals("foo", amqam.getUsername());
         assertEquals("bar", amqam.getPassword().getPlainText());
+
+        KafkaMessagingProvider kafka = (KafkaMessagingProvider) gc.getProvider("Kafka");
+        assertEquals("default.topic", kafka.getTopic());
+        assertEquals("bootstrap.servers=localhost:9092", kafka.getProducerProperties());
+        assertEquals("bootstrap.servers=localhost:9092", kafka.getConsumerProperties());
 
         RabbitMQMessagingProvider rmq = (RabbitMQMessagingProvider) gc.getProvider("Rabbit MQ");
         assertEquals("ex", rmq.getExchange());
