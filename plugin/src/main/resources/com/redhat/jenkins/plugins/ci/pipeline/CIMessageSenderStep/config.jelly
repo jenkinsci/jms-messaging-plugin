@@ -24,40 +24,12 @@
      * THE SOFTWARE.
      */
   -->
-  <f:entry title="${%Messaging Provider}" field="providerName">
-    <f:select onchange="javascript: onProviderChange(this, 'publisher');"/>
-  </f:entry>
-  <f:nested>
-    <j:choose>
-      <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
-      <j:when test="${empty(instance)}">
-        <j:set var="checked" value="${gdescriptor.getFirstProviderOverrides();}"/>
-        <j:set var="value" value="${gdescriptor.getFirstProviderOverrideTopic();}"/>
-      </j:when>
-      <j:otherwise>
-        <j:set var="checked" value="${instance.getOverrides() != null}"/>
-        <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
-      </j:otherwise>
-    </j:choose>
-    <rh:blockWrapper>
-      <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
-        <f:entry title="${%Topic name}" field="topic">
-          <f:textbox value="${value}"/>
-        </f:entry>
-      </f:optionalBlock>
-    </rh:blockWrapper>
-  </f:nested>
-  <f:entry title="${%Message properties}" field="messageProperties">
-    <f:textarea name="messageProperties"/>
-  </f:entry>
-  <f:entry title="${%Message content}" field="messageContent">
-    <f:textarea name="messageContent"/>
-  </f:entry>
-  <f:entry title="${%Message time-to-live}" field="timeToLiveMinutes">
-    <f:number name="timeToLiveMinutes" default="0"/>
-  </f:entry>
-  <f:entry field="failOnError">
-    <f:checkbox title="${%Fail On Error}" name="failOnError" default="false"/>
-  </f:entry>
+  <j:set var="gdescriptor" value="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.GlobalCIConfiguration');}"/>
+
+  <j:set var="instance" value="${instance.providerData}"/>
+  <rh:dropdownInstanceSelector title="${%Messaging Provider}"
+                               field="providerData"
+                               instances="${gdescriptor.getPublisherProviders()}"
+                               desc="${descriptor}" />
 
 </j:jelly>

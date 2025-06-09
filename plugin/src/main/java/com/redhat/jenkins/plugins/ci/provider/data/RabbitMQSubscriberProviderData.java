@@ -83,9 +83,9 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         this(name, overrides);
         if (checks == null)
             throw new IllegalArgumentException("checks are null");
-        this.checks = checks;
-        this.variable = variable;
-        this.timeout = timeout;
+        setChecks(checks);
+        setVariable(variable);
+        setTimeout(timeout);
     }
 
     public @Nonnull List<MsgCheck> getChecks() {
@@ -100,11 +100,15 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     }
 
     public String getMessageVariable() {
-        return variable;
+        return getVariable();
     }
 
     public String getHeadersVariable() {
         return variable + DEFAULT_HEADERS_VARIABLE_NAME_SUFFIX;
+    }
+
+    public String getVariable() {
+        return variable;
     }
 
     @DataBoundSetter

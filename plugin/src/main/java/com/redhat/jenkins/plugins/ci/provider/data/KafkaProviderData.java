@@ -35,6 +35,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
+import hudson.Util;
+
 public abstract class KafkaProviderData extends ProviderData {
     private static final Logger log = Logger.getLogger(KafkaProviderData.class.getName());
 
@@ -50,8 +52,8 @@ public abstract class KafkaProviderData extends ProviderData {
 
     public KafkaProviderData(String name, MessagingProviderOverrides overrides, String properties) {
         super(name);
-        this.overrides = overrides;
-        this.properties = properties;
+        setOverrides(overrides);
+        setProperties(properties);
     }
 
     public MessagingProviderOverrides getOverrides() {
@@ -82,7 +84,7 @@ public abstract class KafkaProviderData extends ProviderData {
 
     @DataBoundSetter
     public void setProperties(String properties) {
-        this.properties = properties;
+        this.properties = Util.fixEmpty(properties);
     }
 
     public String getSubscriberTopic() {

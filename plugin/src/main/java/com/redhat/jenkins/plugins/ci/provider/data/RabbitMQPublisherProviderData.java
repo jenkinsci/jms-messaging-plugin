@@ -37,6 +37,7 @@ import org.kohsuke.stapler.StaplerRequest2;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -76,11 +77,11 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
     public RabbitMQPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageContent,
             Boolean failOnError, Boolean fedoraMessaging, Integer severity, String schema) {
         this(name, overrides);
-        this.messageContent = messageContent;
-        this.failOnError = failOnError;
-        this.fedoraMessaging = fedoraMessaging;
-        this.severity = severity;
-        this.schema = schema;
+        setMessageContent(messageContent);
+        setFailOnError(failOnError);
+        setFedoraMessaging(fedoraMessaging);
+        setSeverity(severity);
+        setSchema(schema);
     }
 
     public String getMessageContent() {
@@ -89,7 +90,7 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
 
     @DataBoundSetter
     public void setMessageContent(String messageContent) {
-        this.messageContent = messageContent;
+        this.messageContent = Util.fixEmpty(messageContent);
     }
 
     public Boolean isFailOnError() {
@@ -125,7 +126,7 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
 
     @DataBoundSetter
     public void setSchema(String schema) {
-        this.schema = schema;
+        this.schema = Util.fixEmpty(schema);
     }
 
     @Override

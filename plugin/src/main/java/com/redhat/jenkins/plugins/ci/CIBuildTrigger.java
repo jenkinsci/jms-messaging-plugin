@@ -28,7 +28,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -93,13 +92,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     public CIBuildTrigger(Boolean noSquash, List<ProviderData> providers) {
         super();
-        this.noSquash = noSquash;
-        this.providers = providers;
-    }
-
-    @DataBoundSetter
-    public void setProviderData(ProviderData providerData) {
-        setProviderList(Collections.singletonList(providerData));
+        setNoSquash(noSquash);
+        setProviders(providers);
     }
 
     public Boolean getNoSquash() {
@@ -136,31 +130,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     @DataBoundSetter
-    public void setProviders(List<ProviderDataEnvelope> envelopes) {
-        ArrayList<ProviderData> providers = new ArrayList<>();
-        for (ProviderDataEnvelope envelope : envelopes) {
-            ProviderData providerData = envelope.providerData;
-            if (providerData == null) {
-                log.warning("Empty provider submitted");
-                continue;
-            }
-            providers.add(providerData);
-        }
+    public void setProviders(List<ProviderData> providers) {
         this.providers = providers;
-    }
-
-    @DataBoundSetter
-    public void setProviderList(List<ProviderData> providers) {
-        this.providers = providers;
-    }
-
-    public static final class ProviderDataEnvelope {
-        private final ProviderData providerData;
-
-        @DataBoundConstructor
-        public ProviderDataEnvelope(ProviderData providerData) {
-            this.providerData = providerData;
-        }
     }
 
     public static CIBuildTrigger findTrigger(String fullname) {

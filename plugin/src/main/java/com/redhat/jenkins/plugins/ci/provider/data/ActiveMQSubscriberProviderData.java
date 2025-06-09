@@ -40,6 +40,7 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
@@ -72,10 +73,10 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     public ActiveMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, String selector,
             List<MsgCheck> checks, String variable, Integer timeout) {
         this(name, overrides);
-        this.selector = selector;
-        this.checks = checks;
-        this.variable = variable;
-        this.timeout = timeout;
+        setSelector(selector);
+        setChecks(checks);
+        setVariable(variable);
+        setTimeout(timeout);
     }
 
     public String getSelector() {
@@ -84,7 +85,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
 
     @DataBoundSetter
     public void setSelector(String selector) {
-        this.selector = selector;
+        this.selector = Util.fixEmpty(selector);
     }
 
     public List<MsgCheck> getChecks() {

@@ -37,6 +37,7 @@ import org.kohsuke.stapler.StaplerRequest2;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -64,10 +65,10 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageProperties,
             String messageContent, Boolean failOnError, Integer timeToLiveMillis) {
         this(name, overrides);
-        this.messageProperties = messageProperties;
-        this.messageContent = messageContent;
-        this.failOnError = failOnError;
-        this.timeToLiveMillis = timeToLiveMillis;
+        setMessageProperties(messageProperties);
+        setMessageContent(messageContent);
+        setFailOnError(failOnError);
+        setTimeToLiveMillis(timeToLiveMillis);
     }
 
     public String getMessageProperties() {
@@ -76,7 +77,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
 
     @DataBoundSetter
     public void setMessageProperties(String messageProperties) {
-        this.messageProperties = messageProperties;
+        this.messageProperties = Util.fixEmpty(messageProperties);
     }
 
     public String getMessageContent() {
@@ -85,7 +86,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
 
     @DataBoundSetter
     public void setMessageContent(String messageContent) {
-        this.messageContent = messageContent;
+        this.messageContent = Util.fixEmpty(messageContent);
     }
 
     public Boolean isFailOnError() {

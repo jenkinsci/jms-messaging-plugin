@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -34,6 +35,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -60,8 +62,8 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String properties,
             String messageContent, Boolean failOnError) {
         this(name, overrides, properties);
-        this.messageContent = messageContent;
-        this.failOnError = failOnError;
+        setMessageContent(messageContent);
+        setFailOnError(failOnError);
     }
 
     public String getMessageContent() {
@@ -70,7 +72,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
 
     @DataBoundSetter
     public void setMessageContent(String messageContent) {
-        this.messageContent = messageContent;
+        this.messageContent = Util.fixEmpty(messageContent);
     }
 
     public Boolean isFailOnError() {
@@ -126,6 +128,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     }
 
     @Extension
+    @Symbol("kafkaPublisher")
     public static class KafkaPublisherProviderDataDescriptor extends KafkaProviderDataDescriptor {
 
         @Override
