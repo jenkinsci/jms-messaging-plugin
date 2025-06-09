@@ -15,7 +15,7 @@ public abstract class RabbitMQProviderData extends ProviderData {
 
     public RabbitMQProviderData(String name, MessagingProviderOverrides overrides) {
         super(name);
-        this.overrides = overrides;
+        setOverrides(overrides);
     }
 
     public MessagingProviderOverrides getOverrides() {

@@ -209,12 +209,12 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         WorkflowJob pipe = j.jenkins.createProject(WorkflowJob.class, "pipeline");
         pipe.setDefinition(new CpsFlowDefinition("pipeline {\n" + "    agent { label 'built-in' }\n"
                 + "    triggers {\n" + "        ciBuildTrigger(noSquash: true,\n"
-                + "                       providerData: activeMQSubscriber(name: '"
+                + "                       providers: [activeMQSubscriber(name: '"
                 + SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME + "',\n"
                 + "                                                        overrides: [topic: \"CI\"],\n"
                 + "                                                        selector: \"CI_STATUS 'failed'\",\n"
-                + "                                                       )\n" + "                      )\n" + "    }\n"
-                + "    stages {\n" + "        stage('foo') {\n" + "            steps {\n"
+                + "                                                       )]\n" + "                      )\n"
+                + "    }\n" + "    stages {\n" + "        stage('foo') {\n" + "            steps {\n"
                 + "                echo 'Hello world!'\n" + "            }\n" + "        }\n" + "    }\n" + "}\n",
                 true));
         pipe.save();
@@ -240,11 +240,11 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         // Now fix the selector.
         pipe.setDefinition(new CpsFlowDefinition("pipeline {\n" + "    agent { label 'built-in' }\n"
                 + "    triggers {\n" + "        ciBuildTrigger(noSquash: true,\n"
-                + "                       providerData: activeMQSubscriber(name: '"
+                + "                       providers: [activeMQSubscriber(name: '"
                 + SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME + "',\n"
                 + "                                                        overrides: [topic: \"CI\"],\n"
                 + "                                                        selector: \"CI_STATUS = 'failed'\",\n"
-                + "                                                       )\n" + "                       )\n"
+                + "                                                       )]\n" + "                       )\n"
                 + "    }\n" + "    stages {\n" + "        stage('foo') {\n" + "            steps {\n"
                 + "                echo 'Hello world!'\n" + "            }\n" + "        }\n" + "    }\n" + "}\n",
                 true));
@@ -276,7 +276,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
 
         // Now change the selector.
         jobA.getTrigger(CIBuildTrigger.class)
-                .setProviderList(Collections.singletonList(
+                .setProviders(Collections.singletonList(
                         new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
                                 null, "CI_STATUS = 'success'", Collections.emptyList(), "CI_MESSAGE", 60)));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);

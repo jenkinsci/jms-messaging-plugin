@@ -458,7 +458,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         // [expectedValue: number + '0.0234', field: 'CI_STATUS2']
         pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_NAME = '" + jobB.getName() + "'");
-        String plist = "providerList: [" + pd.toPipelineScript() + "]";
+        String plist = "providers: [" + pd.toPipelineScript() + "]";
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "receive");
         jobA.addProperty(new ParametersDefinitionProperty(new TextParameterDefinition("CI_MESSAGE", "", "")));
         jobA.setDefinition(
@@ -493,7 +493,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_NAME = '" + jobB.getName() + "'",
                 new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE));
-        plist = "providerList: [" + pd.toPipelineScript() + "]";
+        plist = "providers: [" + pd.toPipelineScript() + "]";
         jobA.setDefinition(
                 new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n" + "properties(\n" + "    [\n"
                         + "        pipelineTriggers(\n" + "            [[$class: 'CIBuildTrigger', noSquash: false, "

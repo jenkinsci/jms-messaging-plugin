@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -162,6 +163,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     }
 
     @Extension
+    @Symbol("kafkaSubscriber")
     public static class KafkaSubscriberProviderDataDescriptor extends KafkaProviderDataDescriptor {
 
         @Override
