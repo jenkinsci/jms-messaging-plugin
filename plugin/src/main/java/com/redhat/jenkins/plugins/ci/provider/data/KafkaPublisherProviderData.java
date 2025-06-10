@@ -23,8 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci.provider.data;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import org.jenkinsci.Symbol;
@@ -82,26 +80,6 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     @DataBoundSetter
     public void setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
-    }
-
-    @Override
-    public String toPipelineScript() {
-        List<String> script = new ArrayList<>();
-        script.add("$class: \"KafkaPublisherProviderData\"");
-        script.add("name: \"" + getName() + "\"");
-        if (getOverrides() != null) {
-            script.add("overrides: [topic: \"" + getOverrides().getTopic() + "\"]");
-        }
-        if (getProperties() != null) {
-            script.add("properties: \"" + getProperties() + "\"");
-        }
-        if (getMessageContent() != null) {
-            script.add("messageContent: \"" + getMessageContent().replace("\"", "\\\"") + "\"");
-        }
-        if (isFailOnError() != null) {
-            script.add("failOnError: " + isFailOnError());
-        }
-        return "[\n    " + String.join(",\n    ", script) + "\n]";
     }
 
     @Override

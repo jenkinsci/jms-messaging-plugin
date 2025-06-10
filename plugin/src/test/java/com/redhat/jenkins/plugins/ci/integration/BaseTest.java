@@ -117,7 +117,7 @@ public abstract class BaseTest {
     }
 
     protected void scheduleAwaitStep(WorkflowJob job, int occurrences) throws Exception {
-        scheduleAwaitStep(job, 1, false);
+        scheduleAwaitStep(job, occurrences, false);
     }
 
     protected void scheduleAwaitStep(WorkflowJob job, int occurrences, boolean skipCheck) throws Exception {

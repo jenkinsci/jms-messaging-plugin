@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.Snippetizer;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
@@ -24,6 +25,8 @@ import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.CIMessageSubscriberBuilder;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
+import com.redhat.jenkins.plugins.ci.pipeline.CIMessageSenderStep;
+import com.redhat.jenkins.plugins.ci.pipeline.CIMessageSubscriberStep;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 import hudson.model.BooleanParameterDefinition;
@@ -78,7 +81,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         if (preStatements != null) {
             sb.append("    " + preStatements + "\n");
         }
-        sb.append("    def message = waitForCIMessage  providerData: " + pd.toPipelineScript() + "\n");
+        CIMessageSubscriberStep step = new CIMessageSubscriberStep(pd);
+        sb.append("    def message = " + Snippetizer.object2Groovy(step) + "\n");
         sb.append("    echo \"message = \" + message\n");
         if (postStatements != null) {
             sb.append("    " + postStatements + "\n");
@@ -97,7 +101,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         if (preStatements != null) {
             sb.append("    " + preStatements + "\n");
         }
-        sb.append("    def message = sendCIMessage providerData: " + pd.toPipelineScript() + "\n");
+        CIMessageSenderStep step = new CIMessageSenderStep(pd);
+        sb.append("    def message = " + Snippetizer.object2Groovy(step) + "\n");
         sb.append("}");
         return sb.toString();
     }
@@ -945,16 +950,16 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         jobB.delete();
     }
 
-    public void _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(WorkflowJob jobB, String selector,
-            String expected) throws Exception {
+    public void _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(WorkflowJob jobB, String expected)
+            throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        ProviderData pd = getSubscriberProviderData("${env.MY_TOPIC}", null, selector + "${env.MY_TOPIC}'");
+        ProviderData pd = getSubscriberProviderData("env.MY_TOPIC", null, null);
         jobA.setDefinition(new CpsFlowDefinition(
                 buildWaitForCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
 
         scheduleAwaitStep(jobA);
 
-        pd = getPublisherProviderData("${env.MY_TOPIC}", "CI_STATUS = failed", "abcdefg");
+        pd = getPublisherProviderData("env.MY_TOPIC", "CI_STATUS = failed", "abcdefg");
         jobB.setDefinition(new CpsFlowDefinition(
                 buildSendCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
 

@@ -32,8 +32,11 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.Snippetizer;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty;
+import org.jenkinsci.plugins.workflow.multibranch.JobPropertyStep;
 import org.jenkinsci.test.acceptance.docker.DockerClassRule;
 import org.junit.After;
 import org.junit.Before;
@@ -271,16 +274,13 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     @Test
     public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "foo");
-        String expected = "message = abcdefg";
-        _testSimpleCIEventSendAndWaitPipeline(send, expected);
+        _testSimpleCIEventSendAndWaitPipeline(send, "message = abcdefg");
     }
 
     @Test
     public void testSimpleCIEventSendAndWaitPipelineWithVariableTopic() throws Exception {
         WorkflowJob send = j.jenkins.createProject(WorkflowJob.class, "foo");
-        String expected = "message = abcdefg";
-        String selector = "JMSDestination = 'topic://";
-        _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(send, selector, expected);
+        _testSimpleCIEventSendAndWaitPipelineWithVariableTopic(send, "message = abcdefg");
     }
 
     @Test
@@ -383,13 +383,13 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         // [expectedValue: number + '0.0234', field: 'CI_STATUS2']
         pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_NAME = '" + jobB.getName() + "'");
-        String plist = "providers: [" + pd.toPipelineScript() + "]";
+        CIBuildTrigger t = new CIBuildTrigger(false, Collections.singletonList(pd));
+        JobPropertyStep s = new JobPropertyStep(
+                Collections.singletonList(new PipelineTriggersJobProperty(Collections.singletonList(t))));
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "receive");
         jobA.addProperty(new ParametersDefinitionProperty(new TextParameterDefinition("CI_MESSAGE", "", "")));
-        jobA.setDefinition(
-                new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n" + "properties(\n" + "    [\n"
-                        + "        pipelineTriggers(\n" + "            [[$class: 'CIBuildTrigger', noSquash: false, "
-                        + plist + "]]\n" + "        )\n" + "    ]\n" + ")\nnode('built-in') {\n sleep 1\n}", true));
+        jobA.setDefinition(new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n"
+                + Snippetizer.object2Groovy(s) + "\nnode('built-in') {\n sleep 1\n}", true));
 
         j.buildAndAssertSuccess(jobA);
         waitForReceiverToBeReady(jobA.getDisplayName());
@@ -423,11 +423,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         pd = getSubscriberProviderData(testName.getMethodName(), null, "CI_NAME = '" + jobB.getName() + "'",
                 new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE));
-        plist = "providers: [" + pd.toPipelineScript() + "]";
-        jobA.setDefinition(
-                new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n" + "properties(\n" + "    [\n"
-                        + "        pipelineTriggers(\n" + "            [[$class: 'CIBuildTrigger', noSquash: false, "
-                        + plist + "]]\n" + "        )\n" + "    ]\n" + ")\nnode('built-in') {\n sleep 1\n}", false));
+        t = new CIBuildTrigger(false, Collections.singletonList(pd));
+        s = new JobPropertyStep(
+                Collections.singletonList(new PipelineTriggersJobProperty(Collections.singletonList(t))));
+        jobA.setDefinition(new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n"
+                + Snippetizer.object2Groovy(s) + "\nnode('built-in') {\n sleep 1\n}", false));
         scheduleAwaitStep(jobA, 10);
 
         for (int i = 0; i < 3; i++) {
