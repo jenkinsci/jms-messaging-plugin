@@ -277,6 +277,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             log.warning(e.getMessage());
         }
 
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(null);
         try (KafkaConsumer<String, String> lconsumer = new KafkaConsumer<>(
                 pd.mergeProperties(provider.getMergedConsumerProperties()))) {
             int timeout = (pd.getTimeout() != null ? pd.getTimeout()
@@ -309,6 +311,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             }
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
+        } finally {
+            Thread.currentThread().setContextClassLoader(original);
         }
         return null;
     }

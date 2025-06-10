@@ -68,8 +68,6 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
 
     public abstract String getPublisherTopic();
 
-    public abstract String toPipelineScript();
-
     @Override
     public boolean equals(Object that) {
         if (this == that) {
