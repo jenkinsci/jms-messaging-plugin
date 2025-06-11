@@ -78,7 +78,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     public static final Logger RESOURCE_LOGGER = Logger.getLogger(CIBuildTrigger.class.getName());
     private static final Logger log = Logger.getLogger(CIBuildTrigger.class.getName());
 
-    private Boolean noSquash;
+    private Boolean noSquash = false;
     private List<ProviderData> providers;
 
     public static final ConcurrentMap<String, List<CITriggerThread>> locks = new ConcurrentHashMap<>();
