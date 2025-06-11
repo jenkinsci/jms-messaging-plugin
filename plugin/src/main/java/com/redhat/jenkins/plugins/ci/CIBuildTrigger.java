@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -194,12 +195,12 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 log.warning("Exception while trying to save job: " + e.getMessage());
             }
         }
-        if (job instanceof AbstractProject) {
-            AbstractProject<?, ?> aJob = (AbstractProject<?, ?>) job;
-            if (aJob.isDisabled()) {
-                log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
-                return;
-            }
+        if (job instanceof AbstractProject && ((AbstractProject<?, ?>) job).isDisabled()) {
+            log.info("Job '" + job.getFullName() + "' is disabled, not subscribing.");
+            return;
+        } else if (job instanceof WorkflowJob && ((WorkflowJob) job).isDisabled()) {
+            log.info("WorkflowJob '" + job.getFullName() + "' is disabled, not subscribing.");
+            return;
         }
         try {
             synchronized (locks.computeIfAbsent(job.getFullName(), o -> new ArrayList<>())) {
