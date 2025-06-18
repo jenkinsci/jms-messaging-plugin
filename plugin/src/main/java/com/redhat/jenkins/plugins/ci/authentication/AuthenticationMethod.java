@@ -24,12 +24,27 @@
 package com.redhat.jenkins.plugins.ci.authentication;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Logger;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.redhat.utils.CredentialLookup;
+
+import hudson.model.Item;
+import hudson.security.ACL;
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 
 public abstract class AuthenticationMethod implements Serializable {
-
     private static final long serialVersionUID = -6077120270692721571L;
+
+    private transient static final Logger log = Logger.getLogger(AuthenticationMethod.class.getName());
 
     /**
      * Taken from gerrit-trigger-plugin
@@ -38,5 +53,55 @@ public abstract class AuthenticationMethod implements Serializable {
         final Jenkins jenkins = Jenkins.get();
         // If Jenkins is not alive then we are not started, so no unauthorised user might do anything
         jenkins.checkPermission(Jenkins.ADMINISTER);
+    }
+
+    protected StandardCertificateCredentials getStandardCertificateCredentials(String credentialId) {
+        if (credentialId == null || credentialId.isEmpty()) {
+            log.warning(String.format("Credential ID '%s' is empty. Cannot create SSLContext.", credentialId));
+            return null;
+        }
+
+        StandardCertificateCredentials ccreds = CredentialLookup.lookupById(credentialId,
+                StandardCertificateCredentials.class);
+        if (ccreds == null) {
+            log.warning(String.format("Credential '%s' not found or is not a certificate credential", credentialId));
+        }
+        return ccreds;
+    }
+
+    protected static ListBoxModel doFillCredentials(Item project, String credentialId, Class<?> clazz, String prompt) {
+        return doFillCredentials(project, credentialId, Collections.singletonList(clazz), prompt);
+    }
+
+    protected static ListBoxModel doFillCredentials(Item project, String credentialId, List<Class<?>> classes,
+            String prompt) {
+        ListBoxModel items = new ListBoxModel();
+        items.add("-- Select " + prompt + " Credential --", "");
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        ACL.impersonate2(authentication, () -> {
+            List<StandardCredentials> availableCredentials = CredentialsProvider
+                    .lookupCredentialsInItem(StandardCredentials.class, project, authentication);
+
+            for (StandardCredentials c : availableCredentials) {
+                if (isInstanceOf(classes, c)) {
+                    items.add(c.getDescription() != null && !c.getDescription().isEmpty()
+                            ? c.getDescription() + " (" + c.getId() + ")"
+                            : c.getId(), c.getId());
+                }
+            }
+        });
+
+        return items;
+    }
+
+    private static boolean isInstanceOf(List<Class<?>> classes, Object object) {
+        for (Class<?> clazz : classes) {
+            if (clazz.isInstance(object)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

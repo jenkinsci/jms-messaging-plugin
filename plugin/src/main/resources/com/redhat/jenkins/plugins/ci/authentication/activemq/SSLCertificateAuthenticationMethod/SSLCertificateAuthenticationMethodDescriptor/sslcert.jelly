@@ -1,5 +1,7 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+         xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
   <!--
      * The MIT License
      *
@@ -24,20 +26,15 @@
      * THE SOFTWARE.
      */
   -->
-      <f:nested>
-        <f:entry title="${%Key store}" field="keystore">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="${%Key store password}" field="keypwd">
-          <f:password />
-        </f:entry>
-        <f:entry title="${%Trust store}" field="truststore">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="${%Trust store password}" field="trustpwd">
-          <f:password />
-        </f:entry>
-        <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="broker,keystore,keypwd,truststore,trustpwd" />
-      </f:nested>
+      <f:entry title="Select KeyStore Credential" field="keyStoreCredentialId">
+        <c:select expression="keyStoreCredentialId"
+                  filter="com.cloudbees.plugins.credentials.common.CertificateCredentials,com.cloudbees.plugins.credentials.impl.X509ClientCertificateCredentials"/>
+      </f:entry>
+      <f:entry title="Select TrustStore Credential" field="trustStoreCredentialId">
+        <c:select expression="trustStoreCredentialId"
+                  filter="com.cloudbees.plugins.credentials.common.CertificateCredentials,com.cloudbees.plugins.credentials.impl.X509ClientCertificateCredentials"/>
+      </f:entry>
+      <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
+         with="broker,keyStoreCredentialId,trustStoreCredentialId" />
 </j:jelly>
 

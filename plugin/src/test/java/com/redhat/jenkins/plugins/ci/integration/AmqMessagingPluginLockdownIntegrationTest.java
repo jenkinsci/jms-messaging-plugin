@@ -58,10 +58,9 @@ import com.redhat.jenkins.plugins.ci.integration.fixtures.ActiveMQContainer;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 
 import hudson.security.Permission;
-import hudson.util.Secret;
 import jenkins.model.Jenkins;
 
-public class AmqMessagingPluginLockdownIntegrationTest {
+public class AmqMessagingPluginLockdownIntegrationTest extends BaseTest {
 
     @ClassRule
     public static DockerClassRule<ActiveMQContainer> docker = new DockerClassRule<>(ActiveMQContainer.class);
@@ -81,16 +80,14 @@ public class AmqMessagingPluginLockdownIntegrationTest {
     public void setUp() throws Exception {
         ActiveMQContainer amq = docker.create();
 
+        addUsernamePasswordCredential("amq-username-password", "admin", "redhat");
+
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
         gcc.setConfigs(
                 Collections.singletonList(new ActiveMqMessagingProvider("name", createFailoverUrl(amq.getBroker()),
-                        true, "CI", null, new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")))));
+                        true, "CI", null, new UsernameAuthenticationMethod("amq-username-password"))));
 
-        String adminUser = "admin";
-        String user = "user";
-        configureSecurity(adminUser, user);
-
-        // TODO test connection. WebClient? Rest?
+        configureSecurity("admin", "user");
     }
 
     private String createFailoverUrl(String broker) {
@@ -106,7 +103,7 @@ public class AmqMessagingPluginLockdownIntegrationTest {
     public void testBlockNonAdminAccess() throws Exception {
         j.jenkins.setCrumbIssuer(null);
 
-        String format = "/descriptorByName/com.redhat.jenkins.plugins.ci.authentication.activemq.%s/testConnection?broker=tcp%%3A%%2F%%2F192.168.182.142%%3A80&username=JMS&password=JMS";
+        String format = "/descriptorByName/com.redhat.jenkins.plugins.ci.authentication.activemq.%s/testConnection?broker=tcp%%3A%%2F%%2F192.168.182.142%%3A80&credentialId=JMS";
         String userAuthUrl = j.getURL().toExternalForm() + String.format(format, "UsernameAuthenticationMethod");
         String sslAuthUrl = j.getURL().toExternalForm() + String.format(format, "SSLCertificateAuthenticationMethod");
 

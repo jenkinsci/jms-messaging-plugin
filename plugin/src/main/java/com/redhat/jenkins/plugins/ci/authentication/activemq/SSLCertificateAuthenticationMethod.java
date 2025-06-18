@@ -27,23 +27,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.activemq.ActiveMQSslConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
+import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
 import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.utils.PluginUtils;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.util.FormValidation;
-import hudson.util.Secret;
+import hudson.util.ListBoxModel;
 import jakarta.jms.Connection;
 import jakarta.jms.JMSException;
 import jakarta.jms.Session;
@@ -54,65 +57,52 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
     private static final long serialVersionUID = -5934219869726669459L;
     private transient static final Logger log = Logger.getLogger(SSLCertificateAuthenticationMethod.class.getName());
 
-    private String keystore;
-    private Secret keypwd = Secret.fromString("");
-    private String truststore;
-    private Secret trustpwd = Secret.fromString("");
+    private String keyStoreCredentialId;
+    private String trustStoreCredentialId;
 
     @DataBoundConstructor
-    public SSLCertificateAuthenticationMethod(String keystore, Secret keypwd, String truststore, Secret trustpwd) {
-        this.setKeystore(keystore);
-        this.setKeypwd(keypwd);
-        this.setTruststore(truststore);
-        this.setTrustpwd(trustpwd);
+    public SSLCertificateAuthenticationMethod(String keyStoreCredentialId, String trustStoreCredentialId) {
+        this.setKeyStoreCredentialId(keyStoreCredentialId);
+        this.setTrustStoreCredentialId(trustStoreCredentialId);
     }
 
-    public String getKeystore() {
-        return keystore;
+    public String getKeyStoreCredentialId() {
+        return keyStoreCredentialId;
     }
 
-    public void setKeystore(String keystore) {
-        this.keystore = keystore;
+    public void setKeyStoreCredentialId(String keyStoreCredentialId) {
+        this.keyStoreCredentialId = keyStoreCredentialId;
     }
 
-    public Secret getKeypwd() {
-        return keypwd;
+    public String getTrustStoreCredentialId() {
+        return trustStoreCredentialId;
     }
 
-    public void setKeypwd(Secret password) {
-        this.keypwd = password;
-    }
-
-    private String getSubstitutedValue(String value) {
-        EnvVars vars = new EnvVars();
-        vars.put("JENKINS_HOME", Jenkins.get().getRootDir().toString());
-        return PluginUtils.getSubstitutedValue(value, vars);
-    }
-
-    public String getTruststore() {
-        return truststore;
-    }
-
-    public void setTruststore(String truststore) {
-        this.truststore = truststore;
-    }
-
-    public Secret getTrustpwd() {
-        return trustpwd;
-    }
-
-    public void setTrustpwd(Secret trustpwd) {
-        this.trustpwd = trustpwd;
+    public void setTrustStoreCredentialId(String trustStoreCredentialId) {
+        this.trustStoreCredentialId = trustStoreCredentialId;
     }
 
     @Override
     public ActiveMQSslConnectionFactory getConnectionFactory(String broker) {
+        StandardCertificateCredentials ksCreds = getStandardCertificateCredentials(keyStoreCredentialId);
+        if (ksCreds == null) {
+            return null;
+        }
+
+        StandardCertificateCredentials tsCreds = getStandardCertificateCredentials(trustStoreCredentialId);
+        if (tsCreds == null) {
+            return null;
+        }
+
         try {
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(ksCreds.getKeyStore(), ksCreds.getPassword().getPlainText().toCharArray());
+
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(tsCreds.getKeyStore());
+
             ActiveMQSslConnectionFactory connectionFactory = new ActiveMQSslConnectionFactory(broker);
-            connectionFactory.setKeyStore(getSubstitutedValue(getKeystore()));
-            connectionFactory.setKeyStorePassword(Secret.toString(getKeypwd()));
-            connectionFactory.setTrustStore(getSubstitutedValue(getTruststore()));
-            connectionFactory.setTrustStorePassword(Secret.toString(getTrustpwd()));
+            connectionFactory.setKeyAndTrustManagers(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
             return connectionFactory;
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unhandled exception creating connection factory.", e);
@@ -136,9 +126,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("keystore"),
-                    Secret.fromString(jo.getString("keypwd")), jo.getString("truststore"),
-                    Secret.fromString(jo.getString("trustpwd")));
+            return new SSLCertificateAuthenticationMethod(jo.getString("keyStoreCredentialId"),
+                    jo.getString("trustStoreCredentialId"));
         }
 
         public String getConfigPage() {
@@ -146,9 +135,29 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
         }
 
         @POST
+        public ListBoxModel doFillKeyStoreCredentialIdItems(@AncestorInPath Item project,
+                @QueryParameter String keyStoreCredentialId) {
+
+            checkAdmin();
+
+            return doFillCredentials(project, keyStoreCredentialId, StandardCertificateCredentials.class,
+                    "Certificate");
+        }
+
+        @POST
+        public ListBoxModel doFillTrustStoreCredentialIdItems(@AncestorInPath Item project,
+                @QueryParameter String trustStoreCredentialId) {
+
+            checkAdmin();
+
+            return doFillCredentials(project, trustStoreCredentialId, StandardCertificateCredentials.class,
+                    "Certificate");
+        }
+
+        @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
-                @QueryParameter("keystore") String keystore, @QueryParameter("keypwd") String keypwd,
-                @QueryParameter("truststore") String truststore, @QueryParameter("trustpwd") String trustpwd) {
+                @QueryParameter("keyStoreCredentialId") String keyStoreCredentialId,
+                @QueryParameter("trustStoreCredentialId") String trustStoreCredentialId) {
 
             checkAdmin();
 
@@ -157,8 +166,8 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             Session session = null;
             if (broker != null && isValidURL(broker)) {
                 try {
-                    SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keystore,
-                            Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
+                    SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(
+                            keyStoreCredentialId, trustStoreCredentialId);
                     ActiveMQSslConnectionFactory connectionFactory = sam.getConnectionFactory(broker);
                     connection = connectionFactory.createConnection();
                     connection.start();

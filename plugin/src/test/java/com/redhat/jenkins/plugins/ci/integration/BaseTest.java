@@ -2,6 +2,7 @@ package com.redhat.jenkins.plugins.ci.integration;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 
 import org.hamcrest.Matcher;
@@ -14,6 +15,10 @@ import org.junit.rules.TestName;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.LoggerRule;
 
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
@@ -22,6 +27,8 @@ import hudson.model.FreeStyleProject;
 import hudson.model.Job;
 import hudson.model.Project;
 import hudson.model.Run;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
 
 public abstract class BaseTest {
 
@@ -34,8 +41,22 @@ public abstract class BaseTest {
 
     @After
     public void after() throws IOException, InterruptedException {
-        for (Project p : j.jenkins.getProjects()) {
-            p.delete();
+        if (j != null && j.jenkins != null) {
+            for (Project p : j.jenkins.getProjects()) {
+                p.delete();
+            }
+        }
+    }
+
+    public void addUsernamePasswordCredential(String id, String username, String password) throws Exception {
+        UsernamePasswordCredentialsImpl cred = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, id, "",
+                username, password);
+
+        try (ACLContext ctx = ACL.as2(ACL.SYSTEM2)) {
+            SystemCredentialsProvider provider = SystemCredentialsProvider.getInstance();
+            List<Credentials> creds = provider.getCredentials();
+            creds.add(cred);
+            provider.save();
         }
     }
 

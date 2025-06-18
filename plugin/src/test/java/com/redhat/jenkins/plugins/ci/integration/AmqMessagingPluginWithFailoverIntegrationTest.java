@@ -60,7 +60,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderDat
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.tasks.Shell;
-import hudson.util.Secret;
 
 public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
     @ClassRule
@@ -71,10 +70,12 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
     public void setUp() throws Exception {
         amq = docker.create();
 
+        addUsernamePasswordCredential("amq-username-password", "admin", "redhat");
+
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
         gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(
                 SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, createFailoverUrl(amq.getBroker()), true,
-                "CI", null, new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")))));
+                "CI", null, new UsernameAuthenticationMethod("amq-username-password"))));
 
         logger.record("com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker", Level.INFO);
         logger.quiet();

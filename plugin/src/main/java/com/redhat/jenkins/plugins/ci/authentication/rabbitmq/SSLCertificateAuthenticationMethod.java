@@ -23,8 +23,10 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
-import java.io.FileInputStream;
-import java.security.KeyStore;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,11 +36,13 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
+import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -47,8 +51,9 @@ import com.redhat.jenkins.plugins.ci.Messages;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.util.FormValidation;
-import hudson.util.Secret;
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
@@ -56,84 +61,54 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
     private static final long serialVersionUID = -5934219869726669459L;
     private transient static final Logger log = Logger.getLogger(SSLCertificateAuthenticationMethod.class.getName());
 
-    private String username;
-    private String keystore;
-    private Secret keypwd = Secret.fromString("");
-    private String truststore;
-    private Secret trustpwd = Secret.fromString("");
+    private String keyStoreCredentialId;
+    private String trustStoreCredentialId;
 
     @DataBoundConstructor
-    public SSLCertificateAuthenticationMethod(String username, String keystore, Secret keypwd, String truststore,
-            Secret trustpwd) {
-        this.setUsername(username);
-        this.setKeystore(keystore);
-        this.setKeypwd(keypwd);
-        this.setTruststore(truststore);
-        this.setTrustpwd(trustpwd);
+    public SSLCertificateAuthenticationMethod(String keyStoreCredentialId, String trustStoreCredentialId) {
+        this.setKeyStoreCredentialId(keyStoreCredentialId);
+        this.setTrustStoreCredentialId(trustStoreCredentialId);
     }
 
-    public String getUsername() {
-        return username;
+    public String getKeyStoreCredentialId() {
+        return keyStoreCredentialId;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setKeyStoreCredentialId(String keyStoreCredentialId) {
+        this.keyStoreCredentialId = keyStoreCredentialId;
     }
 
-    public String getKeystore() {
-        return keystore;
+    public String getTrustStoreCredentialId() {
+        return trustStoreCredentialId;
     }
 
-    public void setKeystore(String keystore) {
-        this.keystore = keystore;
-    }
-
-    public Secret getKeypwd() {
-        return keypwd;
-    }
-
-    public void setKeypwd(Secret password) {
-        this.keypwd = password;
-    }
-
-    public String getTruststore() {
-        return truststore;
-    }
-
-    public void setTruststore(String truststore) {
-        this.truststore = truststore;
-    }
-
-    public Secret getTrustpwd() {
-        return trustpwd;
-    }
-
-    public void setTrustpwd(Secret trustpwd) {
-        this.trustpwd = trustpwd;
+    public void setTrustStoreCredentialId(String trustStoreCredentialId) {
+        this.trustStoreCredentialId = trustStoreCredentialId;
     }
 
     @Override
     public ConnectionFactory getConnectionFactory(String hostname, Integer portNumber, String virtualHost) {
-        try (FileInputStream keystore = new FileInputStream(getKeystore());
-                FileInputStream truststore = new FileInputStream(getTruststore())) {
-            // Prepare SSL context
-            KeyStore ks = KeyStore.getInstance("PKCS12");
-            ks.load(keystore, getKeypwd().getPlainText().toCharArray());
+        StandardCertificateCredentials ksCreds = getStandardCertificateCredentials(keyStoreCredentialId);
+        if (ksCreds == null) {
+            return null;
+        }
 
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
-            keyManagerFactory.init(ks, getKeypwd().getPlainText().toCharArray());
+        StandardCertificateCredentials tsCreds = getStandardCertificateCredentials(trustStoreCredentialId);
+        if (tsCreds == null) {
+            return null;
+        }
 
-            KeyStore tks = KeyStore.getInstance("JKS");
-            tks.load(truststore, getTrustpwd().getPlainText().toCharArray());
+        try {
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(ksCreds.getKeyStore(), ksCreds.getPassword().getPlainText().toCharArray());
 
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
-            trustManagerFactory.init(tks);
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(tsCreds.getKeyStore());
 
             SSLContext c = SSLContext.getInstance("TLSv1.2");
-            c.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+            c.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null); // Default SecureRandom
 
             ConnectionFactory connectionFactory = new ConnectionFactory();
-            connectionFactory.setUsername(getUsername());
             connectionFactory.setHost(hostname);
             connectionFactory.setPort(portNumber);
             connectionFactory.setVirtualHost(virtualHost);
@@ -141,9 +116,15 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
             connectionFactory.setSaslConfig(DefaultSaslConfig.EXTERNAL);
             connectionFactory.enableHostnameVerification();
             return connectionFactory;
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception creating connection factory.", e);
+
+        } catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyManagementException e) {
+            log.log(Level.SEVERE,
+                    String.format(
+                            "Error creating SSLContext from keystore credential '%s' and truststore credential '%s'",
+                            keyStoreCredentialId, trustStoreCredentialId),
+                    e);
         }
+
         return null;
     }
 
@@ -163,9 +144,8 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
 
         @Override
         public SSLCertificateAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
-            return new SSLCertificateAuthenticationMethod(jo.getString("username"), jo.getString("keystore"),
-                    Secret.fromString(jo.getString("keypwd")), jo.getString("truststore"),
-                    Secret.fromString(jo.getString("trustpwd")));
+            return new SSLCertificateAuthenticationMethod(jo.getString("keyStoreCredentialId"),
+                    jo.getString("trustStoreCredentialId"));
         }
 
         public String getConfigPage() {
@@ -173,19 +153,37 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
         }
 
         @POST
-        public FormValidation doTestConnection(@QueryParameter("username") String username,
+        public ListBoxModel doFillKeyStoreCredentialIdItems(@AncestorInPath Item project,
+                @QueryParameter String keyStoreCredentialId) {
+
+            checkAdmin();
+
+            return doFillCredentials(project, keyStoreCredentialId, StandardCertificateCredentials.class, "KeyStore");
+        }
+
+        @POST
+        public ListBoxModel doFillTrustStoreCredentialIdItems(@AncestorInPath Item project,
+                @QueryParameter String trustStoreCredentialId) {
+
+            checkAdmin();
+
+            return doFillCredentials(project, trustStoreCredentialId, StandardCertificateCredentials.class,
+                    "TrustStore");
+        }
+
+        @POST
+        public FormValidation doTestConnection(@QueryParameter("keyStoreCredentialId") String keyStoreCredentialId,
+                @QueryParameter("trustStoreCredentialId") String trustStoreCredentialId,
                 @QueryParameter("hostname") String hostname, @QueryParameter("portNumber") Integer portNumber,
-                @QueryParameter("virtualHost") String virtualHost, @QueryParameter("keystore") String keystore,
-                @QueryParameter("keypwd") String keypwd, @QueryParameter("truststore") String truststore,
-                @QueryParameter("trustpwd") String trustpwd) {
+                @QueryParameter("virtualHost") String virtualHost) {
 
             checkAdmin();
 
             Connection connection = null;
             Channel channel = null;
             try {
-                SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(username, keystore,
-                        Secret.fromString(keypwd), truststore, Secret.fromString(trustpwd));
+                SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(keyStoreCredentialId,
+                        trustStoreCredentialId);
                 ConnectionFactory connectionFactory = sam.getConnectionFactory(hostname, portNumber, virtualHost);
                 connection = connectionFactory.newConnection();
                 channel = connection.createChannel();

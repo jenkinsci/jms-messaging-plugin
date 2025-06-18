@@ -31,18 +31,22 @@ import javax.annotation.Nonnull;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.utils.CredentialLookup;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.util.FormValidation;
-import hudson.util.Secret;
+import hudson.util.ListBoxModel;
 import jakarta.jms.Connection;
 import jakarta.jms.JMSException;
 import jakarta.jms.Session;
@@ -53,36 +57,39 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
     private static final long serialVersionUID = 452156745621333923L;
     private transient static final Logger log = Logger.getLogger(UsernameAuthenticationMethod.class.getName());
 
-    private String username;
-    private Secret password;
+    private String credentialId;
 
     @DataBoundConstructor
-    public UsernameAuthenticationMethod(String username, Secret password) {
-        this.setUsername(username);
-        this.setPassword(password);
+    public UsernameAuthenticationMethod(String credentialId) {
+        this.setCredentialId(credentialId);
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    @DataBoundSetter
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public Secret getPassword() {
-        return password;
+    public String getCredentialId() {
+        return credentialId;
     }
 
     @DataBoundSetter
-    public void setPassword(Secret password) {
-        this.password = password;
+    public void setCredentialId(String credentialId) {
+        this.credentialId = credentialId;
     }
 
     @Override
     public ActiveMQConnectionFactory getConnectionFactory(String broker) {
-        return new ActiveMQConnectionFactory(getUsername(), getPassword().getPlainText(), broker);
+        if (credentialId == null || credentialId.isEmpty()) {
+            log.warning("Credential ID is empty.");
+            return null;
+        }
+
+        StandardUsernamePasswordCredentials credentials = CredentialLookup.lookupById(credentialId,
+                StandardUsernamePasswordCredentials.class);
+
+        if (credentials == null) {
+            log.warning(
+                    String.format("Credential '%s' not found or is not a username/password credential", credentialId));
+            return null;
+        }
+        return new ActiveMQConnectionFactory(credentials.getUsername(), credentials.getPassword().getPlainText(),
+                broker);
     }
 
     @Override
@@ -101,7 +108,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
 
         @Override
         public UsernameAuthenticationMethod newInstance(StaplerRequest2 sr, JSONObject jo) {
-            return new UsernameAuthenticationMethod(jo.getString("user"), Secret.fromString(jo.getString("password")));
+            return new UsernameAuthenticationMethod(jo.getString("credentialId"));
         }
 
         public String getConfigPage() {
@@ -109,8 +116,16 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
         }
 
         @POST
+        public ListBoxModel doFillCredentialIdItems(@AncestorInPath Item project, @QueryParameter String credentialId) {
+            checkAdmin();
+
+            return doFillCredentials(project, credentialId, StandardUsernamePasswordCredentials.class,
+                    "Username/Password");
+        }
+
+        @POST
         public FormValidation doTestConnection(@QueryParameter("broker") String broker,
-                @QueryParameter("username") String username, @QueryParameter("password") String password) {
+                @QueryParameter("credentialId") String credentialId) {
 
             checkAdmin();
 
@@ -119,8 +134,7 @@ public class UsernameAuthenticationMethod extends ActiveMQAuthenticationMethod {
             Connection connection = null;
             if (broker != null && isValidURL(broker)) {
                 try {
-                    UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(username,
-                            Secret.fromString(password));
+                    UsernameAuthenticationMethod uam = new UsernameAuthenticationMethod(credentialId);
                     ActiveMQConnectionFactory connectionFactory = uam.getConnectionFactory(broker);
                     connection = connectionFactory.createConnection();
                     connection.start();

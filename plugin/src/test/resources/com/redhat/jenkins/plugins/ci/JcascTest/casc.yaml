@@ -9,8 +9,12 @@ unclassified:
           useQueues: false
           authenticationMethod:
             simple:
-              username: "foo"
-              password: "bar" # User, encrypt secrets
+              credentialId: "amq-username-password"
+      - kafka:
+          name: "Kafka"
+          topic: "default.topic"
+          producerProperties: "bootstrap.servers=localhost:9092"
+          consumerProperties: "bootstrap.servers=localhost:9092"
       - rabbitMq:
           name: "Rabbit MQ"
           exchange: "ex"
@@ -21,12 +25,16 @@ unclassified:
           virtualHost: "rabbitvh.example.com"
           authenticationMethod:
             sslCertificate:
-              keystore: "/tmp/key"
-              keypwd: "keypwd" # User, encrypt secrets
-              truststore: "/tmp/trust"
-              trustpwd: "trustpwd" # User, encrypt secrets
-      - kafka:
-          name: "Kafka"
-          topic: "default.topic"
-          producerProperties: "bootstrap.servers=localhost:9092"
-          consumerProperties: "bootstrap.servers=localhost:9092"
+              keyStoreCredentialId: "rabbitmq-keystore-credential-id"
+              trustStoreCredentialId: "rabbitmq-truststore-credential-id"
+      - rabbitMq:
+          name: "Rabbit MQ - X.509"
+          exchange: "ex"
+          hostname: "rabbitmq.example.com"
+          portNumber: "4545"
+          queue: "foo.bar"
+          topic: "baz"
+          virtualHost: "rabbitvh.example.com"
+          authenticationMethod:
+            x509Certificate:
+              credentialId: "rabbitmq-x509-credential-id"

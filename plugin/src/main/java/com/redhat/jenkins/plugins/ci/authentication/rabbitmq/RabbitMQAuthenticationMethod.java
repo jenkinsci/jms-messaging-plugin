@@ -23,10 +23,14 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.rabbitmq;
 
+import java.util.Iterator;
+
 import com.rabbitmq.client.ConnectionFactory;
 import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.X509CertificateAuthenticationMethod.X509CertificateAuthenticationMethodDescriptor;
 
 import hudson.ExtensionList;
+import hudson.Plugin;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
@@ -38,7 +42,19 @@ public abstract class RabbitMQAuthenticationMethod extends AuthenticationMethod
 
     public abstract static class AuthenticationMethodDescriptor extends Descriptor<RabbitMQAuthenticationMethod> {
         public static ExtensionList<AuthenticationMethodDescriptor> all() {
-            return Jenkins.get().getExtensionList(AuthenticationMethodDescriptor.class);
+            ExtensionList<AuthenticationMethodDescriptor> elist = Jenkins.get()
+                    .getExtensionList(AuthenticationMethodDescriptor.class);
+            Plugin commons = Jenkins.get().getPlugin("docker-commons");
+            if (commons == null || !commons.getWrapper().isActive()) {
+                Iterator<AuthenticationMethodDescriptor> iter = elist.iterator();
+                while (iter.hasNext()) {
+                    AuthenticationMethodDescriptor d = iter.next();
+                    if (d instanceof X509CertificateAuthenticationMethodDescriptor) {
+                        iter.remove();
+                    }
+                }
+            }
+            return elist;
         }
     }
 
