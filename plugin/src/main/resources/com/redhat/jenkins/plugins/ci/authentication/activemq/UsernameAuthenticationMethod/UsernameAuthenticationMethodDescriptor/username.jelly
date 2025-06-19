@@ -1,5 +1,7 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+         xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
   <!--
      * The MIT License
      *
@@ -24,14 +26,10 @@
      * THE SOFTWARE.
      */
   -->
-      <f:nested>
-        <f:entry title="${%User name}" field="username">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="${%Password}" field="password">
-          <f:password />
-        </f:entry>
-        <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="broker,username,password" />
-      </f:nested>
+      <f:entry title="Select Credential" field="credentialId">
+        <c:select expression="credentialId" filter="com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials"/>
+      </f:entry>
+      <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
+         with="hostname,portNumber,virtualHost,credentialId" />
 </j:jelly>
 

@@ -50,7 +50,6 @@ import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderDat
 import hudson.Util;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
-import hudson.util.Secret;
 
 public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
     @ClassRule
@@ -63,12 +62,13 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         if (!waitForProviderToBeReady(rabbitmq.getCid(), "Starting broker... completed with 0 plugins.")) {
             throw new Exception("RabbitMQ provider container is not ready");
         }
-        System.out.println("######################### CONTAINER STARTED");
+
+        addUsernamePasswordCredential("rabbitmq-username-password", "guest", "guest");
 
         GlobalCIConfiguration.get()
                 .setConfigs(Collections.singletonList(new RabbitMQMessagingProvider(DEFAULT_PROVIDER_NAME, "/",
                         rabbitmq.getIpAddress(), rabbitmq.getPort(), "CI", "amq.fanout", "",
-                        new UsernameAuthenticationMethod("guest", Secret.fromString("guest")))));
+                        new UsernameAuthenticationMethod("rabbitmq-username-password"))));
 
         logger.record("com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingWorker", Level.INFO);
         logger.quiet();

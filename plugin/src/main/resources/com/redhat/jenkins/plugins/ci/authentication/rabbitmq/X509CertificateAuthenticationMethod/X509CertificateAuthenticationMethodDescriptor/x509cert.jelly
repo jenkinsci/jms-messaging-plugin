@@ -26,14 +26,10 @@
      * THE SOFTWARE.
      */
   -->
-      <f:entry title="Select KeyStore Credential" field="keyStoreCredentialId">
-        <c:select expression="keyStoreCredentialId"
-                  filter="com.cloudbees.plugins.credentials.common.CertificateCredentials,com.cloudbees.plugins.credentials.impl.X509ClientCertificateCredentials"/>
-      </f:entry>
-      <f:entry title="Select TrustStore Credential" field="trustStoreCredentialId">
-        <c:select expression="trustStoreCredentialId"
-                  filter="com.cloudbees.plugins.credentials.common.CertificateCredentials,com.cloudbees.plugins.credentials.impl.X509ClientCertificateCredentials"/>
+      <f:entry title="Select X.509 Credential" field="credentialId">
+        <c:select expression="credentialId"
+                  filter="org.jenkinsci.plugins.docker.commons.credentials.DockerServerCredentials"/>
       </f:entry>
       <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
-         with="hostname,portNumber,virtualHost,keyStoreCredentialId,trustStoreCredentialId" />
+         with="hostname,portNumber,virtualHost,credentialId" />
 </j:jelly>

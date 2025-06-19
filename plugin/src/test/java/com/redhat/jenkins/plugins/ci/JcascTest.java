@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.SSLCertificateAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.X509CertificateAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
@@ -56,8 +57,7 @@ public class JcascTest {
         assertThat(amq.getTopicProvider(), Matchers.instanceOf(DefaultTopicProvider.class));
         assertEquals(false, amq.getUseQueues());
         UsernameAuthenticationMethod amqam = (UsernameAuthenticationMethod) amq.getAuthenticationMethod();
-        assertEquals("foo", amqam.getUsername());
-        assertEquals("bar", amqam.getPassword().getPlainText());
+        assertEquals("amq-username-password", amqam.getCredentialId());
 
         KafkaMessagingProvider kafka = (KafkaMessagingProvider) gc.getProvider("Kafka");
         assertEquals("default.topic", kafka.getTopic());
@@ -72,9 +72,18 @@ public class JcascTest {
         assertEquals("baz", rmq.getTopic());
         assertEquals("rabbitvh.example.com", rmq.getVirtualHost());
         SSLCertificateAuthenticationMethod rmqam = (SSLCertificateAuthenticationMethod) rmq.getAuthenticationMethod();
-        assertEquals("/tmp/key", rmqam.getKeystore());
-        assertEquals("/tmp/trust", rmqam.getTruststore());
-        assertEquals("keypwd", rmqam.getKeypwd().getPlainText());
-        assertEquals("trustpwd", rmqam.getTrustpwd().getPlainText());
+        assertEquals("rabbitmq-keystore-credential-id", rmqam.getKeyStoreCredentialId());
+        assertEquals("rabbitmq-truststore-credential-id", rmqam.getTrustStoreCredentialId());
+
+        RabbitMQMessagingProvider rmqx = (RabbitMQMessagingProvider) gc.getProvider("Rabbit MQ - X.509");
+        assertEquals("ex", rmqx.getExchange());
+        assertEquals("rabbitmq.example.com", rmqx.getHostname());
+        assertEquals(4545, rmqx.getPortNumber().intValue());
+        assertEquals("foo.bar", rmqx.getQueue());
+        assertEquals("baz", rmqx.getTopic());
+        assertEquals("rabbitvh.example.com", rmqx.getVirtualHost());
+        X509CertificateAuthenticationMethod rmqxam = (X509CertificateAuthenticationMethod) rmqx
+                .getAuthenticationMethod();
+        assertEquals("rabbitmq-x509-credential-id", rmqxam.getCredentialId());
     }
 }

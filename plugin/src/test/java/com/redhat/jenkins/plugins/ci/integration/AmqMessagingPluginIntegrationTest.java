@@ -64,7 +64,6 @@ import hudson.model.TextParameterDefinition;
 import hudson.model.TextParameterValue;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.tasks.Shell;
-import hudson.util.Secret;
 
 public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
 
@@ -82,9 +81,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         String brokerUrl = amq.getBroker();
 
+        addUsernamePasswordCredential("amq-username-password", "admin", "redhat");
+
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
         gcc.setConfigs(Collections.singletonList(new ActiveMqMessagingProvider(DEFAULT_PROVIDER_NAME, brokerUrl, false,
-                DEFAULT_TOPIC_NAME, null, new UsernameAuthenticationMethod("admin", Secret.fromString("redhat")))));
+                DEFAULT_TOPIC_NAME, null, new UsernameAuthenticationMethod("amq-username-password"))));
 
         logger.record("com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingWorker", Level.INFO);
         logger.quiet();
@@ -503,6 +504,7 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("\"JMSExpiration\":0", jobA.getLastBuild());
 
+        jobB.getPublishersList().clear();
         jobB.getPublishersList().add(new CIMessageNotifier(
                 getPublisherProviderData(DEFAULT_PROVIDER_NAME, null, "CI_STATUS = failed", null, 10000)));
 
