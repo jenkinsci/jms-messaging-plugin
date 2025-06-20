@@ -384,9 +384,15 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 connection = connectionFactory.createConnection();
                 connection.start();
 
+                String kind = provider.getUseQueues() ? "queue" : "topic";
                 session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                Destination destination = session.createTopic(ltopic);
-                publisher = session.createProducer(destination);
+                if (provider.getUseQueues()) {
+                    Queue destination = session.createQueue(ltopic);
+                    publisher = session.createProducer(destination);
+                } else {
+                    Topic destination = session.createTopic(ltopic);
+                    publisher = session.createProducer(destination);
+                }
 
                 message = session.createTextMessage("");
                 message.setJMSType(JSON_TYPE);
@@ -439,7 +445,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 mesgId = message.getJMSMessageID();
                 mesgContent = message.getText();
 
-                log.info("Sent message for job '" + build.getParent().getName() + "' to topic '" + ltopic + "':\n"
+                log.info("Sent message for job '" + build.getParent().getName() + "' to " + kind + " '" + ltopic + "':\n"
                         + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
