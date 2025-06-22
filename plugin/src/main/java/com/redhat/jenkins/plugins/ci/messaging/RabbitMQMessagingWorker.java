@@ -32,6 +32,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderDat
 import com.redhat.utils.PluginUtils;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -188,9 +189,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             while ((new Date().getTime() - lastSeenMessage) < timeout) {
                 if (!messageQueue.isEmpty()) {
                     RabbitMQMessage data = messageQueue.poll();
-                    // Reset timer
                     lastSeenMessage = data.getTimestamp().getTime();
-                    //
                     if (provider.verify(data.getBodyJson(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<>();
                         params.put(pd.getMessageVariable(), data.getBodyJson());
@@ -266,7 +265,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+    public SendResult sendMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata) {
         RabbitMQPublisherProviderData pd = (RabbitMQPublisherProviderData) pdata;
         try {
             if (connection == null || !connection.isOpen()) {
@@ -293,15 +292,15 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         try {
 
             EnvVars env = new EnvVars();
-            env.putAll(build.getEnvironment(listener));
-            env.put("CI_NAME", build.getParent().getName());
-            if (!build.isBuilding()) {
-                env.put("CI_STATUS", (build.getResult() == Result.SUCCESS ? "passed" : "failed"));
-                env.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
+            env.putAll(run.getEnvironment(listener));
+            env.put("CI_NAME", run.getParent().getName());
+            if (!run.isBuilding()) {
+                env.put("CI_STATUS", (run.getResult() == Result.SUCCESS ? "passed" : "failed"));
+                env.put("BUILD_STATUS", Objects.requireNonNull(run.getResult()).toString());
             }
 
             RabbitMQMessage msg = new RabbitMQMessage(
-                    PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener)),
+                    PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener)),
                     PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
 
             msg.setTimestamp(System.currentTimeMillis() / 1000L);
@@ -353,7 +352,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+    public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace) {
         RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData) pdata;
 
         try {
@@ -420,11 +419,16 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     }
                     listener.getLogger().println("Message: '" + message.getMsgId() + "' was succesfully checked.");
 
-                    if (build != null) {
+                    if (run != null) {
                         if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
-                            EnvVars vars = new EnvVars();
-                            vars.put(pd.getMessageVariable(), message.getBodyJson());
-                            build.addAction(new CIEnvironmentContributingAction(vars));
+                            if (pd.getUseFiles()) {
+                                FilePath msgFile = workspace.child(pd.getMessageVariable());
+                                msgFile.write(message.getBodyJson(), String.valueOf(StandardCharsets.UTF_8));
+                            } else {
+                                EnvVars vars = new EnvVars();
+                                vars.put(pd.getMessageVariable(), message.getBodyJson());
+                                run.addAction(new CIEnvironmentContributingAction(vars));
+                            }
                         }
                     }
                     channel.basicAck(message.getDeliveryTag(), false);

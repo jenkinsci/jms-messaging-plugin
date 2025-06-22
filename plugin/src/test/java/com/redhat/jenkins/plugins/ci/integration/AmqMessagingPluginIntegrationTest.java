@@ -98,10 +98,10 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     }
 
     @Override
-    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, String selector,
-            MsgCheck... msgChecks) {
+    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, Boolean useFiles,
+            String selector, MsgCheck... msgChecks) {
         return new ActiveMQSubscriberProviderData(provider, overrideTopic(topic), Util.fixNull(selector),
-                Arrays.asList(msgChecks), Util.fixNull(variableName, "CI_MESSAGE"), 60);
+                Arrays.asList(msgChecks), Util.fixNull(variableName, "CI_MESSAGE"), useFiles, 60);
     }
 
     @Override
@@ -516,5 +516,20 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         jobA.delete();
         jobB.delete();
+    }
+
+    @Test
+    public void testCITriggerWithFileParameter() throws Exception {
+        _testCITriggerWithFileParameter(List.of("CI_MESSAGE", "CI_MESSAGE_HEADERS"));
+    }
+
+    @Test
+    public void testWaitForCIMessageStepWithFiles() throws Exception {
+        _testWaitForCIMessageStepWithFiles(List.of("CI_MESSAGE", "CI_MESSAGE_HEADERS"));
+    }
+
+    @Test
+    public void testWaitForCIMessagePipelineWithFiles() throws Exception {
+        _testWaitForCIMessagePipelineWithFiles(List.of("CI_MESSAGE", "CI_MESSAGE_HEADERS"));
     }
 }

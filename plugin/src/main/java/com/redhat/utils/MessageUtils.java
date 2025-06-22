@@ -49,15 +49,15 @@ public class MessageUtils {
         return items;
     }
 
-    public static SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
-        String startMessage = "Sending message for job '" + build.getParent().getName() + "'.";
+    public static SendResult sendMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata) {
+        String startMessage = "Sending message for job '" + run.getParent().getName() + "'.";
         log.info(startMessage);
         listener.getLogger().println(startMessage);
         GlobalCIConfiguration config = GlobalCIConfiguration.get();
         JMSMessagingProvider provider = config.getProvider(pdata.getName());
         if (provider != null) {
-            JMSMessagingWorker worker = provider.createWorker(pdata, build.getParent().getName());
-            SendResult sendResult = worker.sendMessage(build, listener, pdata);
+            JMSMessagingWorker worker = provider.createWorker(pdata, run.getParent().getName());
+            SendResult sendResult = worker.sendMessage(run, listener, pdata);
             if (sendResult.isSucceeded()) {
                 String completedMessage = "Sent successfully with messageId: " + sendResult.getMessageId();
                 log.info(completedMessage);

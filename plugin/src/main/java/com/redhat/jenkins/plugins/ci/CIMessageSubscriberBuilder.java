@@ -37,6 +37,7 @@ import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -79,7 +80,7 @@ public class CIMessageSubscriberBuilder extends Builder {
         return GlobalCIConfiguration.get().getProvider(providerData.getName());
     }
 
-    public String waitforCIMessage(Run<?, ?> build, Launcher launcher, TaskListener listener) {
+    public String waitForCIMessage(Run<?, ?> run, Launcher launcher, TaskListener listener, FilePath workspace) {
         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
         if (provider == null) {
             listener.error("Failed to locate JMSMessagingProvider with name " + providerData.getName()
@@ -87,17 +88,13 @@ public class CIMessageSubscriberBuilder extends Builder {
             return null;
         }
 
-        JMSMessagingWorker worker = provider.createWorker(providerData, build.getParent().getName());
-        return worker.waitForMessage(build, listener, providerData);
-    }
-
-    public boolean doMessageSubscribe(Run<?, ?> run, Launcher launcher, TaskListener listener) {
-        return waitforCIMessage(run, launcher, listener) != null;
+        JMSMessagingWorker worker = provider.createWorker(providerData, run.getParent().getName());
+        return worker.waitForMessage(run, listener, providerData, workspace);
     }
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
-        return doMessageSubscribe(build, launcher, listener);
+        return waitForCIMessage(build, launcher, listener, build.getWorkspace()) != null;
     }
 
     @Extension

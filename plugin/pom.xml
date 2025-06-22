@@ -109,6 +109,10 @@
             <artifactId>credentials</artifactId>
             <version>1415.v831096eb_5534</version>
         </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-cps</artifactId>
+        </dependency>
 
         <!-- Utilities -->
         <dependency>
@@ -231,11 +235,6 @@
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>1.8.15</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-cps</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

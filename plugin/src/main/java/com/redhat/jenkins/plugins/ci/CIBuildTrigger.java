@@ -23,10 +23,13 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +62,8 @@ import hudson.model.BooleanParameterDefinition;
 import hudson.model.BooleanParameterValue;
 import hudson.model.CauseAction;
 import hudson.model.ChoiceParameterDefinition;
+import hudson.model.FileParameterDefinition;
+import hudson.model.FileParameterValue;
 import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.ParameterDefinition;
@@ -388,53 +393,11 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         }
     }
 
-    protected ParametersAction createParameters(Job<?, ?> project, Map<String, String> messageParams) {
-        List<ParameterValue> definedParameters = getDefinedParameters(project);
-        List<ParameterValue> parameters = getUpdatedParameters(messageParams, definedParameters);
-        try {
-            Constructor<ParametersAction> constructor = ParametersAction.class.getConstructor(List.class);
-            return constructor.newInstance(parameters);
-        } catch (NoSuchMethodException e) {
-            ParametersActionInspection inspection = getParametersInspection();
-            if (inspection.isInspectionFailure()) {
-                log.log(Level.WARNING,
-                        "Failed to inspect ParametersAction to determine "
-                                + "if we can behave normally around SECURITY-170.\nSee "
-                                + "https://wiki.jenkins-ci.org/display/SECURITY/Jenkins+Security+Advisory+2016-05-11"
-                                + " for information.");
-            } else if (inspection.isHasSafeParameterConfig()) {
-                StringBuilder txt = new StringBuilder(
-                        "Running on a core with SECURITY-170 fixed but no direct way for Gerrit Trigger"
-                                + " to self-specify safe parameters.");
-                txt.append(" You should consider upgrading to a new Jenkins core version.\n");
-                if (inspection.isKeepUndefinedParameters()) {
-                    txt.append(".keepUndefinedParameters is set so the trigger should behave normally.");
-                } else {
-                    txt.append("No overriding system properties appears to be set,");
-                    txt.append(" your builds might not work as expected.\n");
-                    txt.append("See https://wiki.jenkins-ci.org/display/SECURITY/Jenkins+Security+Advisory+2016-05-11");
-                    txt.append(" for information.");
-                }
-                log.log(Level.WARNING, txt.toString());
-            } else {
-                log.log(Level.FINE, "Running on an old core before safe parameters, we should be safe.");
-            }
-        } catch (IllegalAccessException e) {
-            log.log(Level.WARNING,
-                    "Running on a core with safe parameters fix available, but not allowed to specify them");
-        } catch (Exception e) {
-            log.log(Level.WARNING, "Running on a core with safe parameters fix available, but failed to provide them");
-        }
-        return new ParametersAction(parameters);
-    }
-
-    public void scheduleBuild(Map<String, String> messageParams) {
+    public void scheduleBuild(Map<String, String> params) {
         if (job == null) {
             throw new IllegalStateException("Trigger not started yet");
         }
-        ParametersAction parameters = createParameters(job, messageParams);
-        List<ParameterValue> definedParameters = getDefinedParameters(Objects.requireNonNull(job));
-        List<ParameterValue> buildParameters = getUpdatedParameters(messageParams, definedParameters);
+
         ParameterizedJobMixIn<?, ?> jobMixIn = new ParameterizedJobMixIn() {
             @Override
             protected Job<?, ?> asJob() {
@@ -442,68 +405,74 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             }
         };
 
-        jobMixIn.scheduleBuild2(0, new CauseAction(new CIBuildCause()), parameters,
-                new CIEnvironmentContributingAction(messageParams, buildParameters),
-                new CIShouldScheduleQueueAction(noSquash));
+        List<ParameterValue> updatedParams = getUpdatedParameters(job, params);
+        jobMixIn.scheduleBuild2(0, new CauseAction(new CIBuildCause()), new ParametersAction(updatedParams),
+                new CIEnvironmentContributingAction(params, updatedParams), new CIShouldScheduleQueueAction(noSquash));
     }
 
-    private List<ParameterValue> getUpdatedParameters(Map<String, String> messageParams,
-            List<ParameterValue> definedParams) {
-        // Update any build parameters that may have values from the triggering message.
-        HashMap<String, ParameterValue> newParams = new HashMap<>();
-        for (ParameterValue def : definedParams) {
-            newParams.put(def.getName(), def);
-        }
-        for (Map.Entry<String, String> e : messageParams.entrySet()) {
-            String key = e.getKey();
+    private List<ParameterValue> getUpdatedParameters(Job<?, ?> project, Map<String, String> messageParams) {
+        // Start with default parameters
+        Map<String, ParameterValue> params = getDefaultParameters(project);
 
-            if (newParams.containsKey(key)) {
-                if (newParams.get(key) instanceof TextParameterValue) {
-                    TextParameterValue tpv = new TextParameterValue(key, messageParams.get(key));
-                    newParams.put(key, tpv);
-                } else if (newParams.get(key) instanceof BooleanParameterValue) {
-                    BooleanParameterValue bpv = new BooleanParameterValue(key,
-                            Boolean.parseBoolean(messageParams.get(key)));
-                    newParams.put(key, bpv);
-                } else {
-                    StringParameterValue spv = new StringParameterValue(key, messageParams.get(key));
-                    newParams.put(key, spv);
+        // Override defaults with anything set from the message.
+        ParametersDefinitionProperty properties = project.getProperty(ParametersDefinitionProperty.class);
+        if (properties != null && properties.getParameterDefinitions() != null) {
+            for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {
+                String name = paramDef.getName();
+
+                if (messageParams.containsKey(name)) {
+                    String value = messageParams.get(name);
+                    if (paramDef instanceof BooleanParameterDefinition) {
+                        params.put(name, new BooleanParameterValue(name, Boolean.parseBoolean(value)));
+                    } else if (paramDef instanceof FileParameterDefinition) {
+                        try {
+                            File file = File.createTempFile("jenkins-param-", ".tmp");
+                            try (FileOutputStream fos = new FileOutputStream(file)) {
+                                fos.write(messageParams.get(name).getBytes(StandardCharsets.UTF_8));
+                            }
+                            params.put(name, new FileParameterValue(name, file, name));
+                        } catch (Exception ex) {
+                            log.log(Level.SEVERE, "Exception raised when creating file parameter", ex);
+                        }
+                    } else if (paramDef instanceof StringParameterDefinition) {
+                        // Both String and Choice parameters use StringParameterValue.
+                        params.put(name, new StringParameterValue(name, value));
+                    } else if (paramDef instanceof TextParameterDefinition) {
+                        params.put(name, new TextParameterValue(name, value));
+                    } else {
+                        log.warning("Unrecognized parameter type: " + params.get(name).getClass().getSimpleName());
+                    }
                 }
             }
         }
-        return new ArrayList<>(newParams.values());
+        return new ArrayList<>(params.values());
     }
 
-    private List<ParameterValue> getDefinedParameters(Job<?, ?> project) {
-        List<ParameterValue> parameters = new ArrayList<>();
+    private Map<String, ParameterValue> getDefaultParameters(Job<?, ?> project) {
+        Map<String, ParameterValue> defaults = new HashMap<>();
         ParametersDefinitionProperty properties = project.getProperty(ParametersDefinitionProperty.class);
 
         if (properties != null && properties.getParameterDefinitions() != null) {
             for (ParameterDefinition paramDef : properties.getParameterDefinitions()) {
-                ParameterValue param = null;
-                if (paramDef instanceof StringParameterDefinition) {
-                    param = new StringParameterValue(paramDef.getName(),
-                            ((StringParameterDefinition) paramDef).getDefaultValue());
-                } else if (paramDef instanceof TextParameterDefinition) {
-                    param = new TextParameterValue(paramDef.getName(),
-                            ((TextParameterDefinition) paramDef).getDefaultValue());
-                } else if (paramDef instanceof BooleanParameterDefinition) {
-                    BooleanParameterValue defaultParameterValue = ((BooleanParameterDefinition) paramDef)
-                            .getDefaultParameterValue();
-                    if (defaultParameterValue != null) {
-                        param = new BooleanParameterValue(paramDef.getName(),
-                                Boolean.TRUE.equals(Objects.requireNonNull(defaultParameterValue).getValue()));
+                if (paramDef instanceof BooleanParameterDefinition) {
+                    BooleanParameterDefinition b = (BooleanParameterDefinition) paramDef;
+                    if (b.getDefaultParameterValue() != null) {
+                        defaults.put(b.getName(), new BooleanParameterValue(b.getName(),
+                                Boolean.TRUE.equals(Objects.requireNonNull(b.getDefaultParameterValue()).getValue())));
                     }
                 } else if (paramDef instanceof ChoiceParameterDefinition) {
-                    param = ((ChoiceParameterDefinition) paramDef).getDefaultParameterValue();
-                }
-
-                if (param != null) {
-                    parameters.add(param);
+                    ChoiceParameterDefinition c = (ChoiceParameterDefinition) paramDef;
+                    defaults.put(c.getName(), c.getDefaultParameterValue());
+                } else if (paramDef instanceof StringParameterDefinition) {
+                    StringParameterDefinition s = (StringParameterDefinition) paramDef;
+                    defaults.put(s.getName(), new StringParameterValue(s.getName(), s.getDefaultValue()));
+                } else if (paramDef instanceof TextParameterDefinition) {
+                    TextParameterDefinition t = (TextParameterDefinition) paramDef;
+                    defaults.put(t.getName(), new TextParameterValue(t.getName(), t.getDefaultValue()));
                 }
             }
         }
-        return parameters;
+        return defaults;
     }
 
     private void saveJob() {
