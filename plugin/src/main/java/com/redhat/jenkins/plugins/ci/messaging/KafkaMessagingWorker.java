@@ -190,7 +190,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             // Invalid value org.apache.kafka.common.serialization.StringDeserializer for configuration
             // value.deserializer: Class org.apache.kafka.common.serialization.StringDeserializer could not be found.
             ClassLoader original = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(null);
+            Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
             consumer = new KafkaConsumer<>(pdata.mergeProperties(provider.getMergedConsumerProperties()));
             Thread.currentThread().setContextClassLoader(original);
         }
@@ -222,7 +222,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         String body = "";
         String msgId = "";
         ClassLoader original = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(null);
+        Thread.currentThread().setContextClassLoader(KafkaProducer.class.getClassLoader());
         try (KafkaProducer<String, String> producer = new KafkaProducer<>(
                 pd.mergeProperties(provider.getMergedProducerProperties()))) {
             EnvVars env = new EnvVars();
@@ -278,7 +278,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         }
 
         ClassLoader original = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(null);
+        Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
         try (KafkaConsumer<String, String> lconsumer = new KafkaConsumer<>(
                 pd.mergeProperties(provider.getMergedConsumerProperties()))) {
             int timeout = (pd.getTimeout() != null ? pd.getTimeout()

@@ -445,8 +445,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 mesgId = message.getJMSMessageID();
                 mesgContent = message.getText();
 
-                log.info("Sent message for job '" + build.getParent().getName() + "' to " + kind + " '" + ltopic + "':\n"
-                        + formatMessage(message));
+                log.info("Sent message for job '" + build.getParent().getName() + "' to " + kind + " '" + ltopic
+                        + "':\n" + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
                 return new SendResult(false, mesgId, mesgContent);

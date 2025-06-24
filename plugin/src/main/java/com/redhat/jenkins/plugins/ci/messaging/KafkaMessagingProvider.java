@@ -181,12 +181,12 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
             Properties cprops = getMergedConsumerProperties(consumerProperties);
 
             ClassLoader original = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(null);
+            Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
             try (KafkaConsumer consumer = new KafkaConsumer<>(cprops);
                     KafkaProducer producer = new KafkaProducer<>(pprops)) {
 
                 // Test producer.
-                ProducerRecord<String, String> record = new ProducerRecord<>("test-topic", "test-key", "test-value");
+                ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
                 producer.send(record).get();
 
                 // Test consumer.
