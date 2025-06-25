@@ -247,7 +247,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                     .println(String.format("message id: %s body: %s", producerRecord.key(), producerRecord.value()));
 
         } catch (ExecutionException | IOException | InterruptedException e) {
-            if (pd.isFailOnError()) {
+            if (pd.getFailOnError()) {
                 log.severe("Unhandled exception in perform: ");
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");
