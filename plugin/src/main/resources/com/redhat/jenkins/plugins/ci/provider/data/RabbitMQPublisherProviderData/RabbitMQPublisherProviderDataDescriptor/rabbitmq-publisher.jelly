@@ -30,16 +30,13 @@
         <j:set var="checked" value="${pdata.hasOverrides();}"/>
         <j:set var="value" value="${pdata.getPublisherTopic();}"/>
         <j:set var="name" value="${pdata.getName();}"/>
-        <j:set var="fedoraMessaging" value="${pdata.isFedoraMessaging();}"/>
-        <j:set var="severity" value="${pdata.getSeverity();}"/>
-        <j:set var="schema" value="${pdata.getSchema();}"/>
+        <j:set var="fedoraMessaging" value="false"/>
       </j:when>
       <j:otherwise>
         <j:set var="checked" value="${instance.getOverrides() != null}"/>
         <j:set var="value" value="${instance.getOverrides().getTopic();}"/>
         <j:set var="name" value="${instance.getName();}"/>
-        <j:set var="fedoraMessaging" value="false"/>
-        <j:set var="severity" value="20"/>
+        <j:set var="fedoraMessaging" value="${pdata.getFedoraMessaging();}"/>
       </j:otherwise>
     </j:choose>
     <rh:blockWrapper>
@@ -58,17 +55,12 @@
   </f:entry>
   <f:nested>
     <rh:blockWrapper>
-      <f:optionalBlock field="fedoraMessagingFields" title="Fedora messaging header fields" checked="${fedoraMessaging}">
+      <f:optionalBlock field="fedoraMessaging" title="Fedora messaging header fields" checked="${fedoraMessaging}">
         <f:entry title="${%Severity}" field="severity">
-            <select name="severity" value="${severity}">
-                <option value="10">Debug</option>
-                <option value="20">Info</option>
-                <option value="30">Warning</option>
-                <option value="40">Critical</option>
-            </select>
+            <f:select />
         </f:entry>
         <f:entry title="${%Schema}" field="schema">
-          <f:textbox value="${schema}"/>
+          <f:textbox name="schema"/>
         </f:entry>
       </f:optionalBlock>
     </rh:blockWrapper>

@@ -440,7 +440,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
                 message.setText(PluginUtils.getSubstitutedValue(pd.getMessageContent(), envVars2));
 
-                publisher.send(message, publisher.getDeliveryMode(), publisher.getPriority(), pd.getTimeToLiveMillis());
+                publisher.send(message, publisher.getDeliveryMode(), publisher.getPriority(),
+                        (long) pd.getTimeToLiveMinutes() * 60 * 1000);
 
                 mesgId = message.getJMSMessageID();
                 mesgContent = message.getText();
@@ -453,7 +454,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             }
 
         } catch (IOException | JMSException | InterruptedException e) {
-            if (pd.isFailOnError()) {
+            if (pd.getFailOnError()) {
                 log.severe("Unhandled exception in perform: ");
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");

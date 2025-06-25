@@ -284,7 +284,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
         // Fedora messaging wire format support
         Map<String, Object> headers = new HashMap<>();
-        if (pd.isFedoraMessaging()) {
+        if (pd.getFedoraMessaging()) {
             headers.put("fedora_messaging_severity", pd.getSeverity());
             headers.put("fedora_messaging_schema", pd.getSchema());
             headers.put("sent_at", ZonedDateTime.now().toString());
@@ -314,7 +314,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                         new AMQP.BasicProperties.Builder().headers(headers).messageId(msgId).build(),
                         body.getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
-                if (pd.isFailOnError()) {
+                if (pd.getFailOnError()) {
                     log.severe("Unhandled exception in perform: Failed to send message!");
                     return new SendResult(false, msgId, body);
                 }
@@ -327,7 +327,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             listener.getLogger().println("JSON message body:\n" + body);
 
         } catch (Exception e) {
-            if (pd.isFailOnError()) {
+            if (pd.getFailOnError()) {
                 log.severe("Unhandled exception in perform: ");
                 log.severe(ExceptionUtils.getStackTrace(e));
                 listener.fatalError("Unhandled exception in perform: ");

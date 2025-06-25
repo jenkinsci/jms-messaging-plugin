@@ -46,7 +46,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     private String messageProperties;
     private String messageContent;
     private Boolean failOnError = false;
-    private Integer timeToLiveMillis = 0;
+    private Integer timeToLiveMinutes = 0;
 
     @DataBoundConstructor
     public ActiveMQPublisherProviderData() {
@@ -61,12 +61,12 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
     }
 
     public ActiveMQPublisherProviderData(String name, MessagingProviderOverrides overrides, String messageProperties,
-            String messageContent, Boolean failOnError, Integer timeToLiveMillis) {
+            String messageContent, Boolean failOnError, Integer timeToLiveMinutes) {
         this(name, overrides);
         setMessageProperties(messageProperties);
         setMessageContent(messageContent);
         setFailOnError(failOnError);
-        setTimeToLiveMillis(timeToLiveMillis);
+        setTimeToLiveMinutes(timeToLiveMinutes);
     }
 
     public String getMessageProperties() {
@@ -87,7 +87,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         this.messageContent = Util.fixEmpty(messageContent);
     }
 
-    public Boolean isFailOnError() {
+    public Boolean getFailOnError() {
         return failOnError;
     }
 
@@ -96,13 +96,13 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
         this.failOnError = failOnError;
     }
 
-    public Integer getTimeToLiveMillis() {
-        return timeToLiveMillis;
+    public Integer getTimeToLiveMinutes() {
+        return timeToLiveMinutes;
     }
 
     @DataBoundSetter
-    public void setTimeToLiveMillis(Integer timeToLiveMillis) {
-        this.timeToLiveMillis = timeToLiveMillis;
+    public void setTimeToLiveMinutes(Integer timeToLiveMinutes) {
+        this.timeToLiveMinutes = timeToLiveMinutes;
     }
 
     @Override
@@ -121,12 +121,12 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
                 && Objects.equals(this.messageProperties, thatp.messageProperties)
                 && Objects.equals(this.messageContent, thatp.messageContent)
                 && Objects.equals(this.failOnError, thatp.failOnError)
-                && Objects.equals(this.timeToLiveMillis, thatp.timeToLiveMillis);
+                && Objects.equals(this.timeToLiveMinutes, thatp.timeToLiveMinutes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), messageProperties, messageContent, failOnError, timeToLiveMillis);
+        return Objects.hash(super.hashCode(), messageProperties, messageContent, failOnError, timeToLiveMinutes);
     }
 
     @Extension
@@ -145,8 +145,7 @@ public class ActiveMQPublisherProviderData extends ActiveMQProviderData {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
             return new ActiveMQPublisherProviderData(jo.getString("name"), mpo, jo.getString("messageProperties"),
-                    jo.getString("messageContent"), jo.getBoolean("failOnError"),
-                    jo.getInt("timeToLiveMinutes") * 60 * 1000);
+                    jo.getString("messageContent"), jo.getBoolean("failOnError"), jo.getInt("timeToLiveMinutes"));
         }
 
         public String getConfigPage() {

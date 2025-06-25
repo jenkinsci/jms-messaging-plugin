@@ -37,6 +37,7 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Descriptor;
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
@@ -91,7 +92,7 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         this.messageContent = Util.fixEmpty(messageContent);
     }
 
-    public Boolean isFailOnError() {
+    public Boolean getFailOnError() {
         return failOnError;
     }
 
@@ -100,7 +101,7 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
         this.failOnError = failOnError;
     }
 
-    public Boolean isFedoraMessaging() {
+    public Boolean getFedoraMessaging() {
         return fedoraMessaging;
     }
 
@@ -160,6 +161,15 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
             return "RabbitMQ Publisher Provider Data";
         }
 
+        public ListBoxModel doFillSeverityItems() {
+            ListBoxModel items = new ListBoxModel();
+            items.add("Debug", "10");
+            items.add("Info", "20");
+            items.add("Warning", "30");
+            items.add("Critical", "40");
+            return items;
+        }
+
         @Override
         public RabbitMQPublisherProviderData newInstance(StaplerRequest2 sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
@@ -169,10 +179,10 @@ public class RabbitMQPublisherProviderData extends RabbitMQProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            if (!jo.getJSONObject("fedoraMessagingFields").isNullObject()) {
+            if (!jo.getJSONObject("fedoraMessaging").isNullObject()) {
                 fedoraMessaging = true;
-                severity = jo.getJSONObject("fedoraMessagingFields").getInt("severity");
-                schema = jo.getJSONObject("fedoraMessagingFields").getString("schema");
+                severity = jo.getJSONObject("fedoraMessaging").getInt("severity");
+                schema = jo.getJSONObject("fedoraMessaging").getString("schema");
             }
             return new RabbitMQPublisherProviderData(jo.getString("name"), mpo, jo.getString("messageContent"),
                     jo.getBoolean("failOnError"), fedoraMessaging, severity, schema);

@@ -73,7 +73,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         this.messageContent = Util.fixEmpty(messageContent);
     }
 
-    public Boolean isFailOnError() {
+    public Boolean getFailOnError() {
         return failOnError;
     }
 
