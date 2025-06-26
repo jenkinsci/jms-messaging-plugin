@@ -26,9 +26,6 @@ package com.redhat.jenkins.plugins.ci;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -310,87 +307,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
     public void clearJobActions() {
         getJobActions().clear();
-    }
-
-    /**
-     * Inspects {@link ParametersAction} to see what kind of capabilities it has in regards to SECURITY-170. Assuming
-     * the safeParameters constructor could not be found.
-     *
-     * @return the inspection result
-     */
-    private static synchronized ParametersActionInspection getParametersInspection() {
-        if (parametersInspectionCache == null) {
-            parametersInspectionCache = new ParametersActionInspection();
-        }
-        return parametersInspectionCache;
-    }
-
-    /**
-     * Stored cache of the inspection.
-     *
-     * @see #getParametersInspection()
-     */
-    private static volatile ParametersActionInspection parametersInspectionCache = null;
-
-    /**
-     * Data structure with information regarding what kind of capabilities {@link ParametersAction} has.
-     */
-    private static class ParametersActionInspection {
-        private static final Class<ParametersAction> KLASS = ParametersAction.class;
-        private boolean inspectionFailure;
-        private boolean keepUndefinedParameters = false;
-        private boolean hasSafeParameterConfig = false;
-
-        /**
-         * Constructor that performs the inspection.
-         */
-        ParametersActionInspection() {
-            try {
-                for (Field field : KLASS.getDeclaredFields()) {
-                    if (Modifier.isStatic(field.getModifiers())
-                            && (field.getName().equals("KEEP_UNDEFINED_PARAMETERS_SYSTEM_PROPERTY_NAME")
-                                    || field.getName().equals("SAFE_PARAMETERS_SYSTEM_PROPERTY_NAME"))) {
-                        this.hasSafeParameterConfig = true;
-                        break;
-                    }
-                }
-                if (hasSafeParameterConfig) {
-                    if (Boolean.getBoolean(KLASS.getName() + ".keepUndefinedParameters")) {
-                        this.keepUndefinedParameters = true;
-                    }
-                }
-                this.inspectionFailure = false;
-            } catch (Exception e) {
-                this.inspectionFailure = true;
-            }
-        }
-
-        /**
-         * If the system property .keepUndefinedParameters is set and set to true.
-         *
-         * @return true if so.
-         */
-        boolean isKeepUndefinedParameters() {
-            return keepUndefinedParameters;
-        }
-
-        /**
-         * If any of the constant fields regarding safeParameters are declared in {@link ParametersAction}.
-         *
-         * @return true if so.
-         */
-        boolean isHasSafeParameterConfig() {
-            return hasSafeParameterConfig;
-        }
-
-        /**
-         * If there was an exception when inspecting the class.
-         *
-         * @return true if so.
-         */
-        public boolean isInspectionFailure() {
-            return inspectionFailure;
-        }
     }
 
     public void scheduleBuild(Map<String, String> params) {

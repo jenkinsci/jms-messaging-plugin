@@ -21,6 +21,7 @@ import org.jenkinsci.plugins.workflow.cps.Snippetizer;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
+import com.google.common.base.Strings;
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.CIMessageBuilder;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
@@ -1230,6 +1231,99 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
         j.assertBuildStatusSuccess(jobA.getLastBuild());
         j.assertLogContains("Hello World", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
+    }
+
+    public void _testCITriggerWithMessageTooLong() throws Exception {
+        FreeStyleProject jobA = j.createFreeStyleProject();
+        jobA.getBuildersList().add(new Shell("env | sort"));
+        attachTrigger(
+                new CIBuildTrigger(false,
+                        Collections.singletonList(getSubscriberProviderData(testName.getMethodName(), null, null))),
+                jobA);
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), "",
+                "{\"msg\": \"" + Strings.repeat("a", 131061) + "\"}")));
+
+        j.buildAndAssertSuccess(jobB);
+
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatus(Result.FAILURE, jobA.getLastBuild());
+        j.assertLogContains("Argument list too long", jobA.getLastBuild());
+
+        jobA.addProperty(new ParametersDefinitionProperty(
+                Collections.singletonList(new FileParameterDefinition("CI_MESSAGE", ""))));
+
+        j.buildAndAssertSuccess(jobB);
+
+        waitUntilTriggeredBuildCompletes(jobA, 2);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
+    }
+
+    public void _testWaitForCIMessageStepWithMessageTooLong() throws Exception {
+        FreeStyleProject jobA = j.createFreeStyleProject();
+        jobA.getBuildersList().add(new CIMessageSubscriberBuilder(
+                getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "CI_MESSAGE", false, "")));
+        jobA.getBuildersList().add(new Shell("env | sort"));
+
+        scheduleAwaitStep(jobA);
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), "",
+                "{\"msg\": \"" + Strings.repeat("a", 131061) + "\"}")));
+
+        j.buildAndAssertSuccess(jobB);
+        waitUntilTriggeredBuildCompletes(jobA);
+
+        j.assertBuildStatus(Result.FAILURE, jobA.getLastBuild());
+        j.assertLogContains("Argument list too long", jobA.getLastBuild());
+
+        jobA.getBuildersList().clear();
+        jobA.getBuildersList().add(new CIMessageSubscriberBuilder(
+                getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "CI_MESSAGE", true, "")));
+        jobA.getBuildersList().add(new Shell("env | sort"));
+        scheduleAwaitStep(jobA, 2);
+
+        j.buildAndAssertSuccess(jobB);
+        waitUntilTriggeredBuildCompletes(jobA, 2);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
+    }
+
+    public void _testWaitForCIMessagePipelineWithMessageTooLong() throws Exception {
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        ProviderData pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "CI_MESSAGE",
+                false, "");
+        String postStatements = "sh 'printenv'";
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd, null, postStatements)));
+
+        scheduleAwaitStep(jobA);
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderData(testName.getMethodName(), "",
+                "{\"msg\": \"" + Strings.repeat("a", 131061) + "\"}")));
+
+        j.buildAndAssertSuccess(jobB);
+        waitUntilTriggeredBuildCompletes(jobA);
+
+        j.assertBuildStatus(Result.FAILURE, jobA.getLastBuild());
+        j.assertLogContains("Argument list too long", jobA.getLastBuild());
+
+        pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "CI_MESSAGE", true, "");
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd, null, postStatements)));
+        scheduleAwaitStep(jobA, 2);
+
+        j.buildAndAssertSuccess(jobB);
+        waitUntilTriggeredBuildCompletes(jobA, 2);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
 
         jobA.delete();
         jobB.delete();
