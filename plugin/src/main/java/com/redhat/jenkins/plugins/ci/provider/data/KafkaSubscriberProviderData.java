@@ -54,6 +54,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
 
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
     private String variable = DEFAULT_VARIABLE_NAME;
+    private Boolean useFiles = false;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
@@ -69,10 +70,11 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     }
 
     public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, String properties,
-            List<MsgCheck> checks, String variable, Integer timeout) {
+            List<MsgCheck> checks, String variable, Boolean useFiles, Integer timeout) {
         this(name, overrides, properties);
         this.checks = checks;
         this.variable = variable;
+        this.useFiles = useFiles;
         this.timeout = timeout;
     }
 
@@ -92,6 +94,15 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     @DataBoundSetter
     public void setVariable(String variable) {
         this.variable = variable;
+    }
+
+    public Boolean getUseFiles() {
+        return useFiles;
+    }
+
+    @DataBoundSetter
+    public void setUseFiles(boolean useFiles) {
+        this.useFiles = useFiles;
     }
 
     public Integer getTimeout() {
@@ -126,12 +137,13 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
         KafkaSubscriberProviderData thatp = (KafkaSubscriberProviderData) that;
         return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
                 && Objects.equals(this.properties, thatp.properties) && Objects.equals(this.checks, thatp.checks)
-                && Objects.equals(this.variable, thatp.variable) && Objects.equals(this.timeout, thatp.timeout);
+                && Objects.equals(this.variable, thatp.variable) && Objects.equals(this.useFiles, thatp.useFiles)
+                && Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, overrides, properties, checks, variable, timeout);
+        return Objects.hash(name, overrides, properties, checks, variable, useFiles, timeout);
     }
 
     @Extension
@@ -159,7 +171,8 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
             if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
-            return new KafkaSubscriberProviderData(jo.getString("name"), mpo, properties, checks, variable, timeout);
+            return new KafkaSubscriberProviderData(jo.getString("name"), mpo, properties, checks, variable,
+                    jo.getBoolean("useFiles"), timeout);
         }
 
         public String getDefaultVariable() {

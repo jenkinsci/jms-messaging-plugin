@@ -26,6 +26,7 @@ package com.redhat.jenkins.plugins.ci.pipeline;
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -53,6 +54,7 @@ import com.redhat.utils.MessageUtils;
 
 import hudson.AbortException;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -60,6 +62,7 @@ import hudson.util.ListBoxModel;
 import jenkins.util.Timer;
 
 public class CIMessageSubscriberStep extends Step {
+    private static final Logger log = Logger.getLogger(CIMessageSubscriberStep.class.getName());
 
     private ProviderData providerData;
 
@@ -104,6 +107,7 @@ public class CIMessageSubscriberStep extends Step {
                 throw new Exception("Unrecognized provider name: " + step.getProviderData().getName());
             }
 
+            StepContext c = getContext();
             task = Timer.get().submit(() -> {
                 try {
                     ProviderData pd = null;
@@ -116,17 +120,16 @@ public class CIMessageSubscriberStep extends Step {
                         pd = (RabbitMQSubscriberProviderData) step.getProviderData();
                     }
                     CIMessageSubscriberBuilder subscriber = new CIMessageSubscriberBuilder(pd);
-                    StepContext c = getContext();
-                    String result = subscriber.waitforCIMessage(c.get(Run.class), c.get(Launcher.class),
-                            c.get(TaskListener.class));
+                    String result = subscriber.waitForCIMessage(c.get(Run.class), c.get(Launcher.class),
+                            c.get(TaskListener.class), c.get(FilePath.class));
                     if (result != null) {
-                        getContext().onSuccess(result);
+                        c.onSuccess(result);
                     } else {
-                        getContext().onFailure(new AbortException("Timeout waiting for message!"));
+                        c.onFailure(new AbortException("Timeout waiting for message!"));
                     }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
-                    getContext().onFailure(e);
+                    c.onFailure(e);
                 }
             });
             return false;
@@ -134,10 +137,11 @@ public class CIMessageSubscriberStep extends Step {
 
         @Override
         public void stop(@Nonnull Throwable cause) throws Exception {
+            StepContext c = getContext();
             if (task != null) {
-                getContext().get(TaskListener.class).getLogger().println("in stop of watcher");
+                c.get(TaskListener.class).getLogger().println("in stop of watcher");
                 task.cancel(true);
-                getContext().onFailure(cause);
+                c.onFailure(cause);
             }
         }
 

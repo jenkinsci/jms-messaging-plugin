@@ -103,6 +103,7 @@ public class CIMessageSenderStep extends Step {
                 throw new Exception("Unrecognized provider name: " + step.getProviderData().getName());
             }
 
+            StepContext c = getContext();
             task = Timer.get().submit(() -> {
                 try {
                     ProviderData pd = null;
@@ -115,16 +116,15 @@ public class CIMessageSenderStep extends Step {
                         pd = (RabbitMQPublisherProviderData) step.getProviderData();
                     }
                     CIMessageNotifier notifier = new CIMessageNotifier(pd);
-                    StepContext c = getContext();
                     SendResult status = notifier.doMessageNotifier(c.get(Run.class), null, c.get(TaskListener.class));
                     if (status.isSucceeded()) {
-                        getContext().onSuccess(status);
+                        c.onSuccess(status);
                     } else {
-                        getContext().onFailure(new Exception("Exception sending message. Please check server logs."));
+                        c.onFailure(new Exception("Exception sending message. Please check server logs."));
                     }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
-                    getContext().onFailure(e);
+                    c.onFailure(e);
                 }
             });
 

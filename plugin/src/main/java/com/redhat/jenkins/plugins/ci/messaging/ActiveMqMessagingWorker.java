@@ -60,6 +60,7 @@ import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -367,7 +368,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+    public SendResult sendMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata) {
         ActiveMQPublisherProviderData pd = (ActiveMQPublisherProviderData) pdata;
         Connection connection = null;
         Session session = null;
@@ -378,7 +379,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         String mesgContent = "";
 
         try {
-            String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
+            String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 connection = connectionFactory.createConnection();
@@ -398,17 +399,17 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 message.setJMSType(JSON_TYPE);
 
                 TreeMap<String, String> envVarParts = new TreeMap<>();
-                message.setStringProperty("CI_NAME", build.getParent().getName());
-                envVarParts.put("CI_NAME", build.getParent().getName());
+                message.setStringProperty("CI_NAME", run.getParent().getName());
+                envVarParts.put("CI_NAME", run.getParent().getName());
 
-                if (!build.isBuilding()) {
-                    String ciStatus = (build.getResult() == Result.SUCCESS ? "passed" : "failed");
+                if (!run.isBuilding()) {
+                    String ciStatus = (run.getResult() == Result.SUCCESS ? "passed" : "failed");
                     message.setStringProperty("CI_STATUS", ciStatus);
                     envVarParts.put("CI_STATUS", ciStatus);
-                    envVarParts.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
+                    envVarParts.put("BUILD_STATUS", Objects.requireNonNull(run.getResult()).toString());
                 }
 
-                EnvVars baseEnvVars = build.getEnvironment(listener);
+                EnvVars baseEnvVars = run.getEnvironment(listener);
                 EnvVars envVars = new EnvVars();
                 envVars.putAll(baseEnvVars);
                 envVars.putAll(envVarParts);
@@ -446,8 +447,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 mesgId = message.getJMSMessageID();
                 mesgContent = message.getText();
 
-                log.info("Sent message for job '" + build.getParent().getName() + "' to " + kind + " '" + ltopic
-                        + "':\n" + formatMessage(message));
+                log.info("Sent message for job '" + run.getParent().getName() + "' to " + kind + " '" + ltopic + "':\n"
+                        + formatMessage(message));
             } else {
                 log.severe("One or more of the following is invalid (null): user, password, topic, broker.");
                 return new SendResult(false, mesgId, mesgContent);
@@ -491,7 +492,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+    public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace) {
         ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData) pdata;
         String ip = null;
         try {
@@ -502,7 +503,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
         String ltopic = getTopic(provider);
         try {
-            ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
+            ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
         } catch (IOException | InterruptedException e) {
             log.warning(e.getMessage());
         }
@@ -539,10 +540,18 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         String value = getMessageBody(message);
                         if (provider.verify(value, pd.getChecks(), jobname)) {
                             if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
-                                EnvVars vars = new EnvVars();
-                                vars.put(pd.getMessageVariable(), value);
-                                vars.put(pd.getHeadersVariable(), getMessageHeaders(message));
-                                build.addAction(new CIEnvironmentContributingAction(vars));
+                                String headers = getMessageHeaders(message);
+                                if (pd.getUseFiles()) {
+                                    FilePath msgFile = workspace.child(pd.getMessageVariable());
+                                    msgFile.write(value, String.valueOf(StandardCharsets.UTF_8));
+                                    FilePath hdrFile = workspace.child(pd.getHeadersVariable());
+                                    hdrFile.write(headers, String.valueOf(StandardCharsets.UTF_8));
+                                } else {
+                                    EnvVars vars = new EnvVars();
+                                    vars.put(pd.getMessageVariable(), value);
+                                    vars.put(pd.getHeadersVariable(), headers);
+                                    run.addAction(new CIEnvironmentContributingAction(vars));
+                                }
                             }
                             log.info("Received message with selector: " + pd.getSelector() + "\n"
                                     + formatMessage(message));
@@ -554,7 +563,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 } while ((new Date().getTime() - startTime) < timeout && message != null);
                 log.info("Timed out waiting for message!");
                 listener.getLogger().println("Timed out waiting for message!");
-            } catch (Exception e) {
+            } catch (InterruptedException | IOException | JMSException e) {
                 log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
             } finally {
                 if (consumer != null) {

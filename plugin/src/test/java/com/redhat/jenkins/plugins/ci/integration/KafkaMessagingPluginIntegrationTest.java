@@ -93,10 +93,10 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     }
 
     @Override
-    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, String selector,
-            MsgCheck... msgChecks) {
+    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, Boolean useFiles,
+            String selector, MsgCheck... msgChecks) {
         return new KafkaSubscriberProviderData(provider, overrideTopic(topic), "group.id=" + testName.getMethodName(),
-                Arrays.asList(msgChecks), Util.fixNull(variableName, "CI_MESSAGE"), 60);
+                Arrays.asList(msgChecks), Util.fixNull(variableName, "CI_MESSAGE"), useFiles, 60);
     }
 
     @Override
@@ -522,5 +522,20 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     @Test
     public void testPipelineInvalidProvider() throws Exception {
         _testPipelineInvalidProvider();
+    }
+
+    @Test
+    public void testCITriggerWithFileParameter() throws Exception {
+        _testCITriggerWithFileParameter(List.of("CI_MESSAGE", "CI_MESSAGE_RECORD"));
+    }
+
+    @Test
+    public void testWaitForCIMessageStepWithFiles() throws Exception {
+        _testWaitForCIMessageStepWithFiles(List.of("CI_MESSAGE", "CI_MESSAGE_RECORD"));
+    }
+
+    @Test
+    public void testWaitForCIMessagePipelineWithFiles() throws Exception {
+        _testWaitForCIMessagePipelineWithFiles(List.of("CI_MESSAGE", "CI_MESSAGE_RECORD"));
     }
 }

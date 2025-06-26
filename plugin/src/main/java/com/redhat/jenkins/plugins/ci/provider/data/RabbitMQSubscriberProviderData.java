@@ -54,6 +54,7 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
 
     private @Nonnull List<MsgCheck> checks = new ArrayList<>();
     private String variable = DEFAULT_VARIABLE_NAME;
+    private Boolean useFiles = false;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
@@ -79,12 +80,13 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     }
 
     public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides,
-            @Nonnull List<MsgCheck> checks, String variable, Integer timeout) {
+            @Nonnull List<MsgCheck> checks, String variable, Boolean useFiles, Integer timeout) {
         this(name, overrides);
         if (checks == null)
             throw new IllegalArgumentException("checks are null");
         setChecks(checks);
         setVariable(variable);
+        setUseFiles(useFiles);
         setTimeout(timeout);
     }
 
@@ -116,6 +118,15 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         this.variable = variable;
     }
 
+    public Boolean getUseFiles() {
+        return useFiles;
+    }
+
+    @DataBoundSetter
+    public void setUseFiles(boolean useFiles) {
+        this.useFiles = useFiles;
+    }
+
     public Integer getTimeout() {
         return timeout;
     }
@@ -139,12 +150,12 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
         RabbitMQSubscriberProviderData thatp = (RabbitMQSubscriberProviderData) that;
         return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
                 && Objects.equals(this.checks, thatp.checks) && Objects.equals(this.variable, thatp.variable)
-                && Objects.equals(this.timeout, thatp.timeout);
+                && Objects.equals(this.useFiles, thatp.useFiles) && Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), checks, variable, timeout);
+        return Objects.hash(super.hashCode(), checks, variable, useFiles, timeout);
     }
 
     @Extension
@@ -172,7 +183,8 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
             if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
-            return new RabbitMQSubscriberProviderData(jo.getString("name"), mpo, checks, variable, timeout);
+            return new RabbitMQSubscriberProviderData(jo.getString("name"), mpo, checks, variable,
+                    jo.getBoolean("useFiles"), timeout);
         }
 
         public String getDefaultVariable() {

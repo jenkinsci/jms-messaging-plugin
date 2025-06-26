@@ -96,7 +96,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
             jobA.addTrigger(new CIBuildTrigger(true,
                     Collections.singletonList(new ActiveMQSubscriberProviderData(
                             SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, null, "CI_STATUS = 'failed'",
-                            Collections.emptyList(), "CI_MESSAGE", 60))));
+                            Collections.emptyList(), "CI_MESSAGE", false, 60))));
         }
         waitForNoAMQTaskThreads();
 
@@ -167,7 +167,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
                                                                                                                 // '=';
                                                                                                                 // invalid
                                                                                                                 // syntax.
-                        Collections.emptyList(), "CI_MESSAGE", 60))));
+                        Collections.emptyList(), "CI_MESSAGE", false, 60))));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         for (int i = 0; i < 5 && getCurrentTriggerThreadIds("receive").size() > 0; i++) {
@@ -188,14 +188,14 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         jobA.addTrigger(new CIBuildTrigger(true,
                 Collections.singletonList(
                         new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_STATUS = 'failed'", Collections.emptyList(), "CI_MESSAGE", 60))));
+                                null, "CI_STATUS = 'failed'", Collections.emptyList(), "CI_MESSAGE", false, 60))));
         new CIBuildTrigger(true,
                 Collections.singletonList(new ActiveMQSubscriberProviderData(
                         SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME, null, "CI_STATUS 'failed'", // Missing
                                                                                                                 // '=';
                                                                                                                 // invalid
                                                                                                                 // syntax.
-                        Collections.emptyList(), "CI_MESSAGE", 60))).start(jobA, true);
+                        Collections.emptyList(), "CI_MESSAGE", false, 60))).start(jobA, true);
 
         List<Long> ids2 = getCurrentTriggerThreadIds("receiver");
         assertEquals("Trigger threads valid selector size", 1, ids2.size());
@@ -269,7 +269,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         jobA.addTrigger(new CIBuildTrigger(true,
                 Collections.singletonList(
                         new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_STATUS = 'failed'", Collections.emptyList(), "CI_MESSAGE", 60))));
+                                null, "CI_STATUS = 'failed'", Collections.emptyList(), "CI_MESSAGE", false, 60))));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         List<Long> ids1 = getCurrentTriggerThreadIds("receiver");
@@ -279,7 +279,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         jobA.getTrigger(CIBuildTrigger.class)
                 .setProviders(Collections.singletonList(
                         new ActiveMQSubscriberProviderData(SharedMessagingPluginIntegrationTest.DEFAULT_PROVIDER_NAME,
-                                null, "CI_STATUS = 'success'", Collections.emptyList(), "CI_MESSAGE", 60)));
+                                null, "CI_STATUS = 'success'", Collections.emptyList(), "CI_MESSAGE", false, 60)));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         List<Long> ids2 = getCurrentTriggerThreadIds("receiver");

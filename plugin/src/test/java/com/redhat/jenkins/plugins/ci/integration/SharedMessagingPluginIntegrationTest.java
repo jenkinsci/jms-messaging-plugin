@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +31,10 @@ import com.redhat.jenkins.plugins.ci.pipeline.CIMessageSubscriberStep;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 
 import hudson.model.BooleanParameterDefinition;
+import hudson.model.FileParameterDefinition;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.ParameterDefinition;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.Result;
@@ -53,11 +56,16 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public static String DEFAULT_PROVIDER_NAME = "test";
 
     public abstract ProviderData getSubscriberProviderData(String provider, String topic, String variableName,
-            String selector, MsgCheck... msgChecks);
+            Boolean useFiles, String selector, MsgCheck... msgChecks);
+
+    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, String selector,
+            MsgCheck... msgChecks) {
+        return getSubscriberProviderData(provider, topic, variableName, false, selector, msgChecks);
+    }
 
     public ProviderData getSubscriberProviderData(String topic, String variableName, String selector,
             MsgCheck... msgChecks) {
-        return getSubscriberProviderData(DEFAULT_PROVIDER_NAME, topic, variableName, selector, msgChecks);
+        return getSubscriberProviderData(DEFAULT_PROVIDER_NAME, topic, variableName, false, selector, msgChecks);
     }
 
     public abstract ProviderData getPublisherProviderData(String provider, String topic, String properties,
@@ -191,7 +199,6 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         FreeStyleProject jobA = j.createFreeStyleProject();
 
         jobA.getBuildersList().add(new Shell("echo CI_MESSAGE = \"$CI_MESSAGE\""));
-        jobA.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition("CI_MESSAGE", "", "")));
         attachTrigger(
                 new CIBuildTrigger(false,
                         Collections.singletonList(getSubscriberProviderData(testName.getMethodName(), null, null))),
@@ -1143,6 +1150,86 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd)));
         build = j.buildAndAssertStatus(Result.FAILURE, jobA);
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
+
+        jobA.delete();
+        jobB.delete();
+    }
+
+    public void _testCITriggerWithFileParameter(List<String> filenames) throws Exception {
+        FreeStyleProject jobA = j.createFreeStyleProject();
+        String script = "if [ ! -e QWERTY ]; then\n    exit 1\nfi\ncat QWERTY; echo ''";
+        List<ParameterDefinition> params = new ArrayList<>();
+        for (String name : filenames) {
+            jobA.getBuildersList().add(new Shell(script.replaceAll("QWERTY", name)));
+            params.add(new FileParameterDefinition(name, ""));
+        }
+        jobA.addProperty(new ParametersDefinitionProperty(params));
+        attachTrigger(
+                new CIBuildTrigger(false,
+                        Collections.singletonList(getSubscriberProviderData(testName.getMethodName(), null, null))),
+                jobA);
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(
+                getPublisherProviderData(testName.getMethodName(), "", "{\"msg\": \"Hello World\"}")));
+
+        j.buildAndAssertSuccess(jobB);
+
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains("Hello World", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
+    }
+
+    public void _testWaitForCIMessageStepWithFiles(List<String> filenames) throws Exception {
+        FreeStyleProject jobA = j.createFreeStyleProject();
+        jobA.getBuildersList().add(new CIMessageSubscriberBuilder(
+                getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "CI_MESSAGE", true, "")));
+
+        String script = "if [ ! -e QWERTY ]; then\n    exit 1\nfi\ncat QWERTY; echo ''";
+        for (String name : filenames) {
+            jobA.getBuildersList().add(new Shell(script.replaceAll("QWERTY", name)));
+        }
+        scheduleAwaitStep(jobA);
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(
+                getPublisherProviderData(testName.getMethodName(), "", "{\"msg\": \"Hello World\"}")));
+
+        j.buildAndAssertSuccess(jobB);
+        waitUntilTriggeredBuildCompletes(jobA);
+
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains("Hello World", jobA.getLastBuild());
+
+        jobA.delete();
+        jobB.delete();
+    }
+
+    public void _testWaitForCIMessagePipelineWithFiles(List<String> filenames) throws Exception {
+        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
+        ProviderData pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "CI_MESSAGE", true,
+                "");
+        String validate = "if (!fileExists('QWERTY')) {\n        error('File does not exist: QWERTY')\n    }\n";
+        String postStatements = "";
+        for (String name : filenames) {
+            postStatements += validate.replaceAll("QWERTY", name);
+        }
+        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd, null, postStatements)));
+
+        scheduleAwaitStep(jobA);
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(
+                getPublisherProviderData(testName.getMethodName(), "", "{\"msg\": \"Hello World\"}")));
+
+        j.buildAndAssertSuccess(jobB);
+        waitUntilTriggeredBuildCompletes(jobA);
+
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains("Hello World", jobA.getLastBuild());
 
         jobA.delete();
         jobB.delete();

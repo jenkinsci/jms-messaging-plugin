@@ -25,6 +25,7 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -57,6 +58,7 @@ import com.redhat.jenkins.plugins.ci.provider.data.*;
 import com.redhat.utils.PluginUtils;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -217,7 +219,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+    public SendResult sendMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata) {
         KafkaPublisherProviderData pd = (KafkaPublisherProviderData) pdata;
         String body = "";
         String msgId = "";
@@ -226,15 +228,15 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         try (KafkaProducer<String, String> producer = new KafkaProducer<>(
                 pd.mergeProperties(provider.getMergedProducerProperties()))) {
             EnvVars env = new EnvVars();
-            env.putAll(build.getEnvironment(listener));
-            env.put("CI_NAME", build.getParent().getName());
-            if (!build.isBuilding()) {
-                String ciStatus = (build.getResult() == Result.SUCCESS ? "passed" : "failed");
+            env.putAll(run.getEnvironment(listener));
+            env.put("CI_NAME", run.getParent().getName());
+            if (!run.isBuilding()) {
+                String ciStatus = (run.getResult() == Result.SUCCESS ? "passed" : "failed");
                 env.put("CI_STATUS", ciStatus);
-                env.put("BUILD_STATUS", Objects.requireNonNull(build.getResult()).toString());
+                env.put("BUILD_STATUS", Objects.requireNonNull(run.getResult()).toString());
             }
 
-            String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
+            String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
             ProducerRecord<String, String> producerRecord = new ProducerRecord<>(ltopic, null,
                     Instant.now().toEpochMilli(), UUID.randomUUID().toString(),
                     PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
@@ -267,12 +269,12 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     }
 
     @Override
-    public String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata) {
+    public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace) {
         KafkaSubscriberProviderData pd = (KafkaSubscriberProviderData) pdata;
 
         String ltopic = getTopic(provider);
         try {
-            ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), build.getEnvironment(listener));
+            ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
         } catch (IOException | InterruptedException e) {
             log.warning(e.getMessage());
         }
@@ -298,10 +300,21 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                     if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                         EnvVars vars = new EnvVars();
                         if (rec.value() != null) {
-                            vars.put(pd.getMessageVariable(), rec.value());
+                            if (pd.getUseFiles()) {
+                                FilePath msgFile = workspace.child(pd.getMessageVariable());
+                                msgFile.write(rec.value(), String.valueOf(StandardCharsets.UTF_8));
+                            } else {
+                                vars.put(pd.getMessageVariable(), rec.value());
+                            }
                         }
-                        vars.put(pd.getRecordVariable(), consumerRecordToJson(rec));
-                        build.addAction(new CIEnvironmentContributingAction(vars));
+                        String json = consumerRecordToJson(rec);
+                        if (pd.getUseFiles()) {
+                            FilePath recFile = workspace.child(pd.getRecordVariable());
+                            recFile.write(json, String.valueOf(StandardCharsets.UTF_8));
+                        } else {
+                            vars.put(pd.getRecordVariable(), json);
+                            run.addAction(new CIEnvironmentContributingAction(vars));
+                        }
                     }
                     return rec.value();
                 }
@@ -309,7 +322,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                 log.warning("Timed out waiting for message!");
                 listener.getLogger().println("Timed out waiting for message!");
             }
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
         } finally {
             Thread.currentThread().setContextClassLoader(original);

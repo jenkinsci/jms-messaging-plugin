@@ -56,6 +56,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private String selector;
     private List<MsgCheck> checks = new ArrayList<>();
     private String variable = DEFAULT_VARIABLE_NAME;
+    private Boolean useFiles = false;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
 
     @DataBoundConstructor
@@ -71,11 +72,12 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     }
 
     public ActiveMQSubscriberProviderData(String name, MessagingProviderOverrides overrides, String selector,
-            List<MsgCheck> checks, String variable, Integer timeout) {
+            List<MsgCheck> checks, String variable, Boolean useFiles, Integer timeout) {
         this(name, overrides);
         setSelector(selector);
         setChecks(checks);
         setVariable(variable);
+        setUseFiles(useFiles);
         setTimeout(timeout);
     }
 
@@ -104,6 +106,15 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     @DataBoundSetter
     public void setVariable(String variable) {
         this.variable = variable;
+    }
+
+    public Boolean getUseFiles() {
+        return useFiles;
+    }
+
+    @DataBoundSetter
+    public void setUseFiles(boolean useFiles) {
+        this.useFiles = useFiles;
     }
 
     public Integer getTimeout() {
@@ -138,19 +149,20 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
         ActiveMQSubscriberProviderData thatp = (ActiveMQSubscriberProviderData) that;
         return Objects.equals(this.name, thatp.name) && Objects.equals(this.selector, thatp.selector)
                 && Objects.equals(this.overrides, thatp.overrides) && Objects.equals(this.checks, thatp.checks)
-                && Objects.equals(this.variable, thatp.variable) && Objects.equals(this.timeout, thatp.timeout);
+                && Objects.equals(this.variable, thatp.variable) && Objects.equals(this.useFiles, thatp.useFiles)
+                && Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, selector, overrides, checks, variable, timeout);
+        return Objects.hash(name, selector, overrides, checks, variable, useFiles, timeout);
     }
 
     @Override
     public String toString() {
         return "ActiveMQSubscriberProviderData{" + "overrides=" + overrides + ", selector='" + selector + '\''
-                + ", checks=" + checks + ", variable='" + variable + '\'' + ", timeout=" + timeout + ", name='" + name
-                + '\'' + '}';
+                + ", checks=" + checks + ", variable='" + variable + '\'' + ", useFiles=" + useFiles + ", timeout="
+                + timeout + ", name='" + name + '\'' + '}';
     }
 
     @Extension
@@ -178,7 +190,7 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
                 timeout = jo.getInt("timeout");
             }
             return new ActiveMQSubscriberProviderData(jo.getString("name"), mpo, jo.getString("selector"), checks,
-                    variable, timeout);
+                    variable, jo.getBoolean("useFiles"), timeout);
         }
 
         public String getDefaultVariable() {

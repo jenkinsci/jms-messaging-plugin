@@ -34,6 +34,7 @@ import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.utils.PluginUtils;
 
+import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
@@ -66,15 +67,15 @@ public abstract class JMSMessagingWorker {
         this.jobname = jobname;
     }
 
-    public abstract SendResult sendMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
+    public abstract SendResult sendMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata);
 
-    public abstract String waitForMessage(Run<?, ?> build, TaskListener listener, ProviderData pdata);
+    public abstract String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace);
 
-    public void trigger(String jobname, String messageSummary, Map<String, String> params) {
+    public void trigger(String jobname, String messageSummary, Map<String, String> envVars) {
         CIBuildTrigger trigger = findTrigger(jobname);
         if (trigger != null) {
             log.info("Scheduling job '" + jobname + "' based on message:\n" + messageSummary);
-            trigger.scheduleBuild(params);
+            trigger.scheduleBuild(envVars);
         } else {
             log.log(Level.WARNING, "Unable to find CIBuildTrigger for '" + jobname + "'.");
         }

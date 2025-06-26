@@ -72,6 +72,10 @@
             <f:entry title="${%Variable}" field="variable">
                 <f:textbox default="${descriptor.getDefaultVariable()}"/>
             </f:entry>
+            <f:entry field="useFiles">
+                <f:checkbox title="${%Use files instead of environment variables}" name="useFiles" default="false"/>
+            </f:entry>
+
             <f:entry title="${%Timeout}" field="timeout">
                 <f:textbox default="${descriptor.getDefaultTimeout()}"/>
             </f:entry>

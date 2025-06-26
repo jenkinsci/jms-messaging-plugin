@@ -26,6 +26,7 @@ package com.redhat.jenkins.plugins.ci.integration;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -81,10 +82,10 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
     }
 
     @Override
-    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, String selector,
-            MsgCheck... msgChecks) {
+    public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, Boolean useFiles,
+            String selector, MsgCheck... msgChecks) {
         return new RabbitMQSubscriberProviderData(provider, overrideTopic(topic), Arrays.asList(msgChecks),
-                Util.fixNull(variableName, "CI_MESSAGE"), 60);
+                Util.fixNull(variableName, "CI_MESSAGE"), useFiles, 60);
     }
 
     @Override
@@ -253,5 +254,20 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         j.assertLogContains("{sent_at=", lastBuild);
 
         jobB.delete();
+    }
+
+    @Test
+    public void testCITriggerWithFileParameter() throws Exception {
+        _testCITriggerWithFileParameter(List.of("CI_MESSAGE"));
+    }
+
+    @Test
+    public void testWaitForCIMessageStepWithFiles() throws Exception {
+        _testWaitForCIMessageStepWithFiles(List.of("CI_MESSAGE"));
+    }
+
+    @Test
+    public void testWaitForCIMessagePipelineWithFiles() throws Exception {
+        _testWaitForCIMessagePipelineWithFiles(List.of("CI_MESSAGE"));
     }
 }
