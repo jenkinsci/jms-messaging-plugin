@@ -4,4 +4,22 @@
 	including the "value" field) in JSON format will also be available in the environment variable
 	"${VARIABLE}_RECORD".
     </p>
+    <p>
+        To pass message content by file instead, configure as follows:
+    </p>
+    <ul>
+        <li>
+            CI Build Trigger<br>
+            <br>
+	    Create a FileParameter on the job with the name of the variable specified here. If
+	    you want the Kafka record as a file as well, create a FileParameter named "${VARIABLE}_RECORD".
+        </li>
+	<br>
+        <li>
+            Job and Pipeline Steps<br>
+            <br>
+	    Check the "Use files instead of environment variables" checkbox. This will create
+	    files in the workspace with the same names as the environment variables.
+        </li>
+    </ul>
 </div>

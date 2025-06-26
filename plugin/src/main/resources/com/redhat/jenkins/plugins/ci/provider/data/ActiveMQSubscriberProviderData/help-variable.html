@@ -1,3 +1,24 @@
 <div>
-    <p>Environment variable to hold received message content.</p>
+    <p>
+        Environment variable to hold received message content.
+        Note that a second environment variable "${VARIABLE}_HEADERS" is created for the message headers.
+    </p>
+    <p>
+        To pass message content by file instead, configure as follows:
+    </p>
+    <ul>
+        <li>
+            CI Build Trigger<br>
+            <br>
+	    Create a FileParameter on the job with the name of the variable specified here. If
+	    you want the message headers as a file as well, create a FileParameter named "${VARIABLE}_HEADERS".
+        </li>
+	<br>
+        <li>
+            Job and Pipeline Steps<br>
+            <br>
+	    Check the "Use files instead of environment variables" checkbox. This will create
+	    files in the workspace with the same names as the environment variables.
+        </li>
+    </ul>
 </div>

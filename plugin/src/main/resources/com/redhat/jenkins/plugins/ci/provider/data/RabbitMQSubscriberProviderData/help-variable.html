@@ -1,3 +1,20 @@
 <div>
     <p>Environment variable to hold received message content.</p>
+    <p>
+        To pass message content by file instead, configure as follows:
+    </p>
+    <ul>
+        <li>
+            CI Build Trigger<br>
+            <br>
+	    Create a FileParameter on the job with the name of the variable specified here.
+        </li>
+	<br>
+        <li>
+            Job and Pipeline Steps<br>
+            <br>
+	    Check the "Use files instead of environment variables" checkbox. This will create
+	    files in the workspace with the same names as the environment variables.
+        </li>
+    </ul>
 </div>
