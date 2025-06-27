@@ -1,3 +1,6 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:f="/lib/form"
+         xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
   <!--
      * The MIT License
      *
@@ -23,9 +26,14 @@
      * THE SOFTWARE.
      */
   -->
-<?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:f="/lib/form">
-    <?jelly escape-by-default='true'?>
+    <j:choose>
+      <j:when test="${empty(instance)}">
+        <j:set var="checked" value="false"/>
+      </j:when>
+      <j:otherwise>
+        <j:set var="checked" value="${instance.getAuthentication() != null}"/>
+      </j:otherwise>
+    </j:choose>
     <f:section title="Connection Properties">
         <f:entry title="Name" field="name">
           <f:textbox />
@@ -39,6 +47,9 @@
         <f:entry title="${%Consumer Properties}" field="consumerProperties">
             <f:textarea />
         </f:entry>
-        <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="topic,producerProperties,consumerProperties" />
+        <f:dropdownDescriptorSelector title="${%Authentication Method}"
+                                      field="authenticationMethod"
+                                      descriptors="${descriptor.getAuthenticationMethodDescriptors()}"
+                                      default="${app.getDescriptorByName('com.redhat.jenkins.plugins.ci.authentication.kafka.NoneAuthenticationMethod');}" />
     </f:section>
 </j:jelly>

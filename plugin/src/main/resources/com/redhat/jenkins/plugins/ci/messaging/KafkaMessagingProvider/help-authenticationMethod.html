@@ -1,0 +1,12 @@
+<div>
+    <p>Authentication message for connecting to Kafka.</p>
+
+    <p>
+        If "Username and Password Authentication" is selected, the username and password 
+	values will be substituted into the properties. This substitution is done using
+	environment variable syntax. For example:
+    </p>
+    <pre>
+        sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="${USERNAME}" password="${PASSWORD}";
+    </pre>
+</div>

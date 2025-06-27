@@ -1,5 +1,7 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+         xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
   <!--
      * The MIT License
      *
@@ -24,25 +26,10 @@
      * THE SOFTWARE.
      */
   -->
-    <f:section title="Connection Properties">
-    <f:entry title="Name" field="name">
-      <f:textbox />
-    </f:entry>
-    <f:entry title="${%CI Broker URL}" field="broker">
-      <f:textbox />
-    </f:entry>
-    <f:entry field="useQueues">
-        <f:checkbox title="Use queues rather than topics." name="useQueues" default="${descriptor.getDefaultQueue()}" />
-    </f:entry>
-    <f:entry title="${%Topic name}" field="topic">
-      <f:textbox />
-    </f:entry>
-    <f:dropdownDescriptorSelector title="${%Topic provider}"
-                                  field="topicProvider"
-                                  descriptors="${descriptor.getTopicProviderDescriptors()}" />
-    <f:dropdownDescriptorSelector title="${%Authentication Method}"
-                                  field="authenticationMethod"
-                                  descriptors="${descriptor.getAuthenticationMethodDescriptors()}" />
-  </f:section>
+      <f:entry title="Select Credential" field="credentialId">
+        <c:select expression="credentialId" filter="com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials"/>
+      </f:entry>
+      <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
+         with="name,topic,consumerProperties,producerProperties,credentialId" />
 </j:jelly>
 
