@@ -62,6 +62,10 @@ public abstract class ProviderData implements Describable<ProviderData>, Seriali
         setProvider();
     }
 
+    public Boolean getFromTrigger() {
+        return false;
+    }
+
     public abstract boolean hasOverrides();
 
     public abstract String getSubscriberTopic();

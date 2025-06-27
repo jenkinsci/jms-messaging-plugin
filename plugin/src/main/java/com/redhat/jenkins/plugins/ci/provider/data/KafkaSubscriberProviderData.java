@@ -56,6 +56,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     private String variable = DEFAULT_VARIABLE_NAME;
     private Boolean useFiles = false;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
+    private transient Boolean fromTrigger = false;
 
     @DataBoundConstructor
     public KafkaSubscriberProviderData() {
@@ -63,6 +64,11 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
 
     public KafkaSubscriberProviderData(String name) {
         this(name, null, null);
+    }
+
+    public KafkaSubscriberProviderData(String name, Boolean fromTrigger) {
+        this(name, null, null);
+        this.fromTrigger = fromTrigger;
     }
 
     public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, String properties) {
@@ -121,6 +127,11 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
 
     public String getRecordVariable() {
         return variable + DEFAULT_RECORD_VARIABLE_SUFFIX;
+    }
+
+    @Override
+    public Boolean getFromTrigger() {
+        return fromTrigger;
     }
 
     @Override

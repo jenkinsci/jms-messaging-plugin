@@ -221,15 +221,19 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     public List<ProviderData> getSubscriberProviders() {
+        return getSubscriberProviders(false);
+    }
+
+    public List<ProviderData> getSubscriberProviders(Boolean fromTrigger) {
         List<ProviderData> pds = new ArrayList<>();
         if (configs != null) {
             for (JMSMessagingProvider p : getConfigs()) {
                 if (p instanceof ActiveMqMessagingProvider) {
-                    pds.add(new ActiveMQSubscriberProviderData(p.getName()));
+                    pds.add(new ActiveMQSubscriberProviderData(p.getName(), fromTrigger));
                 } else if (p instanceof RabbitMQMessagingProvider) {
-                    pds.add(new RabbitMQSubscriberProviderData(p.getName()));
+                    pds.add(new RabbitMQSubscriberProviderData(p.getName(), fromTrigger));
                 } else if (p instanceof KafkaMessagingProvider) {
-                    pds.add(new KafkaSubscriberProviderData(p.getName()));
+                    pds.add(new KafkaSubscriberProviderData(p.getName(), fromTrigger));
                 } else {
                     log.severe("Unknown provider instance '" + p.toString() + "'.");
                 }
