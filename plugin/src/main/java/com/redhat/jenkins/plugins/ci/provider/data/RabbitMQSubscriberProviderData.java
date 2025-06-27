@@ -56,13 +56,19 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     private String variable = DEFAULT_VARIABLE_NAME;
     private Boolean useFiles = false;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
+    private transient Boolean fromTrigger = false;
 
     @DataBoundConstructor
     public RabbitMQSubscriberProviderData() {
     }
 
     public RabbitMQSubscriberProviderData(String name) {
-        this(name, null);
+        this(name, (MessagingProviderOverrides) null);
+    }
+
+    public RabbitMQSubscriberProviderData(String name, Boolean fromTrigger) {
+        this(name);
+        this.fromTrigger = fromTrigger;
     }
 
     @Override
@@ -134,6 +140,11 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     @DataBoundSetter
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
+    }
+
+    @Override
+    public Boolean getFromTrigger() {
+        return fromTrigger;
     }
 
     @Override

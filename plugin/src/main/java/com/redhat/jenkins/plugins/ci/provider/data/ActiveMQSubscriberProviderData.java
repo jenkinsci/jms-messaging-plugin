@@ -58,13 +58,19 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
     private String variable = DEFAULT_VARIABLE_NAME;
     private Boolean useFiles = false;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
+    private transient Boolean fromTrigger = false;
 
     @DataBoundConstructor
     public ActiveMQSubscriberProviderData() {
     }
 
     public ActiveMQSubscriberProviderData(String name) {
-        this(name, null);
+        this(name, (MessagingProviderOverrides) null);
+    }
+
+    public ActiveMQSubscriberProviderData(String name, Boolean fromTrigger) {
+        this(name);
+        this.fromTrigger = fromTrigger;
     }
 
     public ActiveMQSubscriberProviderData(String name, MessagingProviderOverrides overrides) {
@@ -133,6 +139,11 @@ public class ActiveMQSubscriberProviderData extends ActiveMQProviderData {
 
     public String getHeadersVariable() {
         return variable + DEFAULT_HEADERS_VARIABLE_SUFFIX;
+    }
+
+    @Override
+    public Boolean getFromTrigger() {
+        return fromTrigger;
     }
 
     @Override

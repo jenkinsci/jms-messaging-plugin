@@ -39,7 +39,7 @@
 
   <f:repeatable var="instance" name="providers" items="${instance.providers}" add="${%Add provider}" minimum="1">
     <rh:dropdownInstanceSelector title="${%Messaging Provider}"
-                                 instances="${gdescriptor.getSubscriberProviders()}"/>
+                                 instances="${gdescriptor.getSubscriberProviders(true)}"/>
     <f:block>
       <div align="right">
         <f:repeatableDeleteButton />

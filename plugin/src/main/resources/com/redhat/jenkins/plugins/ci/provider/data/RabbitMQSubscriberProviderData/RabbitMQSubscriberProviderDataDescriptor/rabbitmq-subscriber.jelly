@@ -74,9 +74,18 @@
             <f:entry title="${%Variable}" field="variable">
                 <f:textbox default="${descriptor.getDefaultVariable()}"/>
             </f:entry>
-            <f:entry field="useFiles">
-                <f:checkbox title="${%Use files instead of environment variables}" name="useFiles" default="false"/>
-            </f:entry>
+            <j:choose>
+                <j:when test="${pdata.getFromTrigger() == 'true'}">
+                    <f:invisibleEntry field="useFiles">
+                        <f:checkbox title="${%Use files instead of environment variables}" name="useFiles" default="false"/>
+                    </f:invisibleEntry>
+                </j:when>
+                <j:otherwise>
+                    <f:entry field="useFiles">
+                        <f:checkbox title="${%Use files instead of environment variables}" name="useFiles" default="false"/>
+                    </f:entry>
+                </j:otherwise>
+            </j:choose>
             <f:entry title="${%Timeout}" field="timeout">
                 <f:textbox default="${descriptor.getDefaultTimeout()}"/>
             </f:entry>
