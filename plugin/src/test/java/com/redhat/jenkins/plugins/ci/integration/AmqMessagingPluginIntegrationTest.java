@@ -532,4 +532,19 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
     public void testWaitForCIMessagePipelineWithFiles() throws Exception {
         _testWaitForCIMessagePipelineWithFiles(List.of("CI_MESSAGE", "CI_MESSAGE_HEADERS"));
     }
+
+    @Test
+    public void testCITriggerWithMessageTooLong() throws Exception {
+        _testCITriggerWithMessageTooLong();
+    }
+
+    @Test
+    public void testWaitForCIMessageStepWithMessageTooLong() throws Exception {
+        _testWaitForCIMessageStepWithMessageTooLong();
+    }
+
+    @Test
+    public void testWaitForCIMessagePipelineWithMessageTooLong() throws Exception {
+        _testWaitForCIMessagePipelineWithMessageTooLong();
+    }
 }
