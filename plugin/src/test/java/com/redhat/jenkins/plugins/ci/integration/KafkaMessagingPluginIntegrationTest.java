@@ -48,6 +48,7 @@ import org.junit.Test;
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.authentication.kafka.NoneAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.integration.fixtures.KafkaContainer;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
@@ -79,7 +80,8 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         GlobalCIConfiguration gcc = GlobalCIConfiguration.get();
         gcc.setConfigs(Collections.singletonList(new KafkaMessagingProvider(DEFAULT_PROVIDER_NAME, DEFAULT_TOPIC_NAME,
-                kafka.getBootstrapServersProperty(), kafka.getBootstrapServersProperty())));
+                kafka.getBootstrapServersProperty(), kafka.getBootstrapServersProperty(),
+                new NoneAuthenticationMethod())));
 
         logger.record("com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingWorker", Level.INFO);
         logger.record("org.apache.kafka.clients.consumer.internals.SubscriptionState", Level.INFO);

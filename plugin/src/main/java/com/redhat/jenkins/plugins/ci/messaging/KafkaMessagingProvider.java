@@ -25,30 +25,29 @@ package com.redhat.jenkins.plugins.ci.messaging;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.time.Duration;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.logging.Level;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.commons.text.StringSubstitutor;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.verb.POST;
 
-import com.redhat.jenkins.plugins.ci.Messages;
-import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.redhat.jenkins.plugins.ci.authentication.kafka.KafkaAuthenticationMethod;
+import com.redhat.jenkins.plugins.ci.authentication.kafka.KafkaAuthenticationMethod.AuthenticationMethodDescriptor;
+import com.redhat.jenkins.plugins.ci.authentication.kafka.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
+import com.redhat.utils.CredentialLookup;
 
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.Descriptor;
-import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 
 public class KafkaMessagingProvider extends JMSMessagingProvider {
@@ -58,16 +57,16 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
     private String topic;
     private String producerProperties;
     private String consumerProperties;
+    private KafkaAuthenticationMethod authenticationMethod;
 
     @DataBoundConstructor
-    public KafkaMessagingProvider(String name, String topic, String producerProperties, String consumerProperties) {
+    public KafkaMessagingProvider(String name, String topic, String producerProperties, String consumerProperties,
+            KafkaAuthenticationMethod authenticationMethod) {
         this.name = name;
         this.topic = topic;
         this.producerProperties = producerProperties;
         this.consumerProperties = consumerProperties;
-        log.fine(String.format("provider: [%s], topic: [%s], connection properties: [%s]", name, topic,
-                producerProperties, consumerProperties));
-
+        this.authenticationMethod = authenticationMethod;
     }
 
     public void setName(String name) {
@@ -89,6 +88,11 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
         this.consumerProperties = consumerProperties;
     }
 
+    @DataBoundSetter
+    public void setAuthentication(KafkaAuthenticationMethod authenticationMethod) {
+        this.authenticationMethod = authenticationMethod;
+    }
+
     public String getTopic() {
         return topic;
     }
@@ -102,31 +106,54 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
     }
 
     public Properties getMergedProducerProperties() {
-        return getMergedProducerProperties(producerProperties);
+        return getMergedProperties(getDefaultProducerProperties(), producerProperties);
     }
 
     public Properties getMergedConsumerProperties() {
-        return getMergedConsumerProperties(consumerProperties);
+        return getMergedProperties(getDefaultConsumerProperties(), consumerProperties);
     }
 
-    static private Properties getMergedProducerProperties(String properties) {
-        return getMergedProperties(getDefaultProducerProperties(), properties);
+    public KafkaAuthenticationMethod getAuthentication() {
+        return authenticationMethod;
     }
 
-    static private Properties getMergedConsumerProperties(String properties) {
-        return getMergedProperties(getDefaultConsumerProperties(), properties);
-    }
-
-    static private Properties getMergedProperties(Properties defaults, String properties) {
+    private Properties getMergedProperties(Properties defaults, String properties) {
+        Properties props = new Properties();
         try {
-            defaults.load(IOUtils.toInputStream(properties == null ? "" : properties, Charset.defaultCharset()));
+            props.load(IOUtils.toInputStream(properties == null ? "" : properties, Charset.defaultCharset()));
         } catch (IOException e) {
             log.log(Level.WARNING, String.format("bad properties: %s", properties));
         }
-        return defaults;
+        props.putAll(defaults);
+
+        HashMap<String, String> values = new HashMap<>();
+        if (authenticationMethod instanceof UsernameAuthenticationMethod) {
+            UsernameAuthenticationMethod uam = (UsernameAuthenticationMethod) authenticationMethod;
+            String credentialId = uam.getCredentialId();
+            StandardUsernamePasswordCredentials credentials = CredentialLookup.lookupById(credentialId,
+                    StandardUsernamePasswordCredentials.class);
+
+            if (credentials == null) {
+                log.warning(String.format("Credential '%s' not found", credentialId));
+            } else {
+                values.put("USERNAME", credentials.getUsername());
+                values.put("PASSWORD", credentials.getPassword().getPlainText());
+            }
+        }
+
+        StringSubstitutor sub = new StringSubstitutor(values);
+        for (Map.Entry<Object, Object> entry : props.entrySet()) {
+            String key = (String) entry.getKey();
+            if (entry.getValue() instanceof String) {
+                String value = (String) entry.getValue();
+                props.put(key, sub.replace(value));
+            }
+        }
+
+        return props;
     }
 
-    static private Properties getDefaultProducerProperties() {
+    private Properties getDefaultProducerProperties() {
         Properties props = new Properties();
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -135,7 +162,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
         return props;
     }
 
-    static private Properties getDefaultConsumerProperties() {
+    private Properties getDefaultConsumerProperties() {
         Properties props = new Properties();
         props.put("max.poll.records", 1);
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
@@ -170,38 +197,8 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
             return "Kafka";
         }
 
-        @POST
-        public FormValidation doTestConnection(@QueryParameter("topic") String topic,
-                @QueryParameter("producerProperties") String producerProperties,
-                @QueryParameter("consumerProperties") String consumerProperties) {
-
-            AuthenticationMethod.checkAdmin();
-
-            Properties pprops = getMergedProducerProperties(producerProperties);
-            Properties cprops = getMergedConsumerProperties(consumerProperties);
-
-            ClassLoader original = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
-            try (KafkaConsumer consumer = new KafkaConsumer<>(cprops);
-                    KafkaProducer producer = new KafkaProducer<>(pprops)) {
-
-                // Test producer.
-                ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
-                producer.send(record).get();
-
-                // Test consumer.
-                consumer.subscribe(Collections.singletonList(topic));
-                consumer.poll(Duration.ofMillis(100));
-
-                return FormValidation.ok(Messages.SuccessBrokersConnect(pprops.get("bootstrap.servers"),
-                        cprops.get("bootstrap.servers")));
-            } catch (Exception e) {
-                log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestConnection: ", e);
-                return FormValidation.error(Messages.Error() + ": " + e);
-            } finally {
-                Thread.currentThread().setContextClassLoader(original);
-            }
+        public ExtensionList<AuthenticationMethodDescriptor> getAuthenticationMethodDescriptors() {
+            return AuthenticationMethodDescriptor.all();
         }
-
     }
 }
