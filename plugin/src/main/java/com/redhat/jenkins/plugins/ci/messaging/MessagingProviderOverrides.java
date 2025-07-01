@@ -26,6 +26,11 @@ public class MessagingProviderOverrides implements Describable<MessagingProvider
         this.setTopic(topic);
     }
 
+    public MessagingProviderOverrides(String topic, String queue) {
+        this(topic);
+        this.setQueue(queue);
+    }
+
     public String getTopic() {
         return topic;
     }
