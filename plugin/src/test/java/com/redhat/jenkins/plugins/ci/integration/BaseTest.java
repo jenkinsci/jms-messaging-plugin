@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -31,6 +32,7 @@ import hudson.security.ACL;
 import hudson.security.ACLContext;
 
 public abstract class BaseTest {
+    private static final Logger log = Logger.getLogger(BaseTest.class.getName());
 
     @Rule
     public final JenkinsRule j = new JenkinsRule();

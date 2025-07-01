@@ -31,7 +31,6 @@ import java.util.logging.Level;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.test.acceptance.docker.DockerClassRule;
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +41,7 @@ import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.integration.fixtures.RabbitMQRelayContainer;
+import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
@@ -83,157 +83,38 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
 
     @Override
     public ProviderData getSubscriberProviderData(String provider, String topic, String variableName, Boolean useFiles,
-            String selector, MsgCheck... msgChecks) {
+            MsgCheck... msgChecks) {
         return new RabbitMQSubscriberProviderData(provider, overrideTopic(topic), Arrays.asList(msgChecks),
-                Util.fixNull(variableName, "CI_MESSAGE"), useFiles, 60);
+                Util.fixNull(variableName, DEFAULT_VARIABLE_NAME), useFiles, 60);
     }
 
     @Override
+    public ProviderData getPublisherProviderData(String provider, String topic, String content) {
+        return getPublisherProviderData(provider, topic, null, content);
+    }
+
     public ProviderData getPublisherProviderData(String provider, String topic, String properties, String content) {
         return new RabbitMQPublisherProviderData(provider, overrideTopic(topic), content, true, true, 20, "schema");
     }
 
-    @Test
-    public void testSimpleCIEventSubscribeWithCheck() throws Exception {
-        _testSimpleCIEventSubscribeWithCheck();
+    protected MessagingProviderOverrides overrideTopic(String topic) {
+        return topic == null ? null : new MessagingProviderOverrides(topic, "");
     }
 
-    @Test
-    public void testSimpleCIEventTriggerWithTextArea() throws Exception {
-        _testSimpleCIEventTriggerWithTextArea("{ \"message\": \"Hello\\nWorld\" }", "Hello\\nWorld");
+    @Override
+    public List<String> getFileNames() {
+        return List.of(DEFAULT_VARIABLE_NAME);
     }
 
-    @Test
-    public void testSimpleCIEventSubscribeWithCheckWithTopicOverride() throws Exception {
-        _testSimpleCIEventSubscribeWithCheckWithTopicOverride();
-    }
-
-    @Test
-    public void testSimpleCIEventSubscribeWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
-        _testSimpleCIEventSubscribeWithCheckWithTopicOverrideAndVariableTopic();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheckWithPipelineSendMsg() throws Exception {
-        _testSimpleCIEventTriggerWithCheckWithPipelineSendMsg();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheck() throws Exception {
-        _testSimpleCIEventTriggerWithCheck();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheckNoSquash() throws Exception {
-        _testSimpleCIEventTriggerWithCheckNoSquash();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithRegExpCheck() throws Exception {
-        _testSimpleCIEventTriggerWithRegExpCheck();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheckWithTopicOverride() throws Exception {
-        _testSimpleCIEventTriggerWithCheckWithTopicOverride();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithMultipleTopics() throws Exception {
-        _testSimpleCIEventTriggerWithMultipleTopics();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic() throws Exception {
-        _testSimpleCIEventTriggerWithCheckWithTopicOverrideAndVariableTopic();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheckOnPipelineJob() throws Exception {
-        _testSimpleCIEventTriggerWithCheckOnPipelineJob();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg() throws Exception {
-        _testSimpleCIEventTriggerWithCheckWithPipelineWaitForMsg();
-    }
-
-    @Test
-    public void testSimpleCIEventSendAndWaitPipeline() throws Exception {
-        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), null, null);
-        jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd), true));
-        scheduleAwaitStep(jobA);
-
-        WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
-        pd = getPublisherProviderData(testName.getMethodName(), null, "{\"content\":\"abcdefg\"}");
-        jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
-        j.buildAndAssertSuccess(jobB);
-
-        waitUntilScheduledBuildCompletes();
-        WorkflowRun lastBuild = jobA.getLastBuild();
-        j.assertBuildStatusSuccess(lastBuild);
-        j.assertLogContains("message = {\"content\":\"abcdefg\"}", lastBuild);
-
-        jobA.delete();
-        jobB.delete();
-    }
-
-    @Test
-    public void testSimpleCIEventSendAndWaitPipelineWithVariableTopic() throws Exception {
-        WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        ProviderData pd = getSubscriberProviderData("${env.MY_TOPIC}", null, null);
-        jobA.setDefinition(new CpsFlowDefinition(
-                buildWaitForCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
-
-        scheduleAwaitStep(jobA);
-
-        WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
-        pd = getPublisherProviderData("${env.MY_TOPIC}", null, "{\"content\":\"abcdefg\"}");
-        jobB.setDefinition(new CpsFlowDefinition(
-                buildSendCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
-
-        jobB.save();
-        j.buildAndAssertSuccess(jobB);
-
-        waitUntilScheduledBuildCompletes();
-        WorkflowRun lastBuild = jobA.getLastBuild();
-        j.assertBuildStatusSuccess(lastBuild);
-        j.assertLogContains("message = {\"content\":\"abcdefg\"}", lastBuild);
-
-        jobA.delete();
-        jobB.delete();
-    }
-
-    @Test
-    public void testJobRenameWithCheck() throws Exception {
-        _testJobRenameWithCheck();
-    }
-
-    @Test
-    public void testDisabledJobDoesNotGetTriggeredWithCheck() throws Exception {
-        _testDisabledJobDoesNotGetTriggeredWithCheck();
-    }
-
-    @Test
-    public void testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
-        _testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic();
-    }
-
-    @Test
-    public void testAbortWaitingForMessageWithPipelineBuild() throws Exception {
-        _testAbortWaitingForMessageWithPipelineBuild();
-    }
-
-    @Test
-    public void testPipelineInvalidProvider() throws Exception {
-        _testPipelineInvalidProvider();
+    @Override
+    public String getContainerId() {
+        return rabbitmq.getCid();
     }
 
     @Test
     public void testPipelineSendMsgReturnMessage() throws Exception {
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "job");
-        ProviderData pd = getPublisherProviderData(testName.getMethodName(), null, MESSAGE_CHECK_CONTENT);
+        ProviderData pd = getPublisherProviderData(MESSAGE_CHECK_CONTENT);
         jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
         j.buildAndAssertSuccess(jobB);
         // See https://github.com/jenkinsci/jms-messaging-plugin/issues/125
@@ -254,20 +135,5 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         j.assertLogContains("{sent_at=", lastBuild);
 
         jobB.delete();
-    }
-
-    @Test
-    public void testCITriggerWithFileParameter() throws Exception {
-        _testCITriggerWithFileParameter(List.of("CI_MESSAGE"));
-    }
-
-    @Test
-    public void testWaitForCIMessageStepWithFiles() throws Exception {
-        _testWaitForCIMessageStepWithFiles(List.of("CI_MESSAGE"));
-    }
-
-    @Test
-    public void testWaitForCIMessagePipelineWithFiles() throws Exception {
-        _testWaitForCIMessagePipelineWithFiles(List.of("CI_MESSAGE"));
     }
 }

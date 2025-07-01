@@ -80,7 +80,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     if (channel == null || !channel.isOpen()) {
                         this.channel = connection.createChannel();
                         log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
-                        String queueName = getQueue(provider);
+                        String queueName = getQueue(provider, null);
                         try {
                             // Check if queue exists
                             channel.queueDeclarePassive(queueName);
@@ -363,7 +363,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                 this.channel = connection.createChannel();
             }
             channel.exchangeDeclarePassive(exchangeName);
-            channel.queueBind(getQueue(provider), exchangeName, this.topic);
+            String q = getQueue(provider, run.getEnvironment(listener));
+            channel.queueBind(q, exchangeName, this.topic);
         } catch (Exception ex) {
             log.severe("Connection to broker can't be established!");
             log.severe(ExceptionUtils.getStackTrace(ex));
@@ -405,8 +406,9 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         int timeoutInMs = timeout * 60 * 1000;
 
         try {
+            String q = getQueue(provider, run.getEnvironment(listener));
             log.info("Job '" + jobname + "' waiting to receive message");
-            consumerTag = channel.basicConsume(getQueue(provider), deliverCallback, (CancelCallback) null);
+            consumerTag = channel.basicConsume(q, deliverCallback, (CancelCallback) null);
             while ((new Date().getTime() - startTime) < timeoutInMs) {
                 if (!messageQueue.isEmpty()) {
 
@@ -419,16 +421,14 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
                     }
                     listener.getLogger().println("Message: '" + message.getMsgId() + "' was succesfully checked.");
 
-                    if (run != null) {
-                        if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
-                            if (pd.getUseFiles()) {
-                                FilePath msgFile = workspace.child(pd.getMessageVariable());
-                                msgFile.write(message.getBodyJson(), String.valueOf(StandardCharsets.UTF_8));
-                            } else {
-                                EnvVars vars = new EnvVars();
-                                vars.put(pd.getMessageVariable(), message.getBodyJson());
-                                run.addAction(new CIEnvironmentContributingAction(vars));
-                            }
+                    if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
+                        if (pd.getUseFiles()) {
+                            FilePath msgFile = workspace.child(pd.getMessageVariable());
+                            msgFile.write(message.getBodyJson(), String.valueOf(StandardCharsets.UTF_8));
+                        } else {
+                            EnvVars vars = new EnvVars();
+                            vars.put(pd.getMessageVariable(), message.getBodyJson());
+                            run.addAction(new CIEnvironmentContributingAction(vars));
                         }
                     }
                     channel.basicAck(message.getDeliveryTag(), false);
@@ -477,7 +477,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         return null;
     }
 
-    protected String getQueue(JMSMessagingProvider provider) throws IOException {
+    protected String getQueue(JMSMessagingProvider provider, EnvVars env) throws IOException {
         String ltopic;
         RabbitMQMessagingProvider providerd = (RabbitMQMessagingProvider) provider;
         if (overrides != null && overrides.getQueue() != null && !overrides.getQueue().isEmpty()) {
@@ -492,6 +492,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             }
             ltopic = queueName;
         }
-        return PluginUtils.getSubstitutedValue(ltopic, null);
+
+        return PluginUtils.getSubstitutedValue(ltopic, env);
     }
 }
