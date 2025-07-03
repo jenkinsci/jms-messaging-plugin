@@ -30,6 +30,6 @@
         <c:select expression="credentialId" filter="com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials"/>
       </f:entry>
       <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
-         with="hostname,portNumber,virtualHost,credentialId" />
+         with="broker,credentialId" />
 </j:jelly>
 
