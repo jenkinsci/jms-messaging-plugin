@@ -28,9 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -78,11 +75,9 @@ public abstract class AuthenticationMethod implements Serializable {
         ListBoxModel items = new ListBoxModel();
         items.add("-- Select " + prompt + " Credential --", "");
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        ACL.impersonate2(authentication, () -> {
+        ACL.impersonate2(ACL.SYSTEM2, () -> {
             List<StandardCredentials> availableCredentials = CredentialsProvider
-                    .lookupCredentialsInItem(StandardCredentials.class, project, authentication);
+                    .lookupCredentialsInItem(StandardCredentials.class, project, ACL.SYSTEM2);
 
             for (StandardCredentials c : availableCredentials) {
                 if (isInstanceOf(classes, c)) {
