@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>jms-messaging</artifactId>
-    <version>2.0.1-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>JMS Messaging Plugin</name>
     <description>Plugin to listen and emit messages during the build process using a JMS Messaging Provider.</description>
