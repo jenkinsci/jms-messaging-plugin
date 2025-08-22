@@ -21,6 +21,13 @@
         </license>
     </licenses>
 
+    <scm>
+        <connection>scm:git:git@github.com:jenkinsci/jms-messaging-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/jms-messaging-plugin.git</developerConnection>
+        <url>https://github.com/jenkinsci/jms-messaging-plugin.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
     <distributionManagement>
         <repository>
             <id>repo.jenkins-ci.org</id>
