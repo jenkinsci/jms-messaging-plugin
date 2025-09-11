@@ -4,7 +4,7 @@
     <groupId>org.jenkins-ci.plugins.jms-messaging</groupId>
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.1</version>
+    <version>0.0.2-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -35,7 +35,7 @@
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/jms-messaging-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/jms-messaging-plugin.git</developerConnection>
-        <tag>parent-0.0.1</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <build>
