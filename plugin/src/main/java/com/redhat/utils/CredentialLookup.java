@@ -27,10 +27,11 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.cloudbees.plugins.credentials.Credentials;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 
+import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
 
@@ -42,30 +43,29 @@ public class CredentialLookup {
         try (ACLContext ctx = ACL.as2(ACL.SYSTEM2)) {
             log.log(Level.INFO, "Attempting to lookup credential ID: {0} with system privileges.", credentialId);
 
-            List<Credentials> allGlobalCredentials = SystemCredentialsProvider.getInstance().getCredentials();
+            // Search across all credential stores by passing null as the Item parameter
+            // This will search in all available credential stores, including system store and folder stores
+            List<StandardCredentials> allCredentials = CredentialsProvider
+                    .lookupCredentialsInItem(StandardCredentials.class, (Item) null, ACL.SYSTEM2);
 
-            for (Credentials credential : allGlobalCredentials) {
-                if (credential instanceof IdCredentials) {
-                    IdCredentials idCredential = (IdCredentials) credential;
-                    if (idCredential.getId().equals(credentialId)) {
-                        if (type.isInstance(credential)) {
-                            log.info(String.format("Found credential with ID: %s of type %s.", credentialId,
-                                    type.getName()));
-                            return type.cast(credential);
-                        } else {
-                            log.warning(String.format(
-                                    "Credential with ID %s found, but it is not of the expected type %s. Actual type: %s",
-                                    credentialId, type.getName(), credential.getClass().getName()));
-                        }
+            for (StandardCredentials credential : allCredentials) {
+                IdCredentials idCredential = (IdCredentials) credential;
+                if (idCredential.getId().equals(credentialId)) {
+                    if (type.isInstance(credential)) {
+                        log.info(String.format("Found credential with ID: %s of type %s.", credentialId,
+                                type.getName()));
+                        return type.cast(credential);
+                    } else {
+                        log.warning(String.format(
+                                "Credential with ID %s found, but it is not of the expected type %s. Actual type: %s",
+                                credentialId, type.getName(), credential.getClass().getName()));
                     }
                 }
             }
             log.warning(String.format("Credential with ID: %s not found or not of the expected type %s.", credentialId,
                     type.getName()));
             return null;
-        } catch (
-
-        Exception e) {
+        } catch (Exception e) {
             log.log(Level.SEVERE, "Error during credential lookup for ID: " + credentialId, e);
             return null;
         }
