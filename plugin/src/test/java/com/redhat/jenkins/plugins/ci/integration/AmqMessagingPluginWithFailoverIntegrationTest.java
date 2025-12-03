@@ -170,7 +170,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
                         Collections.emptyList(), "CI_MESSAGE", false, 60))));
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
-        for (int i = 0; i < 5 && getCurrentTriggerThreadIds("receive").size() > 0; i++) {
+        for (int i = 0; i < 10 && getCurrentTriggerThreadIds("receive").size() > 0; i++) {
             Thread.sleep(1000);
         }
 

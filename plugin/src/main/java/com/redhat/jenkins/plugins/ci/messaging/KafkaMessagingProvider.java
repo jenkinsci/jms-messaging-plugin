@@ -113,7 +113,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
         return getMergedProperties(getDefaultConsumerProperties(), consumerProperties);
     }
 
-    public KafkaAuthenticationMethod getAuthentication() {
+    public KafkaAuthenticationMethod getAuthenticationMethod() {
         return authenticationMethod;
     }
 
