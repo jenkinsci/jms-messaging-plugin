@@ -59,10 +59,18 @@ public class JcascTest {
         UsernameAuthenticationMethod amqam = (UsernameAuthenticationMethod) amq.getAuthenticationMethod();
         assertEquals("amq-username-password", amqam.getCredentialId());
 
-        KafkaMessagingProvider kafka = (KafkaMessagingProvider) gc.getProvider("Kafka");
-        assertEquals("default.topic", kafka.getTopic());
-        assertEquals("bootstrap.servers=localhost:9092", kafka.getProducerProperties());
-        assertEquals("bootstrap.servers=localhost:9092", kafka.getConsumerProperties());
+        KafkaMessagingProvider kafkaNone = (KafkaMessagingProvider) gc.getProvider("Kafka None");
+        assertEquals("default.topic", kafkaNone.getTopic());
+        assertEquals("bootstrap.servers=localhost:9092", kafkaNone.getProducerProperties());
+        assertEquals("bootstrap.servers=localhost:9092", kafkaNone.getConsumerProperties());
+
+        KafkaMessagingProvider kafkaUser = (KafkaMessagingProvider) gc.getProvider("Kafka Username Password");
+        assertEquals("default.topic", kafkaUser.getTopic());
+        assertEquals("bootstrap.servers=localhost:9092", kafkaUser.getProducerProperties());
+        assertEquals("bootstrap.servers=localhost:9092", kafkaUser.getConsumerProperties());
+        com.redhat.jenkins.plugins.ci.authentication.kafka.UsernameAuthenticationMethod kafkaam = (com.redhat.jenkins.plugins.ci.authentication.kafka.UsernameAuthenticationMethod) kafkaUser
+                .getAuthenticationMethod();
+        assertEquals("kafka-username-password", kafkaam.getCredentialId());
 
         RabbitMQMessagingProvider rmq = (RabbitMQMessagingProvider) gc.getProvider("Rabbit MQ");
         assertEquals("ex", rmq.getExchange());

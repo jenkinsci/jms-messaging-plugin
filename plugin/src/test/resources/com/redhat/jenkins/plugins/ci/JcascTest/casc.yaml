@@ -11,10 +11,18 @@ unclassified:
             simple:
               credentialId: "amq-username-password"
       - kafka:
-          name: "Kafka"
+          name: "Kafka None"
           topic: "default.topic"
           producerProperties: "bootstrap.servers=localhost:9092"
           consumerProperties: "bootstrap.servers=localhost:9092"
+      - kafka:
+          name: "Kafka Username Password"
+          topic: "default.topic"
+          producerProperties: "bootstrap.servers=localhost:9092"
+          consumerProperties: "bootstrap.servers=localhost:9092"
+          authenticationMethod:
+            simple:
+              credentialId: "kafka-username-password"
       - rabbitMq:
           name: "Rabbit MQ"
           exchange: "ex"
