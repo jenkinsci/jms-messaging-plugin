@@ -29,7 +29,9 @@
       <f:entry title="Select Credential" field="credentialId">
         <c:select expression="credentialId" filter="com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials"/>
       </f:entry>
-      <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
+      <f:validateButton title="${%Test Producer Connection}" progress="${%Testing...}" method="testProducerConnection"
+         with="name,topic,consumerProperties,producerProperties,credentialId" />
+      <f:validateButton title="${%Test Consumer Connection}" progress="${%Testing...}" method="testConsumerConnection"
          with="name,topic,consumerProperties,producerProperties,credentialId" />
 </j:jelly>
 

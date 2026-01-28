@@ -26,7 +26,9 @@
      * THE SOFTWARE.
      */
   -->
-      <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
-         with="name,topic,consumerProperties,producerProperties" />
+      <f:validateButton title="${%Test Producer Connection}" progress="${%Testing...}" method="testProducerConnection"
+         with="name,topic,producerProperties" />
+      <f:validateButton title="${%Test Consumer Connection}" progress="${%Testing...}" method="testConsumerConnection"
+         with="name,topic,consumerProperties" />
 </j:jelly>
 
