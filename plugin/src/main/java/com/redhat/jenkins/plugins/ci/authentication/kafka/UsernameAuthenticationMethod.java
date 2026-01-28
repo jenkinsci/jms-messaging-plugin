@@ -106,10 +106,23 @@ public class UsernameAuthenticationMethod extends KafkaAuthenticationMethod {
         }
 
         @POST
-        public FormValidation doTestConnection(@QueryParameter("name") String name,
+        public FormValidation doTestConsumerConnection(@QueryParameter("name") String name,
                 @QueryParameter("topic") String topic, @QueryParameter("producerProperties") String producerProperties,
                 @QueryParameter("consumerProperties") String consumerProperties,
                 @QueryParameter("credentialId") String credentialId) {
+            return doTestConnection(false, name, topic, producerProperties, consumerProperties, credentialId);
+        }
+
+        @POST
+        public FormValidation doTestProducerConnection(@QueryParameter("name") String name,
+                @QueryParameter("topic") String topic, @QueryParameter("producerProperties") String producerProperties,
+                @QueryParameter("consumerProperties") String consumerProperties,
+                @QueryParameter("credentialId") String credentialId) {
+            return doTestConnection(true, name, topic, producerProperties, consumerProperties, credentialId);
+        }
+
+        private FormValidation doTestConnection(Boolean isProducer, String name, String topic,
+                String producerProperties, String consumerProperties, String credentialId) {
 
             KafkaAuthenticationMethod.checkAdmin();
 
@@ -124,18 +137,21 @@ public class UsernameAuthenticationMethod extends KafkaAuthenticationMethod {
             try (KafkaConsumer consumer = new KafkaConsumer<>(cprops);
                     KafkaProducer producer = new KafkaProducer<>(pprops)) {
 
-                // Test producer.
-                ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
-                producer.send(record).get();
-
-                // Test consumer.
-                consumer.subscribe(Collections.singletonList(topic));
-                consumer.poll(Duration.ofMillis(100));
-
-                return FormValidation.ok(Messages.SuccessBrokersConnect(pprops.get("bootstrap.servers"),
-                        cprops.get("bootstrap.servers")));
+                if (isProducer) {
+                    // Test producer.
+                    ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
+                    producer.send(record).get();
+                    return FormValidation.ok(Messages.SuccessKafkaConnect("producer", pprops.get("bootstrap.servers")));
+                } else {
+                    // Test consumer.
+                    consumer.subscribe(Collections.singletonList(topic));
+                    consumer.poll(Duration.ofMillis(100));
+                    return FormValidation.ok(Messages.SuccessKafkaConnect("consumer", cprops.get("bootstrap.servers")));
+                }
             } catch (Exception e) {
-                log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestConnection: ", e);
+                String kind = (isProducer ? "Producer" : "Consumer");
+                log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTest" + kind + "Connection: ",
+                        e);
                 return FormValidation.error(Messages.Error() + ": " + e);
             } finally {
                 Thread.currentThread().setContextClassLoader(original);

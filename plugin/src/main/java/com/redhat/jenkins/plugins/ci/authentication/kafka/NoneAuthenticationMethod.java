@@ -83,36 +83,58 @@ public class NoneAuthenticationMethod extends KafkaAuthenticationMethod {
         }
 
         @POST
-        public FormValidation doTestConnection(@QueryParameter("name") String name,
-                @QueryParameter("topic") String topic, @QueryParameter("producerProperties") String producerProperties,
+        public FormValidation doTestConsumerConnection(@QueryParameter("name") String name,
+                @QueryParameter("topic") String topic,
                 @QueryParameter("consumerProperties") String consumerProperties) {
 
             KafkaAuthenticationMethod.checkAdmin();
 
-            KafkaMessagingProvider prov = new KafkaMessagingProvider(name, topic, producerProperties,
-                    consumerProperties, new NoneAuthenticationMethod());
+            KafkaMessagingProvider prov = new KafkaMessagingProvider(name, topic, "", consumerProperties,
+                    new NoneAuthenticationMethod());
 
-            Properties pprops = prov.getMergedProducerProperties();
             Properties cprops = prov.getMergedConsumerProperties();
+            // Make sure we don't wait too long, as Kafka will keep retrying.
+            cprops.put("default.api.timeout.ms", "1000");
 
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
-            try (KafkaConsumer consumer = new KafkaConsumer<>(cprops);
-                    KafkaProducer producer = new KafkaProducer<>(pprops)) {
-
-                // Test producer.
-                ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
-                producer.send(record).get();
-
-                // Test consumer.
+            try (KafkaConsumer consumer = new KafkaConsumer<>(cprops)) {
                 consumer.subscribe(Collections.singletonList(topic));
                 consumer.poll(Duration.ofMillis(100));
-
-                return FormValidation.ok(Messages.SuccessBrokersConnect(pprops.get("bootstrap.servers"),
-                        cprops.get("bootstrap.servers")));
+                consumer.listTopics();
+                return FormValidation.ok(Messages.SuccessKafkaConnect("consumer", cprops.get("bootstrap.servers")));
             } catch (Exception e) {
-                log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestConnection: ", e);
-                return FormValidation.error(Messages.Error() + ": " + e);
+                log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestConsumerConnection: ", e);
+                return FormValidation.error("Unable to connect to Kafka server");
+            } finally {
+                Thread.currentThread().setContextClassLoader(original);
+            }
+        }
+
+        @POST
+        public FormValidation doTestProducerConnection(@QueryParameter("name") String name,
+                @QueryParameter("topic") String topic,
+                @QueryParameter("producerProperties") String producerProperties) {
+
+            KafkaAuthenticationMethod.checkAdmin();
+
+            KafkaMessagingProvider prov = new KafkaMessagingProvider(name, topic, producerProperties, "",
+                    new NoneAuthenticationMethod());
+
+            Properties pprops = prov.getMergedProducerProperties();
+            // Make sure we don't wait too long, as Kafka will keep retrying.
+            pprops.put("max.block.ms", "1000");
+
+            ClassLoader original = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
+            try (KafkaProducer producer = new KafkaProducer<>(pprops)) {
+
+                ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
+                producer.send(record).get();
+                return FormValidation.ok(Messages.SuccessKafkaConnect("producer", pprops.get("bootstrap.servers")));
+            } catch (Exception e) {
+                log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestProducerConnection: ", e);
+                return FormValidation.error("Unable to connect to Kafka server");
             } finally {
                 Thread.currentThread().setContextClassLoader(original);
             }
