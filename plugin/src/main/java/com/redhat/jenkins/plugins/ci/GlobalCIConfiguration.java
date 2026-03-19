@@ -244,15 +244,8 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         return pds;
     }
 
-    public List<JMSMessagingProvider> getConfigs() {
+        public List<JMSMessagingProvider> getConfigs() {
         return configs;
     }
 
-    @com.thoughtworks.xstream.annotations.XStreamImplicit
-    public void setConfigs(List<JMSMessagingProvider> configs) {
-        this.configs = configs;
-        public List<JMSMessagingProvider> getConfigs() {
-    return configs;
-}
-    }
 }
