@@ -1,0 +1,14 @@
+<div>
+    <p>
+        Only accept or trigger on a Kafka message if the record headers pass all the header checks specified.
+        This applies to the Kafka provider only.
+    </p>
+    <p>
+        Each header check consists of a <b>Header name</b> and an <b>Expected value</b> (regular expression).
+        To pass the check, the record must contain a header with the given name whose value matches the expected value regex.
+    </p>
+    <p>
+        If no header checks are configured, all messages are considered (subject to any message body checks).
+        If one or more header checks are configured, a message is only accepted when every check matches.
+    </p>
+</div>

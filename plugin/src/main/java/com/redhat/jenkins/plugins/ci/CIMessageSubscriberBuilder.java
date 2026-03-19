@@ -54,7 +54,7 @@ import net.sf.json.JSONObject;
 public class CIMessageSubscriberBuilder extends Builder {
     private static final Logger log = Logger.getLogger(CIMessageSubscriberBuilder.class.getName());
 
-    private static final String BUILDER_NAME = Messages.SubscriberBuilder();
+    private static final String BUILDER_NAME = Messages.subscriberBuilder();
 
     private ProviderData providerData;
 

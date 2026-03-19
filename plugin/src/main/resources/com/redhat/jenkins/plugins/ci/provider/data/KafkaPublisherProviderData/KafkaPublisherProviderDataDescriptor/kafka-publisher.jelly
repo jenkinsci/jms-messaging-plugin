@@ -41,20 +41,23 @@
     </j:choose>
     <table width="100%">
       <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
-        <f:entry title="${%Topic name}" field="topic">
+        <f:entry title="${descriptor.topicNameLabel}" field="topic">
           <f:textbox value="${value}"/>
         </f:entry>
       </f:optionalBlock>
     </table>
   </f:nested>
-  <f:entry title="${%Publisher properties}" field="properties">
+  <f:entry title="${descriptor.publisherPropertiesLabel}" field="properties">
     <f:textarea name="properties"/>
   </f:entry>
-  <f:entry title="${%Message content}" field="messageContent">
+  <f:entry title="${descriptor.messageHeadersLabel}" field="messageHeaders" description="${descriptor.messageHeadersDescriptionText}" help="/plugin/jms-messaging/help-kafka-message-headers.html">
+    <f:textarea name="messageHeaders"/>
+  </f:entry>
+  <f:entry title="${descriptor.messageContentLabel}" field="messageContent">
     <f:textarea name="messageContent"/>
   </f:entry>
   <f:entry field="failOnError">
-    <f:checkbox title="${%Fail on error}" name="failOnError" default="false"/>
+    <f:checkbox title="${descriptor.failOnErrorLabel}" name="failOnError" default="false"/>
   </f:entry>
 
 </j:jelly>

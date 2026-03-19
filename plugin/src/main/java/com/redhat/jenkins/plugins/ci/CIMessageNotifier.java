@@ -52,7 +52,7 @@ import net.sf.json.JSONObject;
 public class CIMessageNotifier extends Notifier {
     private static final Logger log = Logger.getLogger(CIMessageNotifier.class.getName());
 
-    private static final String BUILDER_NAME = Messages.MessageNotifier();
+    private static final String BUILDER_NAME = Messages.messageNotifier();
 
     private ProviderData providerData;
 

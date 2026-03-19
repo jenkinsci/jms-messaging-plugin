@@ -100,7 +100,7 @@ public class NoneAuthenticationMethod extends KafkaAuthenticationMethod {
                 consumer.subscribe(Collections.singletonList(topic));
                 consumer.poll(Duration.ofMillis(100));
                 consumer.listTopics();
-                return FormValidation.ok(Messages.SuccessKafkaConnect("consumer", cprops.get("bootstrap.servers")));
+                return FormValidation.ok(Messages.successKafkaConnect("consumer", cprops.get("bootstrap.servers")));
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestConsumerConnection: ", e);
                 return FormValidation.error("Unable to connect to Kafka server");
@@ -129,7 +129,7 @@ public class NoneAuthenticationMethod extends KafkaAuthenticationMethod {
 
                 ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
                 producer.send(record).get();
-                return FormValidation.ok(Messages.SuccessKafkaConnect("producer", pprops.get("bootstrap.servers")));
+                return FormValidation.ok(Messages.successKafkaConnect("producer", pprops.get("bootstrap.servers")));
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTestProducerConnection: ", e);
                 return FormValidation.error("Unable to connect to Kafka server");

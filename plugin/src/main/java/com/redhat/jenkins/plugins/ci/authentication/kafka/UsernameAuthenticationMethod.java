@@ -141,18 +141,18 @@ public class UsernameAuthenticationMethod extends KafkaAuthenticationMethod {
                     // Test producer.
                     ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
                     producer.send(record).get();
-                    return FormValidation.ok(Messages.SuccessKafkaConnect("producer", pprops.get("bootstrap.servers")));
+                    return FormValidation.ok(Messages.successKafkaConnect("producer", pprops.get("bootstrap.servers")));
                 } else {
                     // Test consumer.
                     consumer.subscribe(Collections.singletonList(topic));
                     consumer.poll(Duration.ofMillis(100));
-                    return FormValidation.ok(Messages.SuccessKafkaConnect("consumer", cprops.get("bootstrap.servers")));
+                    return FormValidation.ok(Messages.successKafkaConnect("consumer", cprops.get("bootstrap.servers")));
                 }
             } catch (Exception e) {
                 String kind = (isProducer ? "Producer" : "Consumer");
                 log.log(Level.SEVERE, "Unhandled exception in KafkaMessagingProvider.doTest" + kind + "Connection: ",
                         e);
-                return FormValidation.error(Messages.Error() + ": " + e);
+                return FormValidation.error(Messages.error() + ": " + e);
             } finally {
                 Thread.currentThread().setContextClassLoader(original);
             }

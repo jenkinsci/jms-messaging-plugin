@@ -185,7 +185,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         startTriggerThreads();
     }
 
-    @SuppressWarnings("deprecation")
     private void startTriggerThreads() {
         if (job == null)
             return;
@@ -237,7 +236,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         // return stopTriggerThreads(fullName, getComparisonThreads());
     }
 
-    @SuppressWarnings("deprecation")
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
         synchronized (locks.computeIfAbsent(fullName, o -> new ArrayList<>())) {
             List<CITriggerThread> threads = locks.get(fullName);
@@ -435,7 +433,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
 
         @Override
         public @Nonnull String getDisplayName() {
-            return Messages.PluginName();
+            return Messages.pluginName();
         }
 
         @Override

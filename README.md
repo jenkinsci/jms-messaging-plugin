@@ -190,6 +190,18 @@ A sample step may look something like this:
 sendCIMessage rabbitMQPublisher(failOnError: true, messageContent: '{"msg": "This is my message"}', name: 'RabbitMQ')
 ```
 
+For the Kafka provider, you can optionally send message headers (key=value, one per line).
+Header values support environment variable substitution. Example:
+
+```groovy
+sendCIMessage kafkaPublisher(
+  name: 'Kafka',
+  messageContent: '{"msg": "Hello"}',
+  messageHeaders: 'X-My-Header=myvalue\nX-Other=${ENV_VAR}',
+  failOnError: true
+)
+```
+
 #### waitForCIMessage
 
 This is the Freestyle CI Subscriber Build Step sibling.
@@ -203,6 +215,19 @@ A sample step may look something like this:
 
 ```groovy
 waitForCIMessage kafkaSubscriber(name: 'Kafka', timeout: 30, useFiles: true)
+```
+
+For the Kafka provider, you can optionally add **header checks** so that only messages whose
+record headers match the given name/value (regex) pairs are accepted. Example:
+
+```groovy
+waitForCIMessage kafkaSubscriber(
+  name: 'Kafka',
+  timeout: 30,
+  headerChecks: [
+    headerCheck(headerName: 'X-Filter', expectedValue: 'accept')
+  ]
+)
 ```
 
 > [!NOTE]

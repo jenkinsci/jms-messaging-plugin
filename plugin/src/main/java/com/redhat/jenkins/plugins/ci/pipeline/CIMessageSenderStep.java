@@ -158,7 +158,7 @@ public class CIMessageSenderStep extends Step {
 
         @Override
         public @Nonnull String getDisplayName() {
-            return Messages.MessageNotifier();
+            return Messages.messageNotifier();
         }
 
         public ListBoxModel doFillProviderNameItems() {
