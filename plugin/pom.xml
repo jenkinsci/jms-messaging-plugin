@@ -44,7 +44,7 @@
 
     <properties>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.baseline>2.479</jenkins.baseline>
+        <jenkins.baseline>2.541</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <spotbugs.failOnError>false</spotbugs.failOnError>
@@ -55,7 +55,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>5054.v620b_5d2b_d5e6</version>
+                <version>6146.vc53a_0edb_e986</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -72,7 +72,7 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-amqp</artifactId>
-            <version>6.1.2</version>
+            <version>6.2.1</version>
         </dependency>
         <dependency>
             <groupId>com.rabbitmq</groupId>
@@ -83,6 +83,13 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>4.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Utilities -->
