@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -26,13 +24,10 @@ import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
 import hudson.model.Job;
-import hudson.model.Project;
-import hudson.model.Run;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
 
 public abstract class BaseTest {
-    private static final Logger log = Logger.getLogger(BaseTest.class.getName());
 
     @Rule
     public final JenkinsRule j = new JenkinsRule();
@@ -44,8 +39,8 @@ public abstract class BaseTest {
     @After
     public void after() throws IOException, InterruptedException {
         if (j != null && j.jenkins != null) {
-            for (Project p : j.jenkins.getProjects()) {
-                p.delete();
+            for (Job<?, ?> job : j.jenkins.getAllItems(Job.class)) {
+                job.delete();
             }
         }
     }
@@ -144,7 +139,7 @@ public abstract class BaseTest {
     }
 
     protected void scheduleAwaitStep(WorkflowJob job, int occurrences, boolean skipCheck) throws Exception {
-        WorkflowRun r = job.scheduleBuild2(0).waitForStart();
+        job.scheduleBuild2(0).waitForStart();
         waitForReceiverToBeReady(job.getFullName(), occurrences, skipCheck);
     }
 
@@ -153,7 +148,7 @@ public abstract class BaseTest {
     }
 
     protected void scheduleAwaitStep(AbstractProject<?, ?> job, int occurrences) throws Exception {
-        Run<?, ?> r = job.scheduleBuild2(0).waitForStart();
+        job.scheduleBuild2(0).waitForStart();
         waitForReceiverToBeReady(job.getFullName(), occurrences);
     }
 
@@ -173,7 +168,7 @@ public abstract class BaseTest {
             throws Exception, InterruptedException {
         String term = "Job '" + jobname + "' waiting to receive message";
         for (Integer i = 0; i < 150; i++) {
-            Matcher<LoggerRule> m = logger.recorded(Level.INFO, Matchers.containsString(term));
+            Matcher<LoggerRule> m = LoggerRule.recorded(Level.INFO, Matchers.containsString(term));
             if (m.matches(logger) && Collections.frequency(logger.getMessages(), term) >= occurrences
                     && (skipCheck || additionalWaitForReceiverToBeReadyCheck(jobname, occurrences))) {
                 return;

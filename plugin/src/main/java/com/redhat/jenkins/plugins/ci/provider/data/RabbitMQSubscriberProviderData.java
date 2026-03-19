@@ -88,8 +88,6 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
     public RabbitMQSubscriberProviderData(String name, MessagingProviderOverrides overrides,
             @Nonnull List<MsgCheck> checks, String variable, Boolean useFiles, Integer timeout) {
         this(name, overrides);
-        if (checks == null)
-            throw new IllegalArgumentException("checks are null");
         setChecks(checks);
         setVariable(variable);
         setUseFiles(useFiles);
@@ -102,8 +100,6 @@ public class RabbitMQSubscriberProviderData extends RabbitMQProviderData {
 
     @DataBoundSetter
     public void setChecks(@Nonnull List<MsgCheck> checks) {
-        if (checks == null)
-            throw new IllegalArgumentException("checks are null");
         this.checks = checks;
     }
 

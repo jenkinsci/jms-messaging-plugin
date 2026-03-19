@@ -28,7 +28,7 @@ import java.util.Objects;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
@@ -84,7 +84,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(KafkaPublisherProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(KafkaPublisherProviderDataDescriptor.class);
     }
 
     @Override
@@ -115,7 +115,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         }
 
         @Override
-        public KafkaPublisherProviderData newInstance(StaplerRequest sr, JSONObject jo) {
+        public KafkaPublisherProviderData newInstance(StaplerRequest2 sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));

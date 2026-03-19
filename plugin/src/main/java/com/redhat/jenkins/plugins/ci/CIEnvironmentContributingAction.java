@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nonnull;
-
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.EnvironmentContributingAction;
@@ -67,7 +65,7 @@ public class CIEnvironmentContributingAction implements EnvironmentContributingA
     }
 
     @Override
-    public void buildEnvironment(@Nonnull Run<?, ?> run, @Nonnull EnvVars env) {
+    public void buildEnvironment(Run<?, ?> run, EnvVars env) {
         addEnvVars(env);
     }
 

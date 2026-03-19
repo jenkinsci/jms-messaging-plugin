@@ -23,8 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import java.util.logging.Logger;
-
 import javax.annotation.Nonnull;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -55,7 +53,6 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
     private transient boolean migrationInProgress = false;
     private TopicProvider topicProvider = new DefaultTopicProvider();
     private ActiveMQAuthenticationMethod authenticationMethod;
-    private transient static final Logger log = Logger.getLogger(ActiveMqMessagingProvider.class.getName());
 
     @DataBoundConstructor
     public ActiveMqMessagingProvider(String name, String broker, Boolean useQueues, String topic,

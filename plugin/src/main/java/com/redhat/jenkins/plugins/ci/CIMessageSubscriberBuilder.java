@@ -119,6 +119,7 @@ public class CIMessageSubscriberBuilder extends Builder {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
         }

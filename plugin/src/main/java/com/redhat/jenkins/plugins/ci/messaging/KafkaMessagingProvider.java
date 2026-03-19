@@ -186,7 +186,7 @@ public class KafkaMessagingProvider extends JMSMessagingProvider {
 
     @Override
     public Descriptor<JMSMessagingProvider> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(KafkaMessagingProviderDescriptor.class);
+        return Jenkins.get().getDescriptorByType(KafkaMessagingProviderDescriptor.class);
     }
 
     @Extension

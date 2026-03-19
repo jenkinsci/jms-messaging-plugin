@@ -132,7 +132,7 @@ public class CIMessageSenderStep extends Step {
         }
 
         @Override
-        public void stop(@Nonnull Throwable throwable) {
+        public void stop(Throwable throwable) {
             task.cancel(true);
         }
 
@@ -142,6 +142,7 @@ public class CIMessageSenderStep extends Step {
     /**
      * Adds the step as a workflow extension.
      */
+    @SuppressWarnings("deprecation")
     @Extension(optional = true)
     public static class DescriptorImpl extends StepDescriptor {
 

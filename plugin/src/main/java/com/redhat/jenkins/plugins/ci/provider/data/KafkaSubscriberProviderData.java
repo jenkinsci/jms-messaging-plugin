@@ -32,7 +32,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
@@ -136,7 +136,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
 
     @Override
     public Descriptor<ProviderData> getDescriptor() {
-        return Jenkins.getInstance().getDescriptorByType(KafkaSubscriberProviderDataDescriptor.class);
+        return Jenkins.get().getDescriptorByType(KafkaSubscriberProviderDataDescriptor.class);
     }
 
     @Override
@@ -167,7 +167,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
         }
 
         @Override
-        public KafkaSubscriberProviderData newInstance(StaplerRequest sr, JSONObject jo) {
+        public KafkaSubscriberProviderData newInstance(StaplerRequest2 sr, JSONObject jo) {
             MessagingProviderOverrides mpo = null;
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));

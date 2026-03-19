@@ -48,6 +48,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -341,7 +342,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                 rec.timestamp(), rec.timestampType(), rec.serializedKeySize(), rec.serializedValueSize(), rec.key(),
                 null, rec.headers(), rec.leaderEpoch());
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(Include.NON_NULL, Include.ALWAYS));
         mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
         mapper.registerModule(new Jdk8Module());
         try {

@@ -74,7 +74,7 @@ public class CITriggerThread extends Thread {
                 }
                 interrupt();
             }
-            stop(); // Make sure to resume in finite amount of time
+            // Thread did not respond to interrupt in time; log and continue (do not use deprecated Thread.stop())
             Exception trace = new Exception(getName() + " stacktrace");
             trace.setStackTrace(getStackTrace());
             log.log(SEVERE, "Failed waiting on the " + getClass().getName() + " to shutdown in 10 seconds", trace);

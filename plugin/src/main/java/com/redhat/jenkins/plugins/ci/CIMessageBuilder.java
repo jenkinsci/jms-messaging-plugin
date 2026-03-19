@@ -82,6 +82,7 @@ public class CIMessageBuilder extends Builder {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public boolean isApplicable(Class<? extends AbstractProject> arg0) {
             return true;
         }
