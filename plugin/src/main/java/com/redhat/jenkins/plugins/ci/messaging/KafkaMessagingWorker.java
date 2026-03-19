@@ -86,32 +86,15 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                     log.info("Subscribing job '" + jobname + "' to " + this.topic + " topic.");
                     consumer.subscribe(Collections.singletonList(this.topic));
                     log.info("Subscribed job '" + jobname + "' to topic '" + this.topic + "'.");
-
                     return true;
                 } catch (Exception ex) {
-
-                    // Either we were interrupted, or something else went
-                    // wrong. If we were interrupted, then we will jump ship
-                    // on the next iteration. If something else happened,
-                    // then we just unsubscribe here, sleep, so that we may
-                    // try again on the next iteration.
-
                     log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in "
                             + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
-
                         unsubscribe(jobname);
-
                         try {
                             Thread.sleep(TimeUnit.MINUTES.toMillis(RETRY_MINUTES));
                         } catch (InterruptedException ie) {
-                            // We were interrupted while waiting to retry.
-                            // We will jump ship on the next iteration.
-
-                            // NB: The interrupt flag was cleared when
-                            // InterruptedException was thrown. We have to
-                            // re-install it to make sure we eventually
-                            // leave this thread.
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -133,13 +116,6 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             try {
                 Thread.sleep(TimeUnit.SECONDS.toMillis(2));
             } catch (InterruptedException e) {
-                // We were interrupted while waiting to retry. We will
-                // jump ship on the next iteration.
-
-                // NB: The interrupt flag was cleared when
-                // InterruptedException was thrown. We have to
-                // re-install it to make sure we eventually leave this
-                // thread.
                 Thread.currentThread().interrupt();
             }
         }
@@ -173,14 +149,11 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                 }
             } catch (Exception e) {
                 if (!Thread.currentThread().isInterrupted()) {
-                    // Something other than an interrupt causes this.
-                    // Unsubscribe, but stay in our loop and try to reconnect..
                     log.log(Level.WARNING, "JMS exception raised, going to re-subscribe for job '" + jobname + "'.", e);
-                    unsubscribe(jobname); // Try again next time.
+                    unsubscribe(jobname);
                 }
             }
         } else {
-            // We are about to leave the loop, so unsubscribe.
             unsubscribe(jobname);
         }
     }
@@ -188,9 +161,6 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean connect() {
         if (consumer == null) {
-            // This is a fix for org.apache.kafka.common.config.ConfigException:
-            // Invalid value org.apache.kafka.common.serialization.StringDeserializer for configuration
-            // value.deserializer: Class org.apache.kafka.common.serialization.StringDeserializer could not be found.
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
             consumer = new KafkaConsumer<>(pdata.mergeProperties(provider.getMergedConsumerProperties()));
@@ -212,7 +182,6 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
         } finally {
             consumer = null;
         }
-
         if (resetInterrupt && !Thread.currentThread().isInterrupted()) {
             Thread.currentThread().interrupt();
         }
@@ -237,9 +206,28 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             }
 
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
-            ProducerRecord<String, String> producerRecord = new ProducerRecord<>(ltopic, null,
-                    Instant.now().toEpochMilli(), UUID.randomUUID().toString(),
+
+            // Build the producer record
+            ProducerRecord<String, String> producerRecord = new ProducerRecord<>(
+                    ltopic,
+                    null,
+                    Instant.now().toEpochMilli(),
+                    UUID.randomUUID().toString(),
                     PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
+
+            // NEW: Add custom message headers if provided (fixes issue #341)
+            String messageProperties = pd.getMessageProperties();
+            if (messageProperties != null && !messageProperties.trim().isEmpty()) {
+                for (String line : messageProperties.split("\n")) {
+                    String[] parts = line.split("=", 2);
+                    if (parts.length == 2) {
+                        producerRecord.headers().add(
+                                parts[0].trim(),
+                                parts[1].trim().getBytes(StandardCharsets.UTF_8));
+                    }
+                }
+            }
+
             body = producerRecord.value();
             msgId = producerRecord.key();
 
@@ -293,9 +281,6 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             if (it.hasNext()) {
                 ConsumerRecord<String, String> rec = it.next();
                 listener.getLogger().println(String.format("Received a message: %s", rec.toString()));
-                // log.info(String.format("kafka message received [%s]", rec.toString()));
-                // log.info(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(),
-                // rec.value()));
                 if (provider.verify(rec.value(), pd.getChecks(), jobname)) {
                     if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                         EnvVars vars = new EnvVars();
@@ -336,7 +321,6 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     }
 
     private String consumerRecordToJson(ConsumerRecord<String, String> rec) {
-        // Convert the consumer record to a JSON string, excluding value.
         ConsumerRecord<String, String> copy = new ConsumerRecord<>(rec.topic(), rec.partition(), rec.offset(),
                 rec.timestamp(), rec.timestampType(), rec.serializedKeySize(), rec.serializedValueSize(), rec.key(),
                 null, rec.headers(), rec.leaderEpoch());

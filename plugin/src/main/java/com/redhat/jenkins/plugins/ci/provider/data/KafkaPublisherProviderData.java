@@ -44,6 +44,8 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
 
     private String messageContent;
     private Boolean failOnError = false;
+    // NEW: field for custom message headers (fixes issue #341)
+    private String messageProperties;
 
     @DataBoundConstructor
     public KafkaPublisherProviderData() {
@@ -64,6 +66,15 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         setFailOnError(failOnError);
     }
 
+    // NEW: constructor that also accepts messageProperties
+    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String properties,
+            String messageContent, Boolean failOnError, String messageProperties) {
+        this(name, overrides, properties);
+        setMessageContent(messageContent);
+        setFailOnError(failOnError);
+        setMessageProperties(messageProperties);
+    }
+
     public String getMessageContent() {
         return messageContent;
     }
@@ -82,6 +93,16 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         this.failOnError = failOnError;
     }
 
+    // NEW: getter and setter for messageProperties
+    public String getMessageProperties() {
+        return messageProperties;
+    }
+
+    @DataBoundSetter
+    public void setMessageProperties(String messageProperties) {
+        this.messageProperties = Util.fixEmpty(messageProperties);
+    }
+
     @Override
     public Descriptor<ProviderData> getDescriptor() {
         return Jenkins.getInstance().getDescriptorByType(KafkaPublisherProviderDataDescriptor.class);
@@ -92,17 +113,20 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         if (!super.equals(that)) {
             return false;
         }
-
         KafkaPublisherProviderData thatp = (KafkaPublisherProviderData) that;
-        return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
+        return Objects.equals(this.name, thatp.name)
+                && Objects.equals(this.overrides, thatp.overrides)
                 && Objects.equals(this.properties, thatp.properties)
                 && Objects.equals(this.messageContent, thatp.messageContent)
-                && Objects.equals(this.failOnError, thatp.failOnError);
+                && Objects.equals(this.failOnError, thatp.failOnError)
+                // NEW: include messageProperties in equality check
+                && Objects.equals(this.messageProperties, thatp.messageProperties);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, overrides, properties, messageContent, failOnError);
+        // NEW: include messageProperties in hash
+        return Objects.hash(name, overrides, properties, messageContent, failOnError, messageProperties);
     }
 
     @Extension
@@ -120,13 +144,14 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
+            // NEW: pass messageProperties from form data
             return new KafkaPublisherProviderData(jo.getString("name"), mpo, jo.getString("properties"),
-                    jo.getString("messageContent"), jo.getBoolean("failOnError"));
+                    jo.getString("messageContent"), jo.getBoolean("failOnError"),
+                    jo.optString("messageProperties", null));
         }
 
         public String getConfigPage() {
             return "kafka-publisher.jelly";
         }
-
     }
 }

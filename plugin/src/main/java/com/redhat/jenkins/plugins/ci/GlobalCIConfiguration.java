@@ -24,7 +24,6 @@
 package com.redhat.jenkins.plugins.ci;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
@@ -34,7 +33,6 @@ import javax.annotation.Nonnull;
 
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest2;
 
 import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
@@ -79,9 +77,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         this.migrationInProgress = migrationInProgress;
     }
 
-    /**
-     * The string in global configuration that indicates content is empty.
-     */
     public static final String CONTENT_NONE = "-";
 
     private static final Logger log = Logger.getLogger(GlobalCIConfiguration.class.getName());
@@ -92,7 +87,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
     }
 
     protected Object readResolve() {
-        // Examine providers
         if (configs != null) {
             for (JMSMessagingProvider config : configs) {
                 if (config instanceof ActiveMqMessagingProvider) {
@@ -105,15 +99,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             }
         }
         return this;
-    }
-
-    @DataBoundSetter
-    public void setConfigs(List<JMSMessagingProvider> configs) {
-        this.configs = configs;
-    }
-
-    public List<JMSMessagingProvider> getConfigs() {
-        return Collections.unmodifiableList(this.configs);
     }
 
     public boolean addMessageProvider(JMSMessagingProvider provider) {
@@ -175,7 +160,6 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
         return c;
     }
 
-    // Jelly helper routines.
     public Boolean getFirstProviderOverrides() {
         if (configs != null && configs.size() > 0) {
             JMSMessagingProvider prov = configs.get(0);
@@ -258,5 +242,14 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
             }
         }
         return pds;
+    }
+
+    public List<JMSMessagingProvider> getConfigs() {
+        return configs;
+    }
+
+    @com.thoughtworks.xstream.annotations.XStreamImplicit
+    public void setConfigs(List<JMSMessagingProvider> configs) {
+        this.configs = configs;
     }
 }
