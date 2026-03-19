@@ -134,8 +134,8 @@ public class UsernameAuthenticationMethod extends KafkaAuthenticationMethod {
 
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
-            try (KafkaConsumer consumer = new KafkaConsumer<>(cprops);
-                    KafkaProducer producer = new KafkaProducer<>(pprops)) {
+            try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(cprops);
+                    KafkaProducer<String, String> producer = new KafkaProducer<>(pprops)) {
 
                 if (isProducer) {
                     // Test producer.

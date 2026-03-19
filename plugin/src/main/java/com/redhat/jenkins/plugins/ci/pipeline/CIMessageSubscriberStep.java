@@ -26,7 +26,6 @@ package com.redhat.jenkins.plugins.ci.pipeline;
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -62,7 +61,6 @@ import hudson.util.ListBoxModel;
 import jenkins.util.Timer;
 
 public class CIMessageSubscriberStep extends Step {
-    private static final Logger log = Logger.getLogger(CIMessageSubscriberStep.class.getName());
 
     private ProviderData providerData;
 
@@ -136,7 +134,7 @@ public class CIMessageSubscriberStep extends Step {
         }
 
         @Override
-        public void stop(@Nonnull Throwable cause) throws Exception {
+        public void stop(Throwable cause) throws Exception {
             StepContext c = getContext();
             if (task != null) {
                 c.get(TaskListener.class).getLogger().println("in stop of watcher");
@@ -152,6 +150,7 @@ public class CIMessageSubscriberStep extends Step {
     /**
      * Adds the step as a workflow extension.
      */
+    @SuppressWarnings("deprecation")
     @Extension(optional = true)
     public static class DescriptorImpl extends StepDescriptor {
 

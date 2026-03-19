@@ -12,15 +12,16 @@ import java.util.Vector;
  */
 public class OrderedProperties extends Properties {
 
-    private final Vector _names;
+    private final Vector<Object> _names;
 
     public OrderedProperties() {
         super();
 
-        _names = new Vector();
+        _names = new Vector<>();
     }
 
-    public Enumeration propertyNames() {
+    @Override
+    public Enumeration<Object> propertyNames() {
         return _names.elements();
     }
 

@@ -417,10 +417,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 if (!StringUtils.isEmpty(pd.getMessageProperties())) {
                     OrderedProperties p = new OrderedProperties();
                     p.load(new StringReader(PluginUtils.getSubstitutedValue(pd.getMessageProperties(), envVars)));
-                    @SuppressWarnings("unchecked")
-                    Enumeration<String> e = p.propertyNames();
+                    Enumeration<Object> e = p.propertyNames();
                     while (e.hasMoreElements()) {
-                        String key = e.nextElement();
+                        String key = (String) e.nextElement();
                         if (!key.toLowerCase().startsWith("jms")
                                 || !setMessageHeader(message, key, p.getProperty(key), session)) {
                             EnvVars envVars2 = new EnvVars();

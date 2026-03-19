@@ -161,7 +161,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     @Override
-    public void start(Job project, boolean newInstance) {
+    public void start(Job<?, ?> project, boolean newInstance) {
         super.start(project, newInstance);
         startTriggerThreads();
     }
@@ -185,6 +185,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         startTriggerThreads();
     }
 
+    @SuppressWarnings("deprecation")
     private void startTriggerThreads() {
         if (job == null)
             return;
@@ -236,6 +237,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         // return stopTriggerThreads(fullName, getComparisonThreads());
     }
 
+    @SuppressWarnings("deprecation")
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
         synchronized (locks.computeIfAbsent(fullName, o -> new ArrayList<>())) {
             List<CITriggerThread> threads = locks.get(fullName);
@@ -273,6 +275,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         return null;
     }
 
+    @SuppressWarnings("unused")
     private List<CITriggerThread> getComparisonThreads() {
         if (providers != null && job != null) {
             List<CITriggerThread> threads = new ArrayList<>();
@@ -314,9 +317,10 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             throw new IllegalStateException("Trigger not started yet");
         }
 
-        ParameterizedJobMixIn<?, ?> jobMixIn = new ParameterizedJobMixIn() {
+        @SuppressWarnings("rawtypes")
+        ParameterizedJobMixIn jobMixIn = new ParameterizedJobMixIn() {
             @Override
-            protected Job<?, ?> asJob() {
+            protected Job asJob() {
                 return job;
             }
         };
@@ -391,6 +395,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         return defaults;
     }
 
+    @SuppressWarnings("unused")
     private void saveJob() {
         try {
             if (job != null) {
@@ -401,6 +406,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         }
     }
 
+    @SuppressWarnings("unused")
     private String getJobName() {
         return (job != null) ? job.getName() : "<unknown>";
     }

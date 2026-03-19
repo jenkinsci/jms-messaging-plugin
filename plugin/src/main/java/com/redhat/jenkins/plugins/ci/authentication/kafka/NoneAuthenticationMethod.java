@@ -53,8 +53,6 @@ public class NoneAuthenticationMethod extends KafkaAuthenticationMethod {
     private static final long serialVersionUID = 452156745621333871L;
     private transient static final Logger log = Logger.getLogger(NoneAuthenticationMethod.class.getName());
 
-    private String credentialId;
-
     @DataBoundConstructor
     public NoneAuthenticationMethod() {
     }
@@ -98,7 +96,7 @@ public class NoneAuthenticationMethod extends KafkaAuthenticationMethod {
 
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
-            try (KafkaConsumer consumer = new KafkaConsumer<>(cprops)) {
+            try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(cprops)) {
                 consumer.subscribe(Collections.singletonList(topic));
                 consumer.poll(Duration.ofMillis(100));
                 consumer.listTopics();
@@ -127,7 +125,7 @@ public class NoneAuthenticationMethod extends KafkaAuthenticationMethod {
 
             ClassLoader original = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(KafkaConsumer.class.getClassLoader());
-            try (KafkaProducer producer = new KafkaProducer<>(pprops)) {
+            try (KafkaProducer<String, String> producer = new KafkaProducer<>(pprops)) {
 
                 ProducerRecord<String, String> record = new ProducerRecord<>(topic, "test-key", "test-value");
                 producer.send(record).get();

@@ -23,6 +23,8 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
+import static org.junit.Assert.assertNotNull;
+
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,10 +42,7 @@ public class LoadTest {
     @LocalData
     public void load() throws Exception {
         WorkflowJob foo = j.jenkins.getItemByFullName("foo", WorkflowJob.class);
-        CIBuildTrigger next = ((CIBuildTrigger) foo.getTriggers().values().iterator().next());
-
-        // TODO finish
-        // Thread.getAllStackTraces().keySet().fin
-        // j.interactiveBreak();
+        CIBuildTrigger trigger = (CIBuildTrigger) foo.getTriggers().values().iterator().next();
+        assertNotNull(trigger);
     }
 }

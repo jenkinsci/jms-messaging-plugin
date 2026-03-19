@@ -23,8 +23,6 @@
  */
 package com.redhat.jenkins.plugins.ci.authentication.kafka;
 
-import java.util.logging.Logger;
-
 import com.redhat.jenkins.plugins.ci.authentication.AuthenticationMethod;
 
 import hudson.ExtensionList;
@@ -36,7 +34,6 @@ public abstract class KafkaAuthenticationMethod extends AuthenticationMethod
         implements Describable<KafkaAuthenticationMethod> {
 
     private static final long serialVersionUID = -6077120270692721589L;
-    private transient static final Logger log = Logger.getLogger(AuthenticationMethod.class.getName());
 
     public abstract static class AuthenticationMethodDescriptor extends Descriptor<KafkaAuthenticationMethod> {
         public static ExtensionList<AuthenticationMethodDescriptor> all() {

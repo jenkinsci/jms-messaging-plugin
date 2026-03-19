@@ -35,6 +35,7 @@ import com.redhat.utils.CredentialLookup;
 
 import hudson.model.Item;
 import hudson.security.ACL;
+import hudson.security.ACLContext;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 
@@ -75,7 +76,7 @@ public abstract class AuthenticationMethod implements Serializable {
         ListBoxModel items = new ListBoxModel();
         items.add("-- Select " + prompt + " Credential --", "");
 
-        ACL.impersonate2(ACL.SYSTEM2, () -> {
+        try (ACLContext ctx = ACL.as2(ACL.SYSTEM2)) {
             List<StandardCredentials> availableCredentials = CredentialsProvider
                     .lookupCredentialsInItem(StandardCredentials.class, project, ACL.SYSTEM2);
 
@@ -86,7 +87,7 @@ public abstract class AuthenticationMethod implements Serializable {
                             : c.getId(), c.getId());
                 }
             }
-        });
+        }
 
         return items;
     }

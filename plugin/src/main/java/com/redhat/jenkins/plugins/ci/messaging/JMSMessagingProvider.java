@@ -101,7 +101,10 @@ public abstract class JMSMessagingProvider implements Describable<JMSMessagingPr
 
     private boolean verify(DocumentContext context, MsgCheck check, String jobname) {
         try {
-            String field = StringUtils.prependIfMissing(check.getField(), "$.");
+            String field = check.getField();
+            if (!field.startsWith("$.")) {
+                field = "$." + field;
+            }
             String actual = Objects.toString(context.read(field), "");
             String expected = StringUtils.defaultString(check.getExpectedValue());
             return Pattern.compile(expected).matcher(actual).find();

@@ -1,7 +1,5 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
-import java.util.logging.Logger;
-
 import javax.annotation.Nonnull;
 
 import org.jenkinsci.Symbol;
@@ -22,8 +20,6 @@ import jenkins.model.Jenkins;
 public class RabbitMQMessagingProvider extends JMSMessagingProvider {
 
     private static final long serialVersionUID = 82154526798596907L;
-
-    private static final Logger log = Logger.getLogger(RabbitMQMessagingProvider.class.getName());
 
     private final String virtualHost;
     private final String hostname;
