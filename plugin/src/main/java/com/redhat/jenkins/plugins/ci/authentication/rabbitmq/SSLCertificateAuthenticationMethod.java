@@ -48,6 +48,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
 import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.utils.CertificateExpiryChecker;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
@@ -178,6 +179,17 @@ public class SSLCertificateAuthenticationMethod extends RabbitMQAuthenticationMe
                 @QueryParameter("virtualHost") String virtualHost) {
 
             checkAdmin();
+
+            FormValidation expiredKey = CertificateExpiryChecker
+                    .checkStandardCertificateCredential(keyStoreCredentialId, Messages.certificateStoreKey());
+            if (expiredKey != null) {
+                return expiredKey;
+            }
+            FormValidation expiredTrust = CertificateExpiryChecker
+                    .checkStandardCertificateCredential(trustStoreCredentialId, Messages.certificateStoreTrust());
+            if (expiredTrust != null) {
+                return expiredTrust;
+            }
 
             Connection connection = null;
             Channel channel = null;
