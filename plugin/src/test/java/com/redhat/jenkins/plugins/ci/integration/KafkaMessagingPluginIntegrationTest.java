@@ -27,6 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -51,6 +52,7 @@ import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.kafka.NoneAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.integration.fixtures.KafkaContainer;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.checks.HeaderCheck;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaPublisherProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
@@ -117,6 +119,30 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     @Override
     public ProviderData getPublisherProviderData(String provider, String topic, String content) {
         return new KafkaPublisherProviderData(provider, overrideTopic(topic), "", content, true);
+    }
+
+    /**
+     * Returns publisher provider data with optional message headers (key=value per line).
+     */
+    public ProviderData getPublisherProviderDataWithHeaders(String provider, String topic, String content,
+            String messageHeaders) {
+        KafkaPublisherProviderData pd = new KafkaPublisherProviderData(provider, overrideTopic(topic), "", content,
+                true);
+        if (messageHeaders != null && !messageHeaders.isEmpty()) {
+            pd.setMessageHeaders(messageHeaders);
+        }
+        return pd;
+    }
+
+    /**
+     * Returns subscriber provider data with optional header checks (Kafka only).
+     */
+    public ProviderData getSubscriberProviderDataWithHeaderChecks(String provider, String topic, String variableName,
+            Boolean useFiles, Integer timeoutMinutes, List<HeaderCheck> headerChecks, MsgCheck... msgChecks) {
+        return new KafkaSubscriberProviderData(provider, overrideTopic(topic), "group.id=" + topic,
+                msgChecks != null && msgChecks.length > 0 ? Arrays.asList(msgChecks) : new ArrayList<>(),
+                headerChecks != null ? headerChecks : new ArrayList<>(), variableName, useFiles,
+                timeoutMinutes != null ? timeoutMinutes : 60);
     }
 
     @Override
@@ -363,5 +389,66 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         jobA.delete();
         jobB.delete();
+    }
+
+    @Test
+    public void testSendCIMessageWithHeaders() throws Exception {
+        FreeStyleProject jobA = j.createFreeStyleProject();
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(getSubscriberProviderData())), jobA);
+        jobA.getBuildersList().add(new Shell("echo $" + DEFAULT_VARIABLE_NAME + "_RECORD"));
+
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        ProviderData pd = getPublisherProviderDataWithHeaders(DEFAULT_PROVIDER_NAME, testName.getMethodName(),
+                "{\"msg\": \"with-headers\"}", "X-My-Header=myvalue\nX-Other=othervalue");
+        jobB.getPublishersList().add(new CIMessageNotifier(pd));
+
+        j.buildAndAssertSuccess(jobB);
+
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        j.assertLogContains("X-My-Header", jobA.getLastBuild());
+        j.assertLogContains("X-Other", jobA.getLastBuild());
+        // Header values are base64-encoded in the RECORD JSON (Kafka headers are byte[])
+        j.assertLogContains("bXl2YWx1ZQ==", jobA.getLastBuild()); // base64("myvalue")
+        j.assertLogContains("b3RoZXJ2YWx1ZQ==", jobA.getLastBuild()); // base64("othervalue")
+
+        jobA.delete();
+        jobB.delete();
+    }
+
+    @Test
+    public void testReceiveFilteredByHeaderChecks() throws Exception {
+        List<HeaderCheck> headerChecks = Collections.singletonList(new HeaderCheck("X-Filter", "accept"));
+        ProviderData subscriberPd = getSubscriberProviderDataWithHeaderChecks(DEFAULT_PROVIDER_NAME,
+                testName.getMethodName(), DEFAULT_VARIABLE_NAME, false, 60, headerChecks);
+
+        FreeStyleProject jobA = j.createFreeStyleProject();
+        jobA.getBuildersList().add(new Shell("echo BUILD_NUMBER=$BUILD_NUMBER"));
+        attachTrigger(new CIBuildTrigger(false, Collections.singletonList(subscriberPd)), jobA);
+
+        waitForReceiverToBeReady(jobA.getFullName(), 1);
+
+        // Send message with matching header -> should trigger
+        FreeStyleProject jobB = j.createFreeStyleProject();
+        jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderDataWithHeaders(DEFAULT_PROVIDER_NAME,
+                testName.getMethodName(), "{\"msg\": \"accepted\"}", "X-Filter=accept")));
+        j.buildAndAssertSuccess(jobB);
+
+        waitUntilTriggeredBuildCompletes(jobA);
+        j.assertBuildStatusSuccess(jobA.getLastBuild());
+        assertEquals("One build from message with matching header", 1, jobA.getLastBuild().getNumber());
+
+        // Send message without matching header -> should not trigger
+        FreeStyleProject jobC = j.createFreeStyleProject();
+        jobC.getPublishersList().add(new CIMessageNotifier(
+                getPublisherProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "{\"msg\": \"ignored\"}")));
+        j.buildAndAssertSuccess(jobC);
+
+        Thread.sleep(4000);
+        assertEquals("Still one build; message without header should not trigger", 1, jobA.getLastBuild().getNumber());
+
+        jobA.delete();
+        jobB.delete();
+        jobC.delete();
     }
 }

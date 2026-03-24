@@ -157,7 +157,7 @@ public final class GlobalCIConfiguration extends GlobalConfiguration {
 
     @Override
     public @Nonnull String getDisplayName() {
-        return Messages.PluginName();
+        return Messages.pluginName();
     }
 
     public static @Nonnull GlobalCIConfiguration get() {

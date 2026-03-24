@@ -170,7 +170,7 @@ public class CIMessageSubscriberStep extends Step {
 
         @Override
         public @Nonnull String getDisplayName() {
-            return Messages.SubscriberBuilder();
+            return Messages.subscriberBuilder();
         }
     }
 }

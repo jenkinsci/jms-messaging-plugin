@@ -258,11 +258,11 @@ public class X509CertificateAuthenticationMethod extends RabbitMQAuthenticationM
                 channel = connection.createChannel();
                 channel.close();
                 connection.close();
-                return FormValidation.ok(Messages.SuccessBrokerConnect(hostname + ":" + portNumber));
+                return FormValidation.ok(Messages.successBrokerConnect(hostname + ":" + portNumber));
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Unhandled exception in X509CertificateAuthenticationMethod.doTestConnection: ",
                         e);
-                return FormValidation.error(Messages.Error() + ": " + e);
+                return FormValidation.error(Messages.error() + ": " + e);
             } finally {
                 try {
                     if (channel != null) {

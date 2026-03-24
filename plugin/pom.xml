@@ -55,9 +55,15 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>6146.vc53a_0edb_e986</version>
+                <version>6166.va_a_8b_5eda_8ef5</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <!-- workflow-api needs scm-api; branch-api (test classpath) requires >= 724 -->
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>scm-api</artifactId>
+                <version>724.v7d839074eb_5c</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -169,10 +175,10 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>docker-commons</artifactId>
         </dependency>
+        <!-- compile: required in work/plugins for hpi:run so matrix-project (and this plugin) can load -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
@@ -242,10 +248,11 @@
             <artifactId>workflow-basic-steps</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- compile: test classpath / hpi:run; version from dependencyManagement (branch-api needs scm-api >= 724) -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>scm-api</artifactId>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -425,7 +432,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 </project>

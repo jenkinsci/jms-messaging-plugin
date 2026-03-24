@@ -42,27 +42,45 @@
     </j:choose>
     <table width="100%">
       <f:optionalBlock field="overrides" title="Override provider topic" checked="${checked}">
-        <f:entry title="${%Topic name}" field="topic">
+        <f:entry title="${descriptor.topicNameLabel}" field="topic">
           <f:textbox value="${value}"/>
         </f:entry>
       </f:optionalBlock>
     </table>
-    <f:entry title="${%Consumer properties}" field="properties">
+    <f:entry title="${descriptor.consumerPropertiesLabel}" field="properties">
       <f:textarea name="properties"/>
     </f:entry>
-    <f:entry title="${%Message Checks}" help="/plugin/jms-messaging/help-checks.html">
-        <f:repeatable var="check" name="checks" items="${instance.checks}" add="${%Add check}" minimum="0">
+    <f:entry title="${descriptor.headerChecksLabel}" help="/plugin/jms-messaging/help-kafka-header-checks.html">
+        <f:repeatable var="headerCheck" name="headerChecks" items="${instance.headerChecks}" add="${descriptor.addHeaderCheckLabel}" minimum="0">
           <table width="100%">
-            <f:entry title="${%Field}">
+            <f:entry title="${descriptor.headerNameLabel}">
+              <f:textbox name="headerChecks.headerName" value="${headerCheck.headerName}" />
+            </f:entry>
+            <f:entry title="${descriptor.expectedValueLabel}">
+              <f:textbox name="headerChecks.expectedValue" value="${headerCheck.expectedValue}" />
+            </f:entry>
+            <f:entry>
+              <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                <f:repeatableDeleteButton value="${descriptor.deleteHeaderCheckLabel}" />
+                <br/>
+              </div>
+            </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
+    <f:entry title="${descriptor.messageChecksLabel}" help="/plugin/jms-messaging/help-checks.html">
+        <f:repeatable var="check" name="checks" items="${instance.checks}" add="${descriptor.addCheckLabel}" minimum="0">
+          <table width="100%">
+            <f:entry title="${descriptor.fieldLabel}">
               <f:textbox name="checks.field" value="${check.field}"
                          checkUrl="'descriptorByName/com.redhat.jenkins.plugins.ci.CIBuildTrigger/checkField?value='+escape(this.value)" />
             </f:entry>
-            <f:entry title="${%Expected value}">
+            <f:entry title="${descriptor.expectedValueLabel}">
               <f:textbox name="checks.expectedValue" value="${check.expectedValue}" />
             </f:entry>
             <f:entry>
               <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
-                <f:repeatableDeleteButton value="${%Delete check}" />
+                <f:repeatableDeleteButton value="${descriptor.deleteCheckLabel}" />
                 <br/>
               </div>
             </f:entry>
@@ -70,22 +88,22 @@
       </f:repeatable>
     </f:entry>
     <j:if test="${desc.getClass().getSimpleName() != 'CIBuildTriggerDescriptor'}">
-      <f:entry title="${%Variable}" field="variable">
+      <f:entry title="${descriptor.variableLabel}" field="variable">
         <f:textbox default="${descriptor.getDefaultVariable()}"/>
       </f:entry>
       <j:choose>
         <j:when test="${pdata.getFromTrigger() == 'true'}">
           <f:invisibleEntry field="useFiles">
-            <f:checkbox title="${%Use files instead of environment variables}" name="useFiles" default="false"/>
+            <f:checkbox title="${descriptor.useFilesInsteadOfEnvironmentVariablesLabel}" name="useFiles" default="false"/>
           </f:invisibleEntry>
         </j:when>
         <j:otherwise>
           <f:entry field="useFiles">
-            <f:checkbox title="${%Use files instead of environment variables}" name="useFiles" default="false"/>
+            <f:checkbox title="${descriptor.useFilesInsteadOfEnvironmentVariablesLabel}" name="useFiles" default="false"/>
           </f:entry>
         </j:otherwise>
       </j:choose>
-      <f:entry title="${%Timeout}" field="timeout">
+      <f:entry title="${descriptor.timeoutLabel}" field="timeout">
         <f:textbox default="${descriptor.getDefaultTimeout()}"/>
       </f:entry>
     </j:if>

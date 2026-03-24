@@ -25,12 +25,15 @@
 package com.redhat.jenkins.plugins.ci.messaging;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -46,6 +49,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -54,8 +59,10 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
+import com.redhat.jenkins.plugins.ci.messaging.checks.HeaderCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.SendResult;
 import com.redhat.jenkins.plugins.ci.provider.data.*;
+import com.redhat.utils.OrderedProperties;
 import com.redhat.utils.PluginUtils;
 
 import hudson.EnvVars;
@@ -157,7 +164,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                     log.info(String.format("kafka message received [%s]", rec.toString()));
                     log.info(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(),
                             rec.value()));
-                    if (provider.verify(rec.value(), pd.getChecks(), jobname)) {
+                    if (headerChecksMatch(rec.headers(), pd.getHeaderChecks())
+                            && provider.verify(rec.value(), pd.getChecks(), jobname)) {
                         Map<String, String> params = new HashMap<String, String>();
                         if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                             if (rec.value() != null) {
@@ -238,9 +246,10 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             }
 
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
+            Iterable<org.apache.kafka.common.header.Header> headers = buildRecordHeaders(pd, env);
             ProducerRecord<String, String> producerRecord = new ProducerRecord<>(ltopic, null,
                     Instant.now().toEpochMilli(), UUID.randomUUID().toString(),
-                    PluginUtils.getSubstitutedValue(pd.getMessageContent(), env));
+                    PluginUtils.getSubstitutedValue(pd.getMessageContent(), env), headers);
             body = producerRecord.value();
             msgId = producerRecord.key();
 
@@ -297,7 +306,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                 // log.info(String.format("kafka message received [%s]", rec.toString()));
                 // log.info(String.format("kafka message received from [%s] [%s] [%s]", rec.topic(), rec.key(),
                 // rec.value()));
-                if (provider.verify(rec.value(), pd.getChecks(), jobname)) {
+                if (headerChecksMatch(rec.headers(), pd.getHeaderChecks())
+                        && provider.verify(rec.value(), pd.getChecks(), jobname)) {
                     if (StringUtils.isNotEmpty(pd.getMessageVariable())) {
                         EnvVars vars = new EnvVars();
                         if (rec.value() != null) {
@@ -334,6 +344,55 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     @Override
     public String getDefaultTopic() {
         return DEFAULT_TOPIC;
+    }
+
+    private static Iterable<org.apache.kafka.common.header.Header> buildRecordHeaders(KafkaPublisherProviderData pd,
+            EnvVars env) {
+        RecordHeaders recordHeaders = new RecordHeaders();
+        putRecordHeader(recordHeaders, "CI_NAME", env.get("CI_NAME"));
+        putRecordHeader(recordHeaders, "CI_STATUS", env.get("CI_STATUS"));
+        putRecordHeader(recordHeaders, "BUILD_STATUS", env.get("BUILD_STATUS"));
+
+        if (StringUtils.isEmpty(pd.getMessageHeaders())) {
+            return recordHeaders;
+        }
+        try {
+            OrderedProperties p = new OrderedProperties();
+            p.load(new StringReader(PluginUtils.getSubstitutedValue(pd.getMessageHeaders(), env)));
+            Enumeration<Object> e = p.propertyNames();
+            while (e.hasMoreElements()) {
+                String key = (String) e.nextElement();
+                String value = PluginUtils.getSubstitutedValue(p.getProperty(key), env);
+                if (value != null) {
+                    recordHeaders.remove(key);
+                    recordHeaders.add(new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8)));
+                }
+            }
+        } catch (IOException ex) {
+            log.log(Level.WARNING, "Failed to parse message headers", ex);
+        }
+        return recordHeaders;
+    }
+
+    private static void putRecordHeader(RecordHeaders recordHeaders, String key, String value) {
+        if (StringUtils.isEmpty(key) || value == null) {
+            return;
+        }
+        recordHeaders.remove(key);
+        recordHeaders.add(new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static boolean headerChecksMatch(org.apache.kafka.common.header.Headers headers,
+            List<HeaderCheck> headerChecks) {
+        if (headerChecks == null || headerChecks.isEmpty()) {
+            return true;
+        }
+        for (HeaderCheck hc : headerChecks) {
+            if (!hc.matches(headers)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private String consumerRecordToJson(ConsumerRecord<String, String> rec) {

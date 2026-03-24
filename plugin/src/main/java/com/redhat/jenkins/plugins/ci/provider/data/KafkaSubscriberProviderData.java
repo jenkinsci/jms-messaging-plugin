@@ -24,6 +24,7 @@
 package com.redhat.jenkins.plugins.ci.provider.data;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -35,7 +36,9 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 
+import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
+import com.redhat.jenkins.plugins.ci.messaging.checks.HeaderCheck;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 
 import hudson.Extension;
@@ -53,6 +56,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     public static final Integer DEFAULT_TIMEOUT_IN_MINUTES = 60;
 
     private List<MsgCheck> checks = new ArrayList<MsgCheck>();
+    private List<HeaderCheck> headerChecks = new ArrayList<HeaderCheck>();
     private String variable = DEFAULT_VARIABLE_NAME;
     private Boolean useFiles = false;
     private Integer timeout = DEFAULT_TIMEOUT_IN_MINUTES;
@@ -79,6 +83,17 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
             List<MsgCheck> checks, String variable, Boolean useFiles, Integer timeout) {
         this(name, overrides, properties);
         this.checks = checks;
+        this.headerChecks = new ArrayList<>(); // backward compat: old constructor has no header checks
+        this.variable = variable;
+        this.useFiles = useFiles;
+        this.timeout = timeout;
+    }
+
+    public KafkaSubscriberProviderData(String name, MessagingProviderOverrides overrides, String properties,
+            List<MsgCheck> checks, List<HeaderCheck> headerChecks, String variable, Boolean useFiles, Integer timeout) {
+        this(name, overrides, properties);
+        this.checks = checks != null ? checks : new ArrayList<>();
+        this.headerChecks = headerChecks != null ? headerChecks : new ArrayList<>();
         this.variable = variable;
         this.useFiles = useFiles;
         this.timeout = timeout;
@@ -91,6 +106,18 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
     @DataBoundSetter
     public void setChecks(List<MsgCheck> checks) {
         this.checks = checks;
+    }
+
+    /**
+     * Returns the list of header checks; never null (empty list for old configs that had no header checks).
+     */
+    public List<HeaderCheck> getHeaderChecks() {
+        return headerChecks != null ? headerChecks : Collections.emptyList();
+    }
+
+    @DataBoundSetter
+    public void setHeaderChecks(List<HeaderCheck> headerChecks) {
+        this.headerChecks = headerChecks != null ? headerChecks : new ArrayList<>();
     }
 
     public String getVariable() {
@@ -134,6 +161,19 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
         return fromTrigger;
     }
 
+    /**
+     * Normalize after deserialization so old job configs (without headerChecks in XML) work.
+     */
+    protected Object readResolve() {
+        if (headerChecks == null) {
+            headerChecks = new ArrayList<>();
+        }
+        if (checks == null) {
+            checks = new ArrayList<>();
+        }
+        return this;
+    }
+
     @Override
     public Descriptor<ProviderData> getDescriptor() {
         return Jenkins.get().getDescriptorByType(KafkaSubscriberProviderDataDescriptor.class);
@@ -148,13 +188,14 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
         KafkaSubscriberProviderData thatp = (KafkaSubscriberProviderData) that;
         return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
                 && Objects.equals(this.properties, thatp.properties) && Objects.equals(this.checks, thatp.checks)
+                && Objects.equals(this.headerChecks, thatp.headerChecks)
                 && Objects.equals(this.variable, thatp.variable) && Objects.equals(this.useFiles, thatp.useFiles)
                 && Objects.equals(this.timeout, thatp.timeout);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, overrides, properties, checks, variable, useFiles, timeout);
+        return Objects.hash(name, overrides, properties, checks, headerChecks, variable, useFiles, timeout);
     }
 
     @Extension
@@ -174,6 +215,7 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
             }
             String properties = jo.getString("properties");
             List<MsgCheck> checks = sr.bindJSONToList(MsgCheck.class, jo.get("checks"));
+            List<HeaderCheck> headerChecks = sr.bindJSONToList(HeaderCheck.class, jo.get("headerChecks"));
             String variable = null;
             if (jo.has("variable")) {
                 variable = jo.getString("variable");
@@ -182,8 +224,8 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
             if (jo.has("timeout") && !StringUtils.isEmpty(jo.getString("timeout"))) {
                 timeout = jo.getInt("timeout");
             }
-            return new KafkaSubscriberProviderData(jo.getString("name"), mpo, properties, checks, variable,
-                    jo.getBoolean("useFiles"), timeout);
+            return new KafkaSubscriberProviderData(jo.getString("name"), mpo, properties, checks, headerChecks,
+                    variable, jo.getBoolean("useFiles"), timeout);
         }
 
         public String getDefaultVariable() {
@@ -214,6 +256,62 @@ public class KafkaSubscriberProviderData extends KafkaProviderData {
                 return FormValidation.error("Please enter a valid timeout value.");
             }
             return FormValidation.ok();
+        }
+
+        public String getTopicNameLabel() {
+            return Messages.topicName();
+        }
+
+        public String getConsumerPropertiesLabel() {
+            return Messages.consumerProperties();
+        }
+
+        public String getMessageChecksLabel() {
+            return Messages.messageChecks();
+        }
+
+        public String getAddCheckLabel() {
+            return Messages.addCheck();
+        }
+
+        public String getFieldLabel() {
+            return Messages.field();
+        }
+
+        public String getExpectedValueLabel() {
+            return Messages.expectedValue();
+        }
+
+        public String getDeleteCheckLabel() {
+            return Messages.deleteCheck();
+        }
+
+        public String getHeaderChecksLabel() {
+            return Messages.headerChecks();
+        }
+
+        public String getHeaderNameLabel() {
+            return Messages.headerName();
+        }
+
+        public String getAddHeaderCheckLabel() {
+            return Messages.addHeaderCheck();
+        }
+
+        public String getDeleteHeaderCheckLabel() {
+            return Messages.deleteHeaderCheck();
+        }
+
+        public String getVariableLabel() {
+            return Messages.variable();
+        }
+
+        public String getUseFilesInsteadOfEnvironmentVariablesLabel() {
+            return Messages.useFilesInsteadOfEnvironmentVariables();
+        }
+
+        public String getTimeoutLabel() {
+            return Messages.timeout();
         }
 
         public String getConfigPage() {

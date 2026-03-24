@@ -174,11 +174,11 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
                     session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     session.close();
                     connection.close();
-                    return FormValidation.ok(Messages.SuccessBrokerConnect(broker));
+                    return FormValidation.ok(Messages.successBrokerConnect(broker));
                 } catch (Exception e) {
                     log.log(Level.SEVERE,
                             "Unhandled exception in SSLCertificateAuthenticationMethod.doTestConnection: ", e);
-                    return FormValidation.error(Messages.Error() + ": " + e);
+                    return FormValidation.error(Messages.error() + ": " + e);
                 } finally {
                     try {
                         if (session != null) {
@@ -192,7 +192,7 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
                     }
                 }
             } else {
-                return FormValidation.error(Messages.InvalidURI());
+                return FormValidation.error(Messages.invalidUri());
             }
         }
     }

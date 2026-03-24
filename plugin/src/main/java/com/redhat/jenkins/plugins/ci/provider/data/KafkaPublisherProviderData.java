@@ -30,6 +30,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest2;
 
+import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.MessagingProviderOverrides;
 
 import hudson.Extension;
@@ -43,6 +44,7 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     private static final long serialVersionUID = 9038816269318064458L;
 
     private String messageContent;
+    private String messageHeaders;
     private Boolean failOnError = false;
 
     @DataBoundConstructor
@@ -64,6 +66,14 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         setFailOnError(failOnError);
     }
 
+    public KafkaPublisherProviderData(String name, MessagingProviderOverrides overrides, String properties,
+            String messageContent, String messageHeaders, Boolean failOnError) {
+        this(name, overrides, properties);
+        setMessageContent(messageContent);
+        setMessageHeaders(messageHeaders);
+        setFailOnError(failOnError);
+    }
+
     public String getMessageContent() {
         return messageContent;
     }
@@ -71,6 +81,19 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
     @DataBoundSetter
     public void setMessageContent(String messageContent) {
         this.messageContent = Util.fixEmpty(messageContent);
+    }
+
+    /**
+     * Message headers to send with the Kafka record (key=value format, one per line). Same format as ActiveMQ message
+     * properties; values may use environment variable substitution.
+     */
+    public String getMessageHeaders() {
+        return messageHeaders;
+    }
+
+    @DataBoundSetter
+    public void setMessageHeaders(String messageHeaders) {
+        this.messageHeaders = Util.fixEmpty(messageHeaders);
     }
 
     public Boolean getFailOnError() {
@@ -97,12 +120,13 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
         return Objects.equals(this.name, thatp.name) && Objects.equals(this.overrides, thatp.overrides)
                 && Objects.equals(this.properties, thatp.properties)
                 && Objects.equals(this.messageContent, thatp.messageContent)
+                && Objects.equals(this.messageHeaders, thatp.messageHeaders)
                 && Objects.equals(this.failOnError, thatp.failOnError);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, overrides, properties, messageContent, failOnError);
+        return Objects.hash(name, overrides, properties, messageContent, messageHeaders, failOnError);
     }
 
     @Extension
@@ -120,8 +144,40 @@ public class KafkaPublisherProviderData extends KafkaProviderData {
             if (!jo.getJSONObject("overrides").isNullObject()) {
                 mpo = new MessagingProviderOverrides(jo.getJSONObject("overrides").getString("topic"));
             }
-            return new KafkaPublisherProviderData(jo.getString("name"), mpo, jo.getString("properties"),
-                    jo.getString("messageContent"), jo.getBoolean("failOnError"));
+            KafkaPublisherProviderData data = new KafkaPublisherProviderData(jo.getString("name"), mpo,
+                    jo.optString("properties"), jo.optString("messageContent"), jo.optBoolean("failOnError", false));
+            // Backward compat: only set messageHeaders when present and non-empty (old configs omit it)
+            if (jo.has("messageHeaders") && jo.get("messageHeaders") != null) {
+                String mh = jo.optString("messageHeaders");
+                if (mh != null && !mh.isEmpty()) {
+                    data.setMessageHeaders(mh);
+                }
+            }
+            return data;
+        }
+
+        public String getTopicNameLabel() {
+            return Messages.topicName();
+        }
+
+        public String getPublisherPropertiesLabel() {
+            return Messages.publisherProperties();
+        }
+
+        public String getMessageHeadersLabel() {
+            return Messages.messageHeaders();
+        }
+
+        public String getMessageHeadersDescriptionText() {
+            return Messages.messageHeadersDescription();
+        }
+
+        public String getMessageContentLabel() {
+            return Messages.messageContent();
+        }
+
+        public String getFailOnErrorLabel() {
+            return Messages.failOnError();
         }
 
         public String getConfigPage() {
