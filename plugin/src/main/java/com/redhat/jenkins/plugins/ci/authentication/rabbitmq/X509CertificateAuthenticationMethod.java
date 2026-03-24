@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -65,6 +66,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
 import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.utils.CertificateExpiryChecker;
 import com.redhat.utils.CredentialLookup;
 
 import hudson.Extension;
@@ -212,6 +214,29 @@ public class X509CertificateAuthenticationMethod extends RabbitMQAuthenticationM
         return creds;
     }
 
+    /**
+     * @return error if any certificate in the configured credential is past its not-after time; {@code null} if OK or
+     *         not checkable
+     */
+    @CheckForNull
+    FormValidation checkCredentialCertificatesNotExpired() {
+        DockerServerCredentials creds = getDockerServerCredentials(credentialId);
+        if (creds == null) {
+            return null;
+        }
+        KeyStore ks = createKeyStore(Secret.toString(creds.getClientKeySecret()), creds.getClientCertificate());
+        String m = CertificateExpiryChecker.findExpiredInKeyStore(ks, Messages.certificateLabelX509Client());
+        if (m != null) {
+            return FormValidation.error(m);
+        }
+        KeyStore ts = createTrustStore(creds.getServerCaCertificate());
+        m = CertificateExpiryChecker.findExpiredInKeyStore(ts, Messages.certificateLabelX509ServerCa());
+        if (m != null) {
+            return FormValidation.error(m);
+        }
+        return null;
+    }
+
     @Override
     public Descriptor<RabbitMQAuthenticationMethod> getDescriptor() {
         return Jenkins.get().getDescriptorByType(X509CertificateAuthenticationMethodDescriptor.class);
@@ -249,10 +274,15 @@ public class X509CertificateAuthenticationMethod extends RabbitMQAuthenticationM
 
             checkAdmin();
 
+            X509CertificateAuthenticationMethod sam = new X509CertificateAuthenticationMethod(credentialId);
+            FormValidation expired = sam.checkCredentialCertificatesNotExpired();
+            if (expired != null) {
+                return expired;
+            }
+
             Connection connection = null;
             Channel channel = null;
             try {
-                X509CertificateAuthenticationMethod sam = new X509CertificateAuthenticationMethod(credentialId);
                 ConnectionFactory connectionFactory = sam.getConnectionFactory(hostname, portNumber, virtualHost);
                 connection = connectionFactory.newConnection();
                 channel = connection.createChannel();

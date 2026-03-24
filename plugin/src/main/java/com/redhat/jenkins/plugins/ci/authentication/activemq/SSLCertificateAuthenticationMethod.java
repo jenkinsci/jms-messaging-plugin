@@ -41,6 +41,7 @@ import org.kohsuke.stapler.verb.POST;
 
 import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
 import com.redhat.jenkins.plugins.ci.Messages;
+import com.redhat.utils.CertificateExpiryChecker;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
@@ -166,6 +167,16 @@ public class SSLCertificateAuthenticationMethod extends ActiveMQAuthenticationMe
             Session session = null;
             if (broker != null && isValidURL(broker)) {
                 try {
+                    FormValidation expiredKey = CertificateExpiryChecker
+                            .checkStandardCertificateCredential(keyStoreCredentialId, Messages.certificateStoreKey());
+                    if (expiredKey != null) {
+                        return expiredKey;
+                    }
+                    FormValidation expiredTrust = CertificateExpiryChecker.checkStandardCertificateCredential(
+                            trustStoreCredentialId, Messages.certificateStoreTrust());
+                    if (expiredTrust != null) {
+                        return expiredTrust;
+                    }
                     SSLCertificateAuthenticationMethod sam = new SSLCertificateAuthenticationMethod(
                             keyStoreCredentialId, trustStoreCredentialId);
                     ActiveMQSslConnectionFactory connectionFactory = sam.getConnectionFactory(broker);
