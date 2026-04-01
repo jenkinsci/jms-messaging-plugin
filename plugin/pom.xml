@@ -63,7 +63,7 @@
             <dependency>
                 <groupId>org.jenkins-ci.plugins</groupId>
                 <artifactId>credentials</artifactId>
-                <version>1487.va_d001ede2c31</version>
+                <version>1499.va_f0e811253a_6</version>
             </dependency>
             <!-- workflow-api needs scm-api; branch-api (test classpath) requires >= 724 -->
             <dependency>
