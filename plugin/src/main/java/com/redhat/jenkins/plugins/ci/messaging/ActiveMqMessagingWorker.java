@@ -234,7 +234,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
             return mapper.writer().writeValueAsString(root);
         } catch (JMSException | JsonProcessingException e) {
-            log.log(Level.SEVERE, "Unhandled exception retrieving message headers:\n" + formatMessage(message), e);
+            log.log(Level.SEVERE, "Unhandled exception retrieving message headers:\n" + formatMessage(message, false),
+                    e);
         }
 
         return "";
@@ -265,10 +266,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 bm.readBytes(bytes);
                 return new String(bytes, StandardCharsets.UTF_8);
             } else {
-                log.log(Level.SEVERE, "Unsupported message type:\n" + formatMessage(message));
+                log.log(Level.SEVERE, "Unsupported message type:\n" + formatMessage(message, false));
             }
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception retrieving message body:\n" + formatMessage(message), e);
+            log.log(Level.SEVERE, "Unhandled exception retrieving message body:\n" + formatMessage(message, false), e);
         }
 
         return "";
@@ -290,7 +291,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             }
             super.trigger(jobname, formatMessage(message), params);
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Unhandled exception processing message:\n" + formatMessage(message), e);
+            log.log(Level.SEVERE, "Unhandled exception processing message:\n" + formatMessage(message, false), e);
         }
     }
 
@@ -712,15 +713,20 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     }
 
     public static String formatMessage(Message message) {
-        StringBuilder sb = new StringBuilder();
+        return formatMessage(message, true);
+    }
 
+    public static String formatMessage(Message message, boolean includeBody) {
+        StringBuilder sb = new StringBuilder();
         try {
+            sb.append("Message class: ");
+            sb.append(message.getClass().getName());
+            sb.append("\n");
             String headers = formatHeaders(message);
             if (headers.length() > 0) {
                 sb.append("Message Headers:\n");
                 sb.append(headers);
             }
-
             sb.append("Message Properties:\n");
             @SuppressWarnings("unchecked")
             Enumeration<String> propNames = message.getPropertyNames();
@@ -729,18 +735,19 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 sb.append("  ");
                 sb.append(propertyName);
                 sb.append(": ");
-                if (message.getObjectProperty(propertyName) != null) {
-                    sb.append(message.getObjectProperty(propertyName).toString());
+                try {
+                    if (message.getObjectProperty(propertyName) != null) {
+                        sb.append(message.getObjectProperty(propertyName).toString());
+                    }
+                } catch (JMSException e) {
+                    sb.append("(unable to read)");
                 }
                 sb.append("\n");
             }
-
-            sb.append("Message Body:\n");
-            sb.append(getMessageBody(message));
+            sb.append(includeBody ? "Message Body:\n" + getMessageBody(message) : "Message Body: <omitted>\n");
         } catch (Exception e) {
             log.log(Level.SEVERE, "Unable to format message:", e);
         }
-
         return sb.toString();
     }
 
