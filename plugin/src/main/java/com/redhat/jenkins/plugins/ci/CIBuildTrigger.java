@@ -205,25 +205,29 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             return;
         }
         try {
-            synchronized (locks.computeIfAbsent(job.getFullName(), o -> new ArrayList<>())) {
-                if (job != null && stopTriggerThreads(job.getFullName()) == null && providers != null) {
-                    List<CITriggerThread> threads = locks.get(Objects.requireNonNull(job).getFullName());
-                    int instance = 1;
-                    for (ProviderData pd : providers) {
-                        JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
-                        if (provider == null) {
-                            log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name " + pd.getName()
-                                    + ". You must update the job configuration. Trigger not started.");
-                            return;
-                        }
-                        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd,
-                                job.getFullName(), this, instance);
-                        log.info("Starting thread (" + thread.getId() + ") for '"
-                                + Objects.requireNonNull(job).getFullName() + "'.");
-                        thread.start();
-                        threads.add(thread);
-                        instance++;
+            String fullName = job.getFullName();
+            stopTriggerThreads(fullName);
+
+            if (job == null || providers == null) {
+                return;
+            }
+
+            List<CITriggerThread> threads = locks.computeIfAbsent(fullName, o -> new ArrayList<>());
+            synchronized (threads) {
+                int instance = 1;
+                for (ProviderData pd : providers) {
+                    JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
+                    if (provider == null) {
+                        log.log(Level.SEVERE, "Failed to locate JMSMessagingProvider with name " + pd.getName()
+                                + ". You must update the job configuration. Trigger not started.");
+                        return;
                     }
+                    CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, fullName, this,
+                            instance);
+                    log.info("Starting thread (" + thread.getId() + ") for '" + fullName + "'.");
+                    thread.start();
+                    threads.add(thread);
+                    instance++;
                 }
             }
         } catch (Exception e) {
@@ -266,8 +270,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 }
             }
 
-            // Just in case.
             threads.clear();
+            locks.remove(fullName);
             log.fine("Removed thread lock for '" + fullName + "'.");
         }
         return null;

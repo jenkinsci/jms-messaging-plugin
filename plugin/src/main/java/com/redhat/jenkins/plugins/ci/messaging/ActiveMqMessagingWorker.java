@@ -90,6 +90,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     public static final String DEFAULT_TOPIC = "VirtualTopic.qe.ci.>";
 
     private Connection connection;
+    private Session session;
     private MessageConsumer subscriber;
     private final String uuid = UUID.randomUUID().toString();
 
@@ -111,7 +112,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     String kind = provider.getUseQueues() ? "queue" : "topic";
                     if (subscriber == null) {
                         log.info("Subscribing job '" + jobname + "' to '" + this.topic + "' " + kind + ".");
-                        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                         if (provider.getUseQueues()) {
                             Queue destination = session.createQueue(this.topic);
                             subscriber = session.createConsumer(destination, selector, false);
@@ -190,17 +191,25 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     public void unsubscribe(String jobname) {
         log.info("Unsubscribing job '" + jobname + "' from the '" + this.topic + "' topic.");
         disconnect();
-        if (subscriber != null) {
-            // Make sure the close doesn't clear the interrupt.
-            boolean resetInterrupt = Thread.currentThread().isInterrupted();
-
-            try {
-                subscriber.close();
-            } catch (Exception se) {
-            } finally {
-                subscriber = null;
+        boolean resetInterrupt = Thread.currentThread().isInterrupted();
+        try {
+            if (subscriber != null) {
+                try {
+                    subscriber.close();
+                } catch (Exception se) {
+                } finally {
+                    subscriber = null;
+                }
             }
-
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (Exception se) {
+                } finally {
+                    session = null;
+                }
+            }
+        } finally {
             if (resetInterrupt && !Thread.currentThread().isInterrupted()) {
                 Thread.currentThread().interrupt();
             }
@@ -366,6 +375,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     public void disconnect() {
         disconnect(connection);
         connection = null;
+        session = null;
     }
 
     @Override
