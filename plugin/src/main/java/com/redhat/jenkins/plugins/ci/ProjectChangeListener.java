@@ -46,26 +46,21 @@ public class ProjectChangeListener extends ItemListener {
             if (item instanceof ParameterizedJobMixIn.ParameterizedJob) {
                 ParameterizedJobMixIn.ParameterizedJob<?, ?> project = (ParameterizedJobMixIn.ParameterizedJob<?, ?>) item;
                 List<CITriggerThread> triggerThreads = CIBuildTrigger.locks.get(item.getFullName());
-                if (triggerThreads != null && triggerThreads.size() > 0) {
-                    log.info("Getting trigger threads.");
-                }
-                if (triggerThreads != null && triggerThreads.size() > 0 && project.isDisabled()) {
-                    // there is a trigger thread AND it is disabled. we stop it.
-                    log.info("Job " + item.getFullName() + " may have been previously been enabled"
+                if (triggerThreads != null && !triggerThreads.isEmpty() && project.isDisabled()) {
+                    log.info("Job " + item.getFullName() + " may have been previously enabled"
                             + " but is now disabled. Attempting to stop trigger thread(s)...");
                     cibt.force(item.getFullName());
-                } else {
-                    if ((triggerThreads == null || triggerThreads.size() == 0) && !project.isDisabled()) {
-                        // Job may have been enabled. Let's start the trigger thread.
-                        log.info("Job " + item.getFullName() + " may have been previously been disabled."
-                                + " Attempting to start trigger thread(s)...");
-                        cibt.start((Job<?, ?>) item, false);
-                    }
+                } else if ((triggerThreads == null || triggerThreads.isEmpty()) && !project.isDisabled()) {
+                    log.info("Job " + item.getFullName() + " may have been previously disabled."
+                            + " Attempting to start trigger thread(s)...");
+                    cibt.start((Job<?, ?>) item, false);
                 }
             }
         } else {
-            log.info("No CIBuildTrigger found, forcing thread stop.");
-            new CIBuildTrigger().force(item.getFullName());
+            // No trigger configured for this job — nothing to do.
+            // Jenkins calls Trigger.stop() when a trigger is removed from a job,
+            // so orphaned threads are already cleaned up by the framework.
+            log.fine("No CIBuildTrigger found for '" + item.getFullName() + "', skipping.");
         }
     }
 }
