@@ -50,16 +50,11 @@ public class ProjectChangeListener extends ItemListener {
                     log.info("Job " + item.getFullName() + " may have been previously enabled"
                             + " but is now disabled. Attempting to stop trigger thread(s)...");
                     cibt.force(item.getFullName());
-                } else if ((triggerThreads == null || triggerThreads.isEmpty()) && !project.isDisabled()) {
-                    log.info("Job " + item.getFullName() + " may have been previously disabled."
-                            + " Attempting to start trigger thread(s)...");
-                    cibt.start((Job<?, ?>) item, false);
                 }
+                // Do NOT start triggers here. Jenkins already calls Trigger.start()
+                // during config round-trips; starting here would create duplicates.
             }
         } else {
-            // No trigger configured for this job — nothing to do.
-            // Jenkins calls Trigger.stop() when a trigger is removed from a job,
-            // so orphaned threads are already cleaned up by the framework.
             log.fine("No CIBuildTrigger found for '" + item.getFullName() + "', skipping.");
         }
     }
