@@ -204,10 +204,14 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             log.info("WorkflowJob '" + job.getFullName() + "' is disabled, not subscribing.");
             return;
         }
+
+        String fullName = job.getFullName();
         try {
-            synchronized (locks.computeIfAbsent(job.getFullName(), o -> new ArrayList<>())) {
-                if (job != null && stopTriggerThreads(job.getFullName()) == null && providers != null) {
-                    List<CITriggerThread> threads = locks.get(Objects.requireNonNull(job).getFullName());
+            List<CITriggerThread> threads = locks.computeIfAbsent(fullName, o -> new ArrayList<>());
+            synchronized (threads) {
+                if (stopTriggerThreads(fullName) == null && providers != null) {
+                    // Re-add the threads list to the map after stopTriggerThreads removed it
+                    locks.put(fullName, threads);
                     int instance = 1;
                     for (ProviderData pd : providers) {
                         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
@@ -216,10 +220,9 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                                     + ". You must update the job configuration. Trigger not started.");
                             return;
                         }
-                        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd,
-                                job.getFullName(), this, instance);
-                        log.info("Starting thread (" + thread.getId() + ") for '"
-                                + Objects.requireNonNull(job).getFullName() + "'.");
+                        CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, fullName,
+                                this, instance);
+                        log.info("Starting thread (" + thread.getId() + ") for '" + fullName + "'.");
                         thread.start();
                         threads.add(thread);
                         instance++;
@@ -252,7 +255,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                         }
                     }
                 }
-                if (comparisonThreads.size() == 0) {
+                if (comparisonThreads.isEmpty()) {
                     return threads;
                 }
             }
@@ -266,8 +269,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                 }
             }
 
-            // Just in case.
             threads.clear();
+            locks.remove(fullName);
             log.fine("Removed thread lock for '" + fullName + "'.");
         }
         return null;
