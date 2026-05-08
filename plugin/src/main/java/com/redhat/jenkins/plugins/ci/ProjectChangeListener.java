@@ -46,16 +46,16 @@ public class ProjectChangeListener extends ItemListener {
             if (item instanceof ParameterizedJobMixIn.ParameterizedJob) {
                 ParameterizedJobMixIn.ParameterizedJob<?, ?> project = (ParameterizedJobMixIn.ParameterizedJob<?, ?>) item;
                 List<CITriggerThread> triggerThreads = CIBuildTrigger.locks.get(item.getFullName());
-                if (triggerThreads != null && triggerThreads.size() > 0) {
+                if (triggerThreads != null && !triggerThreads.isEmpty()) {
                     log.info("Getting trigger threads.");
                 }
-                if (triggerThreads != null && triggerThreads.size() > 0 && project.isDisabled()) {
+                if (triggerThreads != null && !triggerThreads.isEmpty() && project.isDisabled()) {
                     // there is a trigger thread AND it is disabled. we stop it.
                     log.info("Job " + item.getFullName() + " may have been previously been enabled"
                             + " but is now disabled. Attempting to stop trigger thread(s)...");
                     cibt.force(item.getFullName());
                 } else {
-                    if ((triggerThreads == null || triggerThreads.size() == 0) && !project.isDisabled()) {
+                    if ((triggerThreads == null || triggerThreads.isEmpty()) && !project.isDisabled()) {
                         // Job may have been enabled. Let's start the trigger thread.
                         log.info("Job " + item.getFullName() + " may have been previously been disabled."
                                 + " Attempting to start trigger thread(s)...");
@@ -64,8 +64,8 @@ public class ProjectChangeListener extends ItemListener {
                 }
             }
         } else {
-            log.info("No CIBuildTrigger found, forcing thread stop.");
-            new CIBuildTrigger().force(item.getFullName());
+            // No CIBuildTrigger configured for this job - this is normal, just skip it
+            log.fine("No CIBuildTrigger found for job " + item.getFullName() + ", skipping.");
         }
     }
 }
