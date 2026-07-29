@@ -228,7 +228,8 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             root.set("JMSMessageID", mapper.convertValue(message.getJMSMessageID(), JsonNode.class));
             root.set("JMSPriority", mapper.convertValue(message.getJMSPriority(), JsonNode.class));
             root.set("JMSRedelivered", mapper.convertValue(message.getJMSRedelivered(), JsonNode.class));
-            root.set("JMSReplyTo", mapper.convertValue(message.getJMSReplyTo(), JsonNode.class));
+            Destination replyTo = message.getJMSReplyTo();
+            root.set("JMSReplyTo", mapper.convertValue(replyTo != null ? replyTo.toString() : null, JsonNode.class));
             root.set("JMSTimestamp", mapper.convertValue(message.getJMSTimestamp(), JsonNode.class));
             root.set("JMSType", mapper.convertValue(message.getJMSType(), JsonNode.class));
 
