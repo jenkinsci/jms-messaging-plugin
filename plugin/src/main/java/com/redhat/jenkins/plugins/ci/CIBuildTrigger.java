@@ -210,8 +210,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             List<CITriggerThread> threads = locks.computeIfAbsent(fullName, o -> new ArrayList<>());
             synchronized (threads) {
                 if (stopTriggerThreads(fullName) == null && providers != null) {
-                    // Re-add the threads list to the map after stopTriggerThreads removed it
-                    locks.put(fullName, threads);
                     int instance = 1;
                     for (ProviderData pd : providers) {
                         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
@@ -270,8 +268,6 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
             }
 
             threads.clear();
-            locks.remove(fullName);
-            log.fine("Removed thread lock for '" + fullName + "'.");
         }
         return null;
     }
