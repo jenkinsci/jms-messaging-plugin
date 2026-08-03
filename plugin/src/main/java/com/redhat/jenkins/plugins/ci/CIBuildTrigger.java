@@ -240,8 +240,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     }
 
     private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
-        synchronized (locks.computeIfAbsent(fullName, o -> new ArrayList<>())) {
-            List<CITriggerThread> threads = locks.get(fullName);
+        List<CITriggerThread> threads = locks.computeIfAbsent(fullName, o -> new ArrayList<>());
+        synchronized (threads) {
             // If threads are the same we have start/stop sequence, so don't bother stopping.
             if (comparisonThreads != null && threads.size() == comparisonThreads.size()) {
                 for (CITriggerThread thread : threads) {
