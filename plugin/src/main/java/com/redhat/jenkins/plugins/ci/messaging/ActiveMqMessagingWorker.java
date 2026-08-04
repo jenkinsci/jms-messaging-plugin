@@ -223,12 +223,15 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
             root.set("JMSCorrelationID", mapper.convertValue(message.getJMSCorrelationID(), JsonNode.class));
             root.set("JMSDeliveryMode", mapper.convertValue(message.getJMSDeliveryMode(), JsonNode.class));
-            root.set("JMSDestination", mapper.convertValue(message.getJMSDestination().toString(), JsonNode.class));
+            Destination destination = message.getJMSDestination();
+            root.set("JMSDestination",
+                    mapper.convertValue(destination != null ? destination.toString() : null, JsonNode.class));
             root.set("JMSExpiration", mapper.convertValue(message.getJMSExpiration(), JsonNode.class));
             root.set("JMSMessageID", mapper.convertValue(message.getJMSMessageID(), JsonNode.class));
             root.set("JMSPriority", mapper.convertValue(message.getJMSPriority(), JsonNode.class));
             root.set("JMSRedelivered", mapper.convertValue(message.getJMSRedelivered(), JsonNode.class));
-            root.set("JMSReplyTo", mapper.convertValue(message.getJMSReplyTo(), JsonNode.class));
+            Destination replyTo = message.getJMSReplyTo();
+            root.set("JMSReplyTo", mapper.convertValue(replyTo != null ? replyTo.toString() : null, JsonNode.class));
             root.set("JMSTimestamp", mapper.convertValue(message.getJMSTimestamp(), JsonNode.class));
             root.set("JMSType", mapper.convertValue(message.getJMSType(), JsonNode.class));
 
