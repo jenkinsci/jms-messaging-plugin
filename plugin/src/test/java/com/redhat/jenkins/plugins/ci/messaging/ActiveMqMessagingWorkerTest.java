@@ -164,6 +164,19 @@ public class ActiveMqMessagingWorkerTest {
     }
 
     @Test
+    public void connect_returnsFalseWhenConnectionFactoryIsNull() {
+        ActiveMqMessagingProvider provider = mock(ActiveMqMessagingProvider.class);
+        when(provider.getConnectionFactory()).thenReturn(null);
+        when(provider.getBroker()).thenReturn("tcp://localhost:61616");
+        when(provider.getName()).thenReturn("test-provider");
+
+        ActiveMqMessagingWorker worker = new ActiveMqMessagingWorker(provider, null, "test-job");
+        boolean connected = worker.connect();
+
+        assertFalse("connect() should return false when factory is null", connected);
+    }
+
+    @Test
     public void getConnectionFactory_setsTimeouts() {
         ActiveMqMessagingProvider provider = mock(ActiveMqMessagingProvider.class,
                 org.mockito.Mockito.CALLS_REAL_METHODS);

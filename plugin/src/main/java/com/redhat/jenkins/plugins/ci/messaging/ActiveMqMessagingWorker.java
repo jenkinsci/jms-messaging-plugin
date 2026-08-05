@@ -129,7 +129,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 } catch (JMSSecurityException | InvalidSelectorException exc) {
                     log.log(Level.SEVERE, "JMS exception raised while subscribing job '" + jobname + "'.", exc);
                     throw new RuntimeException(exc);
-                } catch (JMSException ex) {
+                } catch (JMSException | RuntimeException ex) {
 
                     // Either we were interrupted, or something else went
                     // wrong. If we were interrupted, then we will jump ship
@@ -137,7 +137,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     // then we just unsubscribe here, sleep, so that we may
                     // try again on the next iteration.
 
-                    log.log(Level.SEVERE, "JMS exception raised while subscribing job '" + jobname + "', retrying in "
+                    log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in "
                             + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
 
@@ -166,6 +166,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     public boolean connect() {
         connection = null;
         ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+        if (connectionFactory == null) {
+            log.severe("Connection factory is null for " + provider.getBroker());
+            return false;
+        }
 
         Connection connectiontmp = null;
         try {
@@ -386,6 +390,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+                if (connectionFactory == null) {
+                    log.severe("Connection factory is null for " + provider.getBroker());
+                    return new SendResult(false, mesgId, mesgContent);
+                }
                 connection = connectionFactory.createConnection();
                 connection.start();
 
@@ -519,6 +527,10 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             MessageConsumer consumer = null;
             try {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+                if (connectionFactory == null) {
+                    log.severe("Connection factory is null for " + provider.getBroker());
+                    return null;
+                }
                 connection = connectionFactory.createConnection();
                 connection.setClientID(ip + "_" + UUID.randomUUID());
                 connection.start();
