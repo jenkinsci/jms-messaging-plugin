@@ -48,6 +48,9 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     private static final long serialVersionUID = -5710867670450057616L;
 
+    static final int CONNECT_RESPONSE_TIMEOUT_MS = 60_000;
+    static final int SEND_TIMEOUT_MS = 60_000;
+
     private String broker;
     private Boolean useQueues;
     private transient boolean migrationInProgress = false;
@@ -133,7 +136,12 @@ public class ActiveMqMessagingProvider extends JMSMessagingProvider {
 
     public ActiveMQConnectionFactory getConnectionFactory(String broker,
             ActiveMQAuthenticationMethod authenticationMethod) {
-        return authenticationMethod.getConnectionFactory(broker);
+        ActiveMQConnectionFactory factory = authenticationMethod.getConnectionFactory(broker);
+        if (factory != null) {
+            factory.setConnectResponseTimeout(CONNECT_RESPONSE_TIMEOUT_MS);
+            factory.setSendTimeout(SEND_TIMEOUT_MS);
+        }
+        return factory;
     }
 
     @Override
