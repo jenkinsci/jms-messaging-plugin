@@ -93,10 +93,30 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     private MessageConsumer subscriber;
     private final String uuid = UUID.randomUUID().toString();
 
+    /*
+     * Bounds how long a single synchronous JMS request (e.g. setClientID(), which is invoked while establishing every
+     * connection) is allowed to block on a response from the broker. Without this, a connection that looks healthy at
+     * the TCP level but has gone silently stale (dropped by a NAT/firewall/load-balancer without a clean FIN/RST, or a
+     * broker that accepted the socket but never replies) causes the calling thread to park forever inside
+     * ActiveMQConnection#syncSendPacket, permanently killing the listener with no exception, no log line, and no retry.
+     */
+    private static final int JMS_SEND_TIMEOUT_MS = 60_000;
+
     public ActiveMqMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
             String jobname) {
         super(messagingProvider, overrides, jobname);
         this.provider = (ActiveMqMessagingProvider) messagingProvider;
+    }
+
+    /**
+     * Applies shared safety settings to a connection factory obtained from the provider. Returns {@code null} unchanged
+     * so callers can keep using a single null-check instead of duplicating configuration logic.
+     */
+    private static ActiveMQConnectionFactory configureConnectionFactory(ActiveMQConnectionFactory connectionFactory) {
+        if (connectionFactory != null) {
+            connectionFactory.setSendTimeout(JMS_SEND_TIMEOUT_MS);
+        }
+        return connectionFactory;
     }
 
     @Override
@@ -129,15 +149,23 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 } catch (JMSSecurityException | InvalidSelectorException exc) {
                     log.log(Level.SEVERE, "JMS exception raised while subscribing job '" + jobname + "'.", exc);
                     throw new RuntimeException(exc);
-                } catch (JMSException ex) {
+                } catch (JMSException | RuntimeException ex) {
 
                     // Either we were interrupted, or something else went
                     // wrong. If we were interrupted, then we will jump ship
                     // on the next iteration. If something else happened,
                     // then we just unsubscribe here, sleep, so that we may
                     // try again on the next iteration.
+                    //
+                    // RuntimeException is caught here too (in addition to
+                    // JMSException) so that unexpected failures - e.g. a
+                    // provider whose credentials/SSL context are not yet
+                    // available, which previously surfaced as an uncaught
+                    // NullPointerException from connect() - retry like any
+                    // other connection failure instead of permanently
+                    // killing this thread.
 
-                    log.log(Level.SEVERE, "JMS exception raised while subscribing job '" + jobname + "', retrying in "
+                    log.log(Level.SEVERE, "Exception raised while subscribing job '" + jobname + "', retrying in "
                             + RETRY_MINUTES + " minutes.", ex);
                     if (!Thread.currentThread().isInterrupted()) {
 
@@ -165,7 +193,12 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public boolean connect() {
         connection = null;
-        ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+        ActiveMQConnectionFactory connectionFactory = configureConnectionFactory(provider.getConnectionFactory());
+        if (connectionFactory == null) {
+            log.severe("Unable to create connection factory for " + provider.getBroker()
+                    + ". Check the provider's authentication configuration (credentials may not be available yet).");
+            return false;
+        }
 
         Connection connectiontmp = null;
         try {
@@ -385,7 +418,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
         try {
             String ltopic = PluginUtils.getSubstitutedValue(getTopic(provider), run.getEnvironment(listener));
             if (provider.getAuthenticationMethod() != null && ltopic != null && provider.getBroker() != null) {
-                ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+                ActiveMQConnectionFactory connectionFactory = configureConnectionFactory(
+                        provider.getConnectionFactory());
+                if (connectionFactory == null) {
+                    log.severe("Unable to create connection factory for " + provider.getBroker()
+                            + ". Check the provider's authentication configuration.");
+                    return new SendResult(false, mesgId, mesgContent);
+                }
                 connection = connectionFactory.createConnection();
                 connection.start();
 
@@ -518,7 +557,13 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             Connection connection = null;
             MessageConsumer consumer = null;
             try {
-                ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
+                ActiveMQConnectionFactory connectionFactory = configureConnectionFactory(
+                        provider.getConnectionFactory());
+                if (connectionFactory == null) {
+                    log.severe("Unable to create connection factory for " + provider.getBroker()
+                            + ". Check the provider's authentication configuration.");
+                    return null;
+                }
                 connection = connectionFactory.createConnection();
                 connection.setClientID(ip + "_" + UUID.randomUUID());
                 connection.start();
