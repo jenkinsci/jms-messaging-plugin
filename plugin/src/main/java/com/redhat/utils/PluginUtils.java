@@ -26,7 +26,7 @@ package com.redhat.utils;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.text.StringSubstitutor;
 
 import hudson.EnvVars;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
@@ -41,10 +41,10 @@ public class PluginUtils {
         }
         String text = id.replaceAll("\\$([a-zA-Z_]+[a-zA-Z0-9_]*)", "\\${$1}"); // replace $VAR instances with ${VAR}.
         if (env != null) {
-            StrSubstitutor sub1 = new StrSubstitutor(env);
+            StringSubstitutor sub1 = new StringSubstitutor(env);
             text = sub1.replace(text).trim();
         }
-        StrSubstitutor sub2 = new StrSubstitutor(getNodeGlobalProperties());
+        StringSubstitutor sub2 = new StringSubstitutor(getNodeGlobalProperties());
         return sub2.replace(text).trim();
     }
 
