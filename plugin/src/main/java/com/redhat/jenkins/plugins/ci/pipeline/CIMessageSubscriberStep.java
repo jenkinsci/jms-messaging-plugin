@@ -123,7 +123,15 @@ public class CIMessageSubscriberStep extends Step {
                     if (result != null) {
                         c.onSuccess(result);
                     } else {
-                        c.onFailure(new AbortException("Timeout waiting for message!"));
+                        Throwable cause = subscriber.getLastError();
+                        String message = cause != null
+                                ? "Failed waiting for message: " + cause.getMessage()
+                                : "Timeout waiting for message!";
+                        AbortException abort = new AbortException(message);
+                        if (cause != null) {
+                            abort.initCause(cause);
+                        }
+                        c.onFailure(abort);
                     }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
