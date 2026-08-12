@@ -55,6 +55,7 @@
         <jenkins.version>${jenkins.baseline}.1</jenkins.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <spotbugs.failOnError>false</spotbugs.failOnError>
+        <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
     </properties>
 
     <dependencyManagement>
