@@ -57,6 +57,7 @@ public class CIMessageSubscriberBuilder extends Builder {
     private static final String BUILDER_NAME = Messages.subscriberBuilder();
 
     private ProviderData providerData;
+    private transient JMSMessagingWorker worker;
 
     @DataBoundConstructor
     public CIMessageSubscriberBuilder() {
@@ -88,8 +89,16 @@ public class CIMessageSubscriberBuilder extends Builder {
             return null;
         }
 
-        JMSMessagingWorker worker = provider.createWorker(providerData, run.getParent().getName());
+        worker = provider.createWorker(providerData, run.getParent().getName());
         return worker.waitForMessage(run, listener, providerData, workspace);
+    }
+
+    /**
+     * The failure (if any) that caused the most recent {@link #waitForCIMessage} call to return {@code null}, so
+     * callers can report a more useful message than a generic timeout.
+     */
+    public Throwable getLastError() {
+        return worker != null ? worker.getLastError() : null;
     }
 
     @Override

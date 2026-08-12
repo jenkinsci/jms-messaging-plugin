@@ -505,6 +505,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
     @Override
     public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace) {
         ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData) pdata;
+        setLastError(null);
         String ip = null;
         try {
             ip = Inet4Address.getLocalHost().getHostAddress();
@@ -519,38 +520,53 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
             log.warning(e.getMessage());
         }
 
-        if (ip != null && provider.getAuthenticationMethod() != null && ltopic != null
-                && provider.getBroker() != null) {
-            log.info("Waiting for message with selector: " + pd.getSelector());
-            listener.getLogger().println("Waiting for message with selector: " + pd.getSelector());
+        if (ip == null || provider.getAuthenticationMethod() == null || ltopic == null
+                || provider.getBroker() == null) {
+            String msg = "One or more of the following is invalid (null): ip, user, password, topic, broker.";
+            log.severe(msg);
+            setLastError(new IllegalStateException(msg));
+            return null;
+        }
+
+        log.info("Waiting for message with selector: " + pd.getSelector());
+        listener.getLogger().println("Waiting for message with selector: " + pd.getSelector());
+
+        long deadline = new Date().getTime() + (pd.getTimeout() != null ? pd.getTimeout()
+                : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000L;
+        String localIp = ip;
+        String localTopic = ltopic;
+
+        // Each iteration establishes a fresh connection/subscription and waits for a message. A connection
+        // that fails to establish, or drops mid-wait (e.g. a stale broker connection - see
+        // ActiveMqMessagingProvider's connect/send timeouts), is retried with a fresh connection as long as
+        // time remains within the configured timeout, instead of failing the whole wait on what is often a
+        // transient broker/network blip.
+        while (new Date().getTime() < deadline && !Thread.currentThread().isInterrupted()) {
             Connection connection = null;
             MessageConsumer consumer = null;
             try {
                 ActiveMQConnectionFactory connectionFactory = provider.getConnectionFactory();
                 if (connectionFactory == null) {
-                    log.severe("Connection factory is null for " + provider.getBroker());
-                    return null;
+                    throw new JMSException("Connection factory is null for " + provider.getBroker());
                 }
                 connection = connectionFactory.createConnection();
-                connection.setClientID(ip + "_" + UUID.randomUUID());
+                connection.setClientID(localIp + "_" + UUID.randomUUID());
                 connection.start();
                 Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 if (provider.getUseQueues()) {
-                    Queue destination = session.createQueue(ltopic);
+                    Queue destination = session.createQueue(localTopic);
                     consumer = session.createConsumer(destination, pd.getSelector(), false);
                 } else {
-                    Topic destination = session.createTopic(ltopic);
+                    Topic destination = session.createTopic(localTopic);
                     consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
                 }
+                setLastError(null);
 
-                long startTime = new Date().getTime();
-                int timeout = (pd.getTimeout() != null ? pd.getTimeout()
-                        : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000;
                 Message message;
                 do {
                     log.info("Job '" + jobname + "' waiting to receive message");
                     listener.getLogger().println("Job '" + jobname + "' waiting to receive message");
-                    message = consumer.receive(timeout);
+                    message = consumer.receive(Math.max(1, deadline - new Date().getTime()));
                     if (message != null) {
                         String value = getMessageBody(message);
                         if (provider.verify(value, pd.getChecks(), jobname)) {
@@ -575,11 +591,22 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                             return value;
                         }
                     }
-                } while ((new Date().getTime() - startTime) < timeout && message != null);
+                } while (new Date().getTime() < deadline && message != null);
+
                 log.info("Timed out waiting for message!");
                 listener.getLogger().println("Timed out waiting for message!");
-            } catch (InterruptedException | IOException | JMSException e) {
-                log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
+                return null;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                setLastError(e);
+                return null;
+            } catch (IOException | JMSException e) {
+                setLastError(e);
+                long remaining = deadline - new Date().getTime();
+                log.log(Level.WARNING, "Exception establishing JMS subscription while waiting for message"
+                        + (remaining > 0 ? "; will retry." : "; out of time, giving up."), e);
+                listener.getLogger().println("Exception establishing JMS subscription while waiting for message: "
+                        + e.getMessage() + (remaining > 0 ? " Retrying..." : ""));
             } finally {
                 if (consumer != null) {
                     try {
@@ -594,8 +621,17 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     }
                 }
             }
-        } else {
-            log.severe("One or more of the following is invalid (null): ip, user, password, topic, broker.");
+
+            long remaining = deadline - new Date().getTime();
+            if (remaining <= 0) {
+                break;
+            }
+            try {
+                Thread.sleep(Math.min(RETRY_MINUTES * 60 * 1000L, remaining));
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
         return null;
     }

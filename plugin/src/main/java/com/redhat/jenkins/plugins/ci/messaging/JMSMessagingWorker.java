@@ -47,6 +47,21 @@ public abstract class JMSMessagingWorker {
     protected MessagingProviderOverrides overrides;
     protected String topic;
 
+    /**
+     * The most recent failure encountered by {@link #waitForMessage}, if any. Lets callers (e.g. the
+     * {@code waitForCIMessage} pipeline step) surface the real cause of a failed wait instead of a generic "Timeout
+     * waiting for message!" message when the wait actually ended early due to a connection error.
+     */
+    private volatile Throwable lastError;
+
+    public Throwable getLastError() {
+        return lastError;
+    }
+
+    protected void setLastError(Throwable lastError) {
+        this.lastError = lastError;
+    }
+
     public boolean subscribe(String jobname) {
         return subscribe(jobname, null);
     }
