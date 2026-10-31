@@ -202,6 +202,70 @@ sendCIMessage kafkaPublisher(
 )
 ```
 
+#### withCIMessage (RabbitMQ)
+
+`withCIMessage` accepts a body for RabbitMQ request/response exchanges. The plugin declares the
+response queue, binds it to the provider's exchange, and waits for the broker to
+confirm the consumer **before** starting the body. The body can send a request
+and do other work while responses are buffered. After the body completes, the
+step collects a matching response and returns its JSON content:
+
+```groovy
+node {
+    def response = withCIMessage(providerData: [
+        $class: 'RabbitMQSubscriberProviderData',
+        name: 'RabbitMQ',
+        overrides: [
+            $class: 'MessagingProviderOverrides',
+            topic: 'request-123.response',
+            queue: ''
+        ],
+        checks: [],
+        variable: 'RPC_RESPONSE',
+        useFiles: false,
+        timeout: 5
+    ]) {
+        sendCIMessage(providerData: [
+            $class: 'RabbitMQPublisherProviderData',
+            name: 'RabbitMQ',
+            overrides: [
+                $class: 'MessagingProviderOverrides',
+                topic: 'request-123'
+            ],
+            messageContent: '{"parameter":[],"responseRoutingKey":"request-123.response"}',
+            failOnError: true
+        ])
+        echo 'Other work can run here while the response is buffered.'
+    }
+    // Requires Pipeline Utility Steps for readJSON.
+    def result = readJSON(text: response, returnPojo: true)
+    echo "Response: ${result}"
+}
+```
+
+The provider must reference the desired exchange and have a blank queue to
+generate an exclusive, auto-delete response queue. With a configured queue,
+the existing queue is used and is never deleted by this step. The service
+receiving the request must publish its response using the agreed routing key;
+the request-side queue and its binding must already exist. Use a unique response
+routing key per exchange or add correlation checks with a suitable queue layout.
+
+The `timeout` above, in minutes, starts **after the body completes**. A response
+arriving during the body is retained and can satisfy the wait immediately. Wrap
+the step in Pipeline `timeout` to bound setup, body execution, and response wait
+together. Body failures are propagated without being replaced by a message
+timeout. Cancellation stops the body and receiver; generated response queues
+are cleaned up on success and failure, including partial subscription setup.
+Configured queues and their bindings are preserved.
+
+`withCIMessage` currently supports RabbitMQ only. The existing `waitForCIMessage`
+step is unchanged and retains its wait-only behavior for every supported provider. A block cannot
+resume after a controller restart: it fails explicitly rather than silently
+replaying a request or continuing with a lost exclusive queue. Retry the entire
+exchange with a new correlation ID only when the receiving service supports
+that retry safely. Responses are acknowledged before the step returns; this is
+not a transaction spanning RabbitMQ and later Pipeline stages.
+
 #### waitForCIMessage
 
 This is the Freestyle CI Subscriber Build Step sibling.

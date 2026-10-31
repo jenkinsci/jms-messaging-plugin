@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,6 +23,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
+import com.rabbitmq.client.ShutdownSignalException;
 import com.redhat.jenkins.plugins.ci.CIEnvironmentContributingAction;
 import com.redhat.jenkins.plugins.ci.messaging.checks.MsgCheck;
 import com.redhat.jenkins.plugins.ci.messaging.data.RabbitMQMessage;
@@ -40,6 +42,12 @@ import jenkins.model.Jenkins;
 
 public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
+    /** Called once the broker has confirmed the response consumer. */
+    @FunctionalInterface
+    public interface SubscribedCallback {
+        void run() throws IOException, InterruptedException, ExecutionException;
+    }
+
     private static final Logger log = Logger.getLogger(RabbitMQMessagingWorker.class.getName());
     private final RabbitMQMessagingProvider provider;
 
@@ -53,6 +61,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
     private String consumerTag = "";
     private String queueName;
     private final String exchangeName;
+    private boolean temporaryQueueCreated;
 
     public RabbitMQMessagingWorker(JMSMessagingProvider messagingProvider, MessagingProviderOverrides overrides,
             String jobname) {
@@ -353,7 +362,18 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace) {
+        return waitForMessage(run, listener, pdata, workspace, null);
+    }
+
+    /**
+     * Calls {@code onSubscribed} after the broker confirms the consumer. The callback may run a Pipeline body while
+     * deliveries are buffered; the message timeout starts when that body finishes. Existing callers use the overload
+     * without a callback and retain the original wait-only behavior.
+     */
+    public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace,
+            SubscribedCallback onSubscribed) {
         RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData) pdata;
+        setLastError(null);
 
         try {
             if (connection == null || !connection.isOpen()) {
@@ -366,6 +386,10 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             String q = getQueue(provider, run.getEnvironment(listener));
             channel.queueBind(q, exchangeName, this.topic);
         } catch (Exception ex) {
+            setLastError(ex);
+            if (onSubscribed != null) {
+                closeBlockSubscription(listener, null);
+            }
             log.severe("Connection to broker can't be established!");
             log.severe(ExceptionUtils.getStackTrace(ex));
             listener.error("Connection to broker can't be established!");
@@ -409,6 +433,11 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             String q = getQueue(provider, run.getEnvironment(listener));
             log.info("Job '" + jobname + "' waiting to receive message");
             consumerTag = channel.basicConsume(q, deliverCallback, (CancelCallback) null);
+            if (onSubscribed != null) {
+                listener.getLogger().println("RabbitMQ subscription ready: queue=" + q + ", binding=" + this.topic);
+                onSubscribed.run();
+                startTime = System.currentTimeMillis();
+            }
             while ((new Date().getTime() - startTime) < timeoutInMs) {
                 if (!messageQueue.isEmpty()) {
 
@@ -441,7 +470,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             }
             log.severe("Timed out waiting for message!");
             listener.getLogger().println("Timed out waiting for message!");
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException | ExecutionException | RuntimeException e) {
+            setLastError(e);
             // If InterruptedException is caught, interrupt is cleared
             // and it needs to be set again
             // See https://stackoverflow.com/questions/7142665/why-does-thread-isinterrupted-always-return-false
@@ -452,16 +482,69 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
             log.log(Level.SEVERE, "Unhandled exception waiting for message.", e);
         } finally {
-            try {
-                if (consumerTag != null) {
-                    channel.basicCancel(consumerTag);
+            if (onSubscribed != null) {
+                closeBlockSubscription(listener, consumerTag);
+            } else {
+                try {
+                    if (consumerTag != null) {
+                        channel.basicCancel(consumerTag);
+                    }
+                    channel.close();
+                } catch (Exception e) {
+                    listener.getLogger().println("exception in finally");
                 }
-                channel.close();
-            } catch (Exception e) {
-                listener.getLogger().println("exception in finally");
             }
         }
         return null;
+    }
+
+    private void closeBlockSubscription(TaskListener listener, String consumerTag) {
+        try {
+            if (channel != null && channel.isOpen()) {
+                if (consumerTag != null) {
+                    channel.basicCancel(consumerTag);
+                }
+            }
+        } catch (Exception failure) {
+            log.log(Level.WARNING, "Unable to cancel RabbitMQ consumer.", failure);
+        } finally {
+            try {
+                if (channel != null && channel.isOpen()) {
+                    channel.close();
+                }
+            } catch (Exception failure) {
+                log.log(Level.WARNING, "Unable to close RabbitMQ channel.", failure);
+            }
+        }
+        // Auto-delete requires a consumer to have existed. Explicitly remove a
+        // generated queue as well when setup fails before basicConsume succeeds.
+        // Never delete a configured queue or close the provider's shared connection.
+        if (temporaryQueueCreated && connection != null && connection.isOpen()) {
+            Channel cleanup = null;
+            try {
+                cleanup = connection.createChannel();
+                cleanup.queueDelete(queueName);
+            } catch (Exception failure) {
+                // A successful auto-delete may already have removed the queue.
+                Throwable cause = failure.getCause();
+                boolean alreadyDeleted = cause instanceof ShutdownSignalException
+                        && ((ShutdownSignalException) cause).getReason() instanceof AMQP.Channel.Close
+                        && ((AMQP.Channel.Close) ((ShutdownSignalException) cause).getReason()).getReplyCode() == 404;
+                if (!alreadyDeleted) {
+                    log.log(Level.WARNING, "Unable to remove generated RabbitMQ queue " + queueName, failure);
+                    listener.error("Unable to remove generated RabbitMQ queue " + queueName);
+                }
+            } finally {
+                try {
+                    if (cleanup != null && cleanup.isOpen()) {
+                        cleanup.close();
+                    }
+                } catch (Exception failure) {
+                    log.log(Level.WARNING, "Unable to close queue cleanup channel.", failure);
+                }
+            }
+            temporaryQueueCreated = false;
+        }
     }
 
     public void prepareForInterrupt() {
@@ -489,6 +572,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             if (StringUtils.isEmpty(queueName)) {
                 queueName = UUID.randomUUID().toString();
                 channel.queueDeclare(queueName, false, true, true, null);
+                temporaryQueueCreated = true;
             }
             ltopic = queueName;
         }

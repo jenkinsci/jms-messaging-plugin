@@ -1,0 +1,12 @@
+<div>
+  <p>Subscribe to a RabbitMQ response queue before running the enclosed Pipeline body.</p>
+  <p>The body starts only after the broker confirms the consumer. It can send a request
+    and run other steps while responses are buffered. After the body completes, this
+    step waits for a matching message and returns its JSON content.</p>
+  <p>The message timeout is in minutes and starts after the body finishes. Use a Pipeline
+    timeout around the whole block to bound setup and body execution as well.</p>
+  <p>Leave both the provider queue and the queue override empty to create a temporary
+    exclusive queue. Generated queues are cleaned up; configured queues are preserved.</p>
+  <p>RabbitMQ is currently the only supported provider. An active subscription cannot
+    resume after a Jenkins restart, so the step fails explicitly without replaying its body.</p>
+</div>
