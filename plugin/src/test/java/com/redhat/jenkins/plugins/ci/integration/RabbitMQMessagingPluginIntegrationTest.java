@@ -31,11 +31,11 @@ import java.util.logging.Level;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.test.acceptance.docker.DockerClassRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
@@ -52,12 +52,13 @@ import hudson.Util;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 
+@WithJenkins
 public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
-    @ClassRule
-    public static DockerClassRule<RabbitMQRelayContainer> docker = new DockerClassRule<>(RabbitMQRelayContainer.class);
+    @RegisterExtension
+    public static final DockerClassExtension<RabbitMQRelayContainer> docker = new DockerClassExtension<>(RabbitMQRelayContainer.class);
     private static RabbitMQRelayContainer rabbitmq = null;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception, IOException, InterruptedException {
         rabbitmq = docker.create();
         if (!waitForProviderToBeReady(rabbitmq.getCid(), "Starting broker... completed with 0 plugins.")) {
@@ -76,7 +77,7 @@ public class RabbitMQMessagingPluginIntegrationTest extends SharedMessagingPlugi
         logger.capture(5000);
     }
 
-    @After
+    @AfterEach
     public void after() {
         rabbitmq.close();
     }

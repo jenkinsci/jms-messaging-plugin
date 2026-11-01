@@ -20,7 +20,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.Snippetizer;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Strings;
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
@@ -63,7 +63,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public abstract String getContainerId();
 
     public ProviderData getSubscriberProviderData(MsgCheck... msgChecks) {
-        return getSubscriberProviderData(testName.getMethodName(), DEFAULT_VARIABLE_NAME, DEFAULT_USE_FILES, msgChecks);
+        return getSubscriberProviderData(testName, DEFAULT_VARIABLE_NAME, DEFAULT_USE_FILES, msgChecks);
     }
 
     public ProviderData getSubscriberProviderData(String topic) {
@@ -83,7 +83,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
             Boolean useFiles, MsgCheck... msgChecks);
 
     public ProviderData getPublisherProviderData(String content) {
-        return getPublisherProviderData(testName.getMethodName(), content);
+        return getPublisherProviderData(testName, content);
     }
 
     public ProviderData getPublisherProviderData(String topic, String content) {
@@ -558,8 +558,8 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
     @Test
     public void testSimpleCIEventTriggerWithMultipleTopics() throws Exception {
-        String topic1 = testName.getMethodName() + "-1";
-        String topic2 = testName.getMethodName() + "-2";
+        String topic1 = testName + "-1";
+        String topic2 = testName + "-2";
         FreeStyleProject jobA = j.createFreeStyleProject();
         attachTrigger(new CIBuildTrigger(false,
                 Arrays.asList(getSubscriberProviderData(topic1, new MsgCheck("my-topic", topic1)),
@@ -624,7 +624,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.addProperty(new ParametersDefinitionProperty(
-                new StringParameterDefinition("MY_TOPIC", testName.getMethodName(), "")));
+                new StringParameterDefinition("MY_TOPIC", testName, "")));
         jobB.getPublishersList()
                 .add(new CIMessageNotifier(getPublisherProviderData("$MY_TOPIC", MESSAGE_CHECK_CONTENT)));
 
@@ -736,7 +736,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public void testSimpleCIEventTriggerWithCheckOnPipelineJobWithGlobalEnvVarInTopic() throws Exception {
 
         j.jenkins.getGlobalNodeProperties().add(new EnvironmentVariablesNodeProperty(
-                new EnvironmentVariablesNodeProperty.Entry("MY_TOPIC_ID", testName.getMethodName())));
+                new EnvironmentVariablesNodeProperty.Entry("MY_TOPIC_ID", testName)));
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "jobA");
         jobA.setDefinition(new CpsFlowDefinition("node('built-in') {\n sleep 10\n}", true));
@@ -853,14 +853,14 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
         ProviderData pd = getSubscriberProviderData("env.MY_TOPIC");
         jobA.setDefinition(new CpsFlowDefinition(
-                buildWaitForCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
+                buildWaitForCIMessageScript(pd, "env.MY_TOPIC = \"" + testName + "\""), true));
 
         scheduleAwaitStep(jobA);
 
         pd = getPublisherProviderData("env.MY_TOPIC", "{\"msg\": \"abcdefg\"}");
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "foo");
         jobB.setDefinition(new CpsFlowDefinition(
-                buildSendCIMessageScript(pd, "env.MY_TOPIC = \"" + testName.getMethodName() + "\""), true));
+                buildSendCIMessageScript(pd, "env.MY_TOPIC = \"" + testName + "\""), true));
 
         j.buildAndAssertSuccess(jobB);
 
@@ -1028,14 +1028,14 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     @Test
     public void testPipelineInvalidProvider() throws Exception {
         WorkflowJob jobB = j.jenkins.createProject(WorkflowJob.class, "send");
-        ProviderData pd = getPublisherProviderData("bogus", testName.getMethodName(), "");
+        ProviderData pd = getPublisherProviderData("bogus", testName, "");
         jobB.setDefinition(new CpsFlowDefinition(buildSendCIMessageScript(pd), true));
 
         WorkflowRun build = j.buildAndAssertStatus(Result.FAILURE, jobB);
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
 
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        pd = getSubscriberProviderData("bogus", testName.getMethodName(), DEFAULT_VARIABLE_NAME, false);
+        pd = getSubscriberProviderData("bogus", testName, DEFAULT_VARIABLE_NAME, false);
         jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd), true));
         build = j.buildAndAssertStatus(Result.FAILURE, jobA);
         j.assertLogContains("java.lang.Exception: Unrecognized provider name: bogus", build);
@@ -1073,7 +1073,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public void testWaitForCIMessageStepWithFiles() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(DEFAULT_PROVIDER_NAME,
-                testName.getMethodName(), DEFAULT_VARIABLE_NAME, true)));
+                testName, DEFAULT_VARIABLE_NAME, true)));
 
         String script = "if [ ! -e QWERTY ]; then\n    exit 1\nfi\ncat QWERTY; echo ''";
         for (String name : getFileNames()) {
@@ -1097,7 +1097,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     @Test
     public void testWaitForCIMessagePipelineWithFiles() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        ProviderData pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(),
+        ProviderData pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName,
                 DEFAULT_VARIABLE_NAME, true);
         String validate = "if (!fileExists('QWERTY')) {\n        error('File does not exist: QWERTY')\n    }\n";
         String postStatements = "";
@@ -1153,7 +1153,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     public void testWaitForCIMessageStepWithMessageTooLong() throws Exception {
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(DEFAULT_PROVIDER_NAME,
-                testName.getMethodName(), DEFAULT_VARIABLE_NAME, false)));
+                testName, DEFAULT_VARIABLE_NAME, false)));
         jobA.getBuildersList().add(new Shell("env | sort"));
 
         scheduleAwaitStep(jobA);
@@ -1170,7 +1170,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
 
         jobA.getBuildersList().clear();
         jobA.getBuildersList().add(new CIMessageSubscriberBuilder(getSubscriberProviderData(DEFAULT_PROVIDER_NAME,
-                testName.getMethodName(), DEFAULT_VARIABLE_NAME, true)));
+                testName, DEFAULT_VARIABLE_NAME, true)));
         jobA.getBuildersList().add(new Shell("env | sort"));
         scheduleAwaitStep(jobA, 2);
 
@@ -1185,7 +1185,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
     @Test
     public void testWaitForCIMessagePipelineWithMessageTooLong() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        ProviderData pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(),
+        ProviderData pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName,
                 DEFAULT_VARIABLE_NAME, false);
         String postStatements = "sh 'printenv'";
         jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd, null, postStatements), true));
@@ -1202,7 +1202,7 @@ public abstract class SharedMessagingPluginIntegrationTest extends BaseTest {
         j.assertBuildStatus(Result.FAILURE, jobA.getLastBuild());
         j.assertLogContains("Argument list too long", jobA.getLastBuild());
 
-        pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), DEFAULT_VARIABLE_NAME, true);
+        pd = getSubscriberProviderData(DEFAULT_PROVIDER_NAME, testName, DEFAULT_VARIABLE_NAME, true);
         jobA.setDefinition(new CpsFlowDefinition(buildWaitForCIMessageScript(pd, null, postStatements), true));
         scheduleAwaitStep(jobA, 2);
 
