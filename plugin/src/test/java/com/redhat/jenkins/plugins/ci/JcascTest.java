@@ -24,11 +24,10 @@
 package com.redhat.jenkins.plugins.ci;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
 import com.redhat.jenkins.plugins.ci.authentication.rabbitmq.SSLCertificateAuthenticationMethod;
@@ -40,14 +39,15 @@ import com.redhat.jenkins.plugins.ci.messaging.topics.DefaultTopicProvider;
 
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.misc.junit.jupiter.WithJenkinsConfiguredWithCode;
 
+@WithJenkinsConfiguredWithCode
 public class JcascTest {
 
-    @Rule
-    public JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
+    @ConfiguredWithCode("JcascTest/casc.yaml")
+    public static JenkinsConfiguredWithCodeRule j;
 
     @Test
-    @ConfiguredWithCode("JcascTest/casc.yaml")
     public void load() {
         GlobalCIConfiguration gc = GlobalCIConfiguration.get();
 

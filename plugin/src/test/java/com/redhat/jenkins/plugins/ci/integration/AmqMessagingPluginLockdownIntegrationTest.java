@@ -44,13 +44,11 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.jenkinsci.test.acceptance.docker.DockerClassRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.MockAuthorizationStrategy;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.authentication.activemq.UsernameAuthenticationMethod;
@@ -60,13 +58,11 @@ import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import hudson.security.Permission;
 import jenkins.model.Jenkins;
 
+@WithJenkins
 public class AmqMessagingPluginLockdownIntegrationTest extends BaseTest {
 
-    @ClassRule
-    public static DockerClassRule<ActiveMQContainer> docker = new DockerClassRule<>(ActiveMQContainer.class);
-
-    @Rule
-    public final JenkinsRule j = new JenkinsRule();
+    @RegisterExtension
+    public static final DockerClassExtension<ActiveMQContainer> docker = new DockerClassExtension<>(ActiveMQContainer.class);
 
     private void configureSecurity(final String admin, final String user) {
         j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
@@ -76,7 +72,7 @@ public class AmqMessagingPluginLockdownIntegrationTest extends BaseTest {
         mas.grant(Permission.READ).everywhere().to(user);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         ActiveMQContainer amq = docker.create();
 
