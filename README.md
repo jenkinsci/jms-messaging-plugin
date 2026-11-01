@@ -202,12 +202,25 @@ sendCIMessage kafkaPublisher(
 )
 ```
 
-#### withCIMessage (RabbitMQ)
+#### withCIMessage
 
-`withCIMessage` accepts a body for RabbitMQ request/response exchanges. The plugin declares the
-response queue, binds it to the provider's exchange, and waits for the broker to
-confirm the consumer **before** starting the body. The body can send a request
-and do other work while responses are buffered. After the body completes, the
+`withCIMessage` supports ActiveMQ, RabbitMQ, and Kafka request/response exchanges.
+It establishes the response subscription **before** starting the Pipeline body:
+
+| Provider | Readiness barrier | Resources after completion |
+| --- | --- | --- |
+| ActiveMQ | JMS queue consumer or non-durable topic consumer created | Consumer and connection closed; configured destinations preserved |
+| RabbitMQ | Response queue declared, binding established, and consumer confirmed by the broker | Generated exclusive queues removed; configured queues and bindings preserved |
+| Kafka | Partitions assigned and initial offsets resolved | Consumer closed; topics preserved |
+
+For Kafka, polling continues during the body so the consumer remains in its
+group even when the body exceeds `max.poll.interval.ms`. Automatic offset commits
+are disabled for this block; the matched response offset is committed only after
+the body succeeds. A matching response fetched during assignment or body execution
+is retained. Consumers sharing a Kafka group split partitions; use separate group IDs
+for independent response subscriptions.
+
+The body can send a request and do other work while responses are buffered. After the body completes, the
 step collects a matching response and returns its JSON content:
 
 ```groovy
@@ -243,7 +256,12 @@ node {
 }
 ```
 
-The provider must reference the desired exchange and have a blank queue to
+For ActiveMQ or Kafka, select `ActiveMQSubscriberProviderData` or
+`KafkaSubscriberProviderData` and the corresponding configured provider. The body
+and returned JSON follow the same contract; provider-specific options such as
+selectors, header checks, topic overrides, and file output remain available.
+
+For the RabbitMQ example, the provider must reference the desired exchange and have a blank queue to
 generate an exclusive, auto-delete response queue. With a configured queue,
 the existing queue is used and is never deleted by this step. The service
 receiving the request must publish its response using the agreed routing key;
@@ -254,14 +272,13 @@ The `timeout` above, in minutes, starts **after the body completes**. A response
 arriving during the body is retained and can satisfy the wait immediately. Wrap
 the step in Pipeline `timeout` to bound setup, body execution, and response wait
 together. Body failures are propagated without being replaced by a message
-timeout. Cancellation stops the body and receiver; generated response queues
-are cleaned up on success and failure, including partial subscription setup.
-Configured queues and their bindings are preserved.
+timeout. Cancellation stops the body and receiver. RabbitMQ-generated response
+queues are cleaned up on success and failure, including partial subscription setup.
+Configured queues, topics, and their existing bindings are preserved.
 
-`withCIMessage` currently supports RabbitMQ only. The existing `waitForCIMessage`
-step is unchanged and retains its wait-only behavior for every supported provider. A block cannot
+The existing `waitForCIMessage` step retains its wait-only behavior. A block cannot
 resume after a controller restart: it fails explicitly rather than silently
-replaying a request or continuing with a lost exclusive queue. Retry the entire
+replaying a request or continuing with lost subscription state. Retry the entire
 exchange with a new correlation ID only when the receiving service supports
 that retry safely. Responses are acknowledged before the step returns; this is
 not a transaction spanning RabbitMQ and later Pipeline stages.

@@ -13,7 +13,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
-import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 
 import hudson.Extension;
 import hudson.model.Run;
@@ -34,14 +33,13 @@ public class WithCIMessageStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) {
-        return new RabbitMQSubscriberBlockExecution(providerData, context);
+        return new CIMessageBlockExecution(providerData, context);
     }
 
     @Extension
     public static class DescriptorImpl extends StepDescriptor {
         public List<ProviderData> getSubscriberProviders() {
-            return GlobalCIConfiguration.get().getSubscriberProviders().stream()
-                    .filter(RabbitMQSubscriberProviderData.class::isInstance).toList();
+            return GlobalCIConfiguration.get().getSubscriberProviders();
         }
 
         @Override
@@ -51,7 +49,7 @@ public class WithCIMessageStep extends Step {
 
         @Override
         public @Nonnull String getDisplayName() {
-            return "Subscribe to RabbitMQ, run a body, and await a response";
+            return "Subscribe, run a body, and await a response";
         }
 
         @Override

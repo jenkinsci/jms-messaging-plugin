@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -102,6 +103,7 @@ public class RabbitMQReadySubscriptionTest {
                     isNull(CancelCallback.class));
             reply(); // A response delivered before the body returns must not be lost.
             verify(channel, never()).basicAck(1L, false);
+            return CompletableFuture.completedFuture(null);
         });
         assertEquals("{\"result\":\"ok\"}", result);
         verify(channel).basicAck(1L, false);
@@ -128,6 +130,7 @@ public class RabbitMQReadySubscriptionTest {
         AtomicBoolean called = new AtomicBoolean();
         assertNull(worker.waitForMessage(run, TaskListener.NULL, data, null, () -> {
             called.set(true);
+            return CompletableFuture.completedFuture(null);
         }));
         assertFalse(called.get());
         assertSame(failure, worker.getLastError());
@@ -155,6 +158,7 @@ public class RabbitMQReadySubscriptionTest {
         worker = new RabbitMQMessagingWorker(provider, null, "job");
         assertNotNull(worker.waitForMessage(run, TaskListener.NULL, data, null, () -> {
             reply();
+            return CompletableFuture.completedFuture(null);
         }));
         verify(channel, never()).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), any());
         verify(cleanup, never()).queueDelete(anyString());
@@ -163,8 +167,8 @@ public class RabbitMQReadySubscriptionTest {
     @Test
     public void timeoutCleansUpWithoutAcknowledgingMessages() throws Exception {
         data.setTimeout(0);
-        assertNull(worker.waitForMessage(run, TaskListener.NULL, data, null, () -> {
-        }));
+        assertNull(worker.waitForMessage(run, TaskListener.NULL, data, null,
+                () -> CompletableFuture.completedFuture(null)));
         assertNull(worker.getLastError());
         verify(channel).close();
         verify(cleanup).queueDelete(queue.get());

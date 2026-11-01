@@ -11,23 +11,27 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.ActiveMqMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingProvider;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker;
+import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
-import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingWorker;
+import com.redhat.jenkins.plugins.ci.provider.data.ActiveMQSubscriberProviderData;
+import com.redhat.jenkins.plugins.ci.provider.data.KafkaSubscriberProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.ProviderData;
 import com.redhat.jenkins.plugins.ci.provider.data.RabbitMQSubscriberProviderData;
 
 import hudson.AbortException;
 import hudson.FilePath;
+import hudson.model.Computer;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import jenkins.util.Timer;
 
 /**
- * Runs a Pipeline body only after the RabbitMQ consumer is ready. Deliveries remain unacknowledged until the body
+ * Runs a Pipeline body only after the messaging consumer is ready. Deliveries remain unacknowledged until the body
  * completes and the response is collected.
  */
-final class RabbitMQSubscriberBlockExecution extends StepExecution {
+final class CIMessageBlockExecution extends StepExecution {
     private static final long serialVersionUID = 1L;
 
     private final ProviderData providerData;
@@ -35,26 +39,32 @@ final class RabbitMQSubscriberBlockExecution extends StepExecution {
     private BodyExecution body;
     private transient volatile Future<?> task;
     private transient CompletableFuture<Void> bodyCompletion;
-    private transient volatile RabbitMQMessagingWorker worker;
+    private transient volatile JMSMessagingWorker worker;
 
-    RabbitMQSubscriberBlockExecution(ProviderData providerData, StepContext context) {
+    CIMessageBlockExecution(ProviderData providerData, StepContext context) {
         super(context);
         this.providerData = providerData;
     }
 
     @Override
     public boolean start() throws Exception {
-        if (!(providerData instanceof RabbitMQSubscriberProviderData)) {
-            throw new AbortException("withCIMessage supports RabbitMQ subscribers only.");
+        if (providerData == null) {
+            throw new AbortException("withCIMessage requires subscriber provider data.");
         }
         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
-        if (!(provider instanceof RabbitMQMessagingProvider)) {
-            throw new AbortException("withCIMessage requires a configured RabbitMQ provider.");
+        boolean supported = (provider instanceof RabbitMQMessagingProvider
+                && providerData instanceof RabbitMQSubscriberProviderData)
+                || (provider instanceof ActiveMqMessagingProvider
+                        && providerData instanceof ActiveMQSubscriberProviderData)
+                || (provider instanceof KafkaMessagingProvider && providerData instanceof KafkaSubscriberProviderData);
+        if (!supported) {
+            throw new AbortException(
+                    "withCIMessage requires matching ActiveMQ, RabbitMQ, or Kafka subscriber data and provider.");
         }
         bodyCompletion = new CompletableFuture<>();
-        worker = (RabbitMQMessagingWorker) provider.createWorker(providerData,
-                getContext().get(Run.class).getParent().getFullName());
-        task = Timer.get().submit(this::receive);
+        worker = provider.createWorker(providerData, getContext().get(Run.class).getParent().getFullName());
+        // A subscription can outlive the body; do not occupy Jenkins' timer threads.
+        task = Computer.threadPoolForRemoting.submit(this::receive);
         // A cancellation can race with submitting the background task.
         if (completed.get()) {
             task.cancel(true);
@@ -73,7 +83,7 @@ final class RabbitMQSubscriberBlockExecution extends StepExecution {
                             }
                             body = context.newBodyInvoker().withCallback(new Callback(this)).start();
                         }
-                        bodyCompletion.get();
+                        return bodyCompletion;
                     });
             if (message == null) {
                 Throwable cause = worker.getLastError();
@@ -89,11 +99,14 @@ final class RabbitMQSubscriberBlockExecution extends StepExecution {
         }
     }
 
-    private void complete(String message, Throwable failure) {
+    private synchronized void complete(String message, Throwable failure) {
         if (completed.compareAndSet(false, true)) {
             if (failure == null) {
                 getContext().onSuccess(message);
             } else {
+                if (body != null) {
+                    body.cancel(failure);
+                }
                 getContext().onFailure(failure);
             }
         }
@@ -107,7 +120,7 @@ final class RabbitMQSubscriberBlockExecution extends StepExecution {
                     body.cancel(cause);
                 }
                 if (worker != null) {
-                    worker.prepareForInterrupt();
+                    worker.cancelWait();
                 }
                 if (task != null) {
                     task.cancel(true);
@@ -120,7 +133,7 @@ final class RabbitMQSubscriberBlockExecution extends StepExecution {
     @Override
     public void onResume() {
         try {
-            stop(new AbortException("The withCIMessage RabbitMQ subscription cannot resume after a Jenkins restart. "
+            stop(new AbortException("The withCIMessage subscription cannot resume after a Jenkins restart. "
                     + "Retry the complete request/response block with a new correlation ID."));
         } catch (Exception failure) {
             getContext().onFailure(failure);
@@ -129,9 +142,9 @@ final class RabbitMQSubscriberBlockExecution extends StepExecution {
 
     private static final class Callback extends BodyExecutionCallback {
         private static final long serialVersionUID = 1L;
-        private final RabbitMQSubscriberBlockExecution execution;
+        private final CIMessageBlockExecution execution;
 
-        Callback(RabbitMQSubscriberBlockExecution execution) {
+        Callback(CIMessageBlockExecution execution) {
             this.execution = execution;
         }
 

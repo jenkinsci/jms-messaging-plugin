@@ -16,9 +16,9 @@ import org.junit.Test;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import com.redhat.jenkins.plugins.ci.GlobalCIConfiguration;
+import com.redhat.jenkins.plugins.ci.messaging.JMSMessagingWorker.SubscribedCallback;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingProvider;
 import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingWorker;
-import com.redhat.jenkins.plugins.ci.messaging.RabbitMQMessagingWorker.SubscribedCallback;
 
 import hudson.model.Result;
 
@@ -37,7 +37,7 @@ public class CIMessageSubscriberBlockRestartTest {
             when(worker.getLastError()).thenAnswer(call -> failure.get());
             when(worker.waitForMessage(any(), any(), any(), any(), any())).thenAnswer(call -> {
                 try {
-                    ((SubscribedCallback) call.getArgument(4)).run();
+                    ((SubscribedCallback) call.getArgument(4)).run().get();
                 } catch (Exception e) {
                     failure.set(e);
                 }

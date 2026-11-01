@@ -42,12 +42,6 @@ import jenkins.model.Jenkins;
 
 public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
-    /** Called once the broker has confirmed the response consumer. */
-    @FunctionalInterface
-    public interface SubscribedCallback {
-        void run() throws IOException, InterruptedException, ExecutionException;
-    }
-
     private static final Logger log = Logger.getLogger(RabbitMQMessagingWorker.class.getName());
     private final RabbitMQMessagingProvider provider;
 
@@ -370,6 +364,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
      * deliveries are buffered; the message timeout starts when that body finishes. Existing callers use the overload
      * without a callback and retain the original wait-only behavior.
      */
+    @Override
     public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace,
             SubscribedCallback onSubscribed) {
         RabbitMQSubscriberProviderData pd = (RabbitMQSubscriberProviderData) pdata;
@@ -435,7 +430,7 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
             consumerTag = channel.basicConsume(q, deliverCallback, (CancelCallback) null);
             if (onSubscribed != null) {
                 listener.getLogger().println("RabbitMQ subscription ready: queue=" + q + ", binding=" + this.topic);
-                onSubscribed.run();
+                onSubscribed.run().get();
                 startTime = System.currentTimeMillis();
             }
             while ((new Date().getTime() - startTime) < timeoutInMs) {
@@ -549,6 +544,11 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
 
     public void prepareForInterrupt() {
         interrupt = true;
+    }
+
+    @Override
+    public void cancelWait() {
+        prepareForInterrupt();
     }
 
     public boolean isBeingInterrupted() {
