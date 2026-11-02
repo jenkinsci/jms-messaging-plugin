@@ -43,6 +43,7 @@ import org.kohsuke.stapler.verb.POST;
 import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
@@ -81,6 +82,7 @@ public class NoneAuthenticationMethod extends KafkaAuthenticationMethod {
         }
 
         @POST
+        @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT", justification = "Kafka poll joins the subscription and listTopics requests broker metadata; both intentionally probe connectivity.")
         public FormValidation doTestConsumerConnection(@QueryParameter("name") String name,
                 @QueryParameter("topic") String topic,
                 @QueryParameter("consumerProperties") String consumerProperties) {
