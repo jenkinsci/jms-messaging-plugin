@@ -8,9 +8,9 @@ import java.util.logging.Level;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.LoggerRule;
 
@@ -29,19 +29,32 @@ import hudson.security.ACLContext;
 
 public abstract class BaseTest {
 
-    @Rule
-    public final JenkinsRule j = new JenkinsRule();
-    @Rule
-    public final LoggerRule logger = new LoggerRule();
-    @Rule
-    public TestName testName = new TestName();
+    protected JenkinsRule j;
+    public final ManagedLoggerRule logger = new ManagedLoggerRule();
+    protected String testName;
 
-    @After
-    public void after() throws IOException, InterruptedException {
-        if (j != null && j.jenkins != null) {
-            for (Job<?, ?> job : j.jenkins.getAllItems(Job.class)) {
-                job.delete();
+    @BeforeEach
+    public void setUpBaseTest(JenkinsRule j, TestInfo testInfo) {
+        this.j = j;
+        this.testName = testInfo.getTestMethod().orElseThrow().getName();
+    }
+
+    @AfterEach
+    public void tearDownBaseTest() throws Exception {
+        try {
+            if (j != null && j.jenkins != null) {
+                for (Job<?, ?> job : j.jenkins.getAllItems(Job.class)) {
+                    job.delete();
+                }
             }
+        } finally {
+            logger.restore();
+        }
+    }
+
+    public static final class ManagedLoggerRule extends LoggerRule {
+        public void restore() {
+            super.after();
         }
     }
 

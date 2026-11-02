@@ -23,24 +23,23 @@
  */
 package com.redhat.jenkins.plugins.ci;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.recipes.LocalData;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 /**
  * @author ogondza.
  */
+@WithJenkins
 public class LoadTest {
-    @Rule
-    public final JenkinsRule j = new JenkinsRule();
 
     @Test
     @LocalData
-    public void load() throws Exception {
+    public void load(JenkinsRule j) throws Exception {
         WorkflowJob foo = j.jenkins.getItemByFullName("foo", WorkflowJob.class);
         CIBuildTrigger trigger = (CIBuildTrigger) foo.getTriggers().values().iterator().next();
         assertNotNull(trigger);

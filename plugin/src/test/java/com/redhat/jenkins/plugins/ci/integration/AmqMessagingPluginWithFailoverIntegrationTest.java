@@ -28,9 +28,9 @@ import static java.lang.StrictMath.abs;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,11 +42,11 @@ import java.util.stream.Collectors;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.test.acceptance.docker.Docker;
-import org.jenkinsci.test.acceptance.docker.DockerClassRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
@@ -61,12 +61,13 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.tasks.Shell;
 
+@WithJenkins
 public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
-    @ClassRule
-    public static DockerClassRule<ActiveMQContainer> docker = new DockerClassRule<>(ActiveMQContainer.class);
+    @RegisterExtension
+    public static final DockerClassExtension<ActiveMQContainer> docker = new DockerClassExtension<>(ActiveMQContainer.class);
     private ActiveMQContainer amq = null;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         amq = docker.create();
 
@@ -176,7 +177,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
 
         List<Long> ids1 = getCurrentTriggerThreadIds("receiver");
 
-        assertEquals("Trigger threads invalid size", 0, ids1.size());
+        assertEquals(0, ids1.size(), "Trigger threads invalid size");
 
         JenkinsRule.WebClient wc = j.createWebClient();
         String source = wc.getPage(jobA).getWebResponse().getContentAsString();
@@ -198,7 +199,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
                         Collections.emptyList(), "CI_MESSAGE", false, 60))).start(jobA, true);
 
         List<Long> ids2 = getCurrentTriggerThreadIds("receiver");
-        assertEquals("Trigger threads valid selector size", 1, ids2.size());
+        assertEquals(1, ids2.size(), "Trigger threads valid selector size");
 
         jobA.delete();
     }
@@ -222,7 +223,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
 
         // No trigger threads created on save. Must run once.
         List<Long> ids = getCurrentTriggerThreadIds("pipeline");
-        assertEquals("Trigger threads initial pipeline save", 0, ids.size());
+        assertEquals(0, ids.size(), "Trigger threads initial pipeline save");
 
         j.buildAndAssertSuccess(pipe);
 
@@ -231,7 +232,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         }
         // No trigger threads created because of bad syntax.
         List<Long> ids2 = getCurrentTriggerThreadIds("pipeline");
-        assertEquals("Trigger threads invalid syntax size", 0, ids2.size());
+        assertEquals(0, ids2.size(), "Trigger threads invalid syntax size");
 
         JenkinsRule.WebClient wc = j.createWebClient();
         String source = wc.getPage(pipe).getWebResponse().getContentAsString();
@@ -254,7 +255,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         // Let's start a build to get new selector activated.
         j.buildAndAssertSuccess(pipe);
         waitForReceiverToBeReady(pipe.getFullName());
-        assertEquals("Number of threads", 1, getCurrentTriggerThreadIds("pipeline").size());
+        assertEquals(1, getCurrentTriggerThreadIds("pipeline").size(), "Number of threads");
 
         pipe.delete();
     }
@@ -273,7 +274,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         List<Long> ids1 = getCurrentTriggerThreadIds("receiver");
-        assertEquals("Trigger threads value selector size", 1, ids1.size());
+        assertEquals(1, ids1.size(), "Trigger threads value selector size");
 
         // Now change the selector.
         jobA.getTrigger(CIBuildTrigger.class)
@@ -283,8 +284,8 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
         jobA.getTrigger(CIBuildTrigger.class).start(jobA, true);
 
         List<Long> ids2 = getCurrentTriggerThreadIds("receiver");
-        assertEquals("Trigger threads changed selector size", 1, ids2.size());
-        assertNotSame("Trigger threads new thread created", ids1.get(0), ids2.get(0));
+        assertEquals(1, ids2.size(), "Trigger threads changed selector size");
+        assertNotSame(ids1.get(0), ids2.get(0), "Trigger threads new thread created");
 
         jobA.delete();
     }
@@ -332,7 +333,7 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
             currentThreadCount = getCurrentAMQTaskCount();
         }
         boolean equal = currentThreadCount == 0;
-        assertTrue("currentThreadCount != 0", equal);
+        assertTrue(equal, "currentThreadCount != 0");
         System.out.println("currentThreadCount == 0");
     }
 
@@ -363,6 +364,6 @@ public class AmqMessagingPluginWithFailoverIntegrationTest extends BaseTest {
             System.out.println("*** Current  Threads ***");
             System.out.println(printAMQThreads());
         }
-        assertTrue("abs(currentThreadCount - previousThreadCount) > 2", equal);
+        assertTrue(equal, "abs(currentThreadCount - previousThreadCount) > 2");
     }
 }

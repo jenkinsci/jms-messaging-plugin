@@ -2,7 +2,7 @@ package com.redhat.jenkins.plugins.ci.messaging;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -16,7 +16,7 @@ import java.util.Collections;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.command.ActiveMQTopic;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,7 +111,7 @@ public class ActiveMqMessagingWorkerTest {
 
             assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
                 boolean connected = worker.connect();
-                assertFalse("connect() should return false when broker is unresponsive", connected);
+                assertFalse(connected, "connect() should return false when broker is unresponsive");
             }, "connect() hung for >20s against an unresponsive broker (issue #381)");
         }
     }
@@ -158,7 +158,7 @@ public class ActiveMqMessagingWorkerTest {
 
             assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
                 boolean connected = worker.connect();
-                assertFalse("connect() should return false when broker goes silent after handshake", connected);
+                assertFalse(connected, "connect() should return false when broker goes silent after handshake");
             }, "connect() hung against a stale broker — connectResponseTimeout did not fire (issue #381)");
         }
     }
@@ -173,7 +173,7 @@ public class ActiveMqMessagingWorkerTest {
         ActiveMqMessagingWorker worker = new ActiveMqMessagingWorker(provider, null, "test-job");
         boolean connected = worker.connect();
 
-        assertFalse("connect() should return false when factory is null", connected);
+        assertFalse(connected, "connect() should return false when factory is null");
     }
 
     @Test
