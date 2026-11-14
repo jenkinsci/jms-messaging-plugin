@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:rh="/com/redhat/jenkins/plugins/ci/form">
+  <j:set var="instance" value="${instance.providerData}"/>
+  <rh:dropdownInstanceSelector title="${%Messaging Provider}"
+                               field="providerData"
+                               instances="${descriptor.subscriberProviders}"
+                               desc="${descriptor}" />
+</j:jelly>

@@ -46,6 +46,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.redhat.jenkins.plugins.ci.Messages;
 import com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingProvider;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Item;
@@ -121,6 +122,7 @@ public class UsernameAuthenticationMethod extends KafkaAuthenticationMethod {
             return doTestConnection(true, name, topic, producerProperties, consumerProperties, credentialId);
         }
 
+        @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT", justification = "Kafka poll joins the subscription and performs network I/O; this connection probe intentionally ignores received records.")
         private FormValidation doTestConnection(Boolean isProducer, String name, String topic,
                 String producerProperties, String consumerProperties, String credentialId) {
 
