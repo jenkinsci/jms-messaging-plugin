@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -504,6 +505,12 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace) {
+        return waitForMessage(run, listener, pdata, workspace, null);
+    }
+
+    @Override
+    public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace,
+            SubscribedCallback onSubscribed) {
         ActiveMQSubscriberProviderData pd = (ActiveMQSubscriberProviderData) pdata;
         setLastError(null);
         String ip = null;
@@ -535,6 +542,7 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000L;
         String localIp = ip;
         String localTopic = ltopic;
+        boolean bodyStarted = false;
 
         // Each iteration establishes a fresh connection/subscription and waits for a message. A connection
         // that fails to establish, or drops mid-wait (e.g. a stale broker connection - see
@@ -558,9 +566,18 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                     consumer = session.createConsumer(destination, pd.getSelector(), false);
                 } else {
                     Topic destination = session.createTopic(localTopic);
-                    consumer = session.createDurableSubscriber(destination, jobname, pd.getSelector(), false);
+                    consumer = onSubscribed == null
+                            ? session.createDurableSubscriber(destination, jobname, pd.getSelector(), false)
+                            : session.createConsumer(destination, pd.getSelector(), false);
                 }
                 setLastError(null);
+                if (onSubscribed != null) {
+                    bodyStarted = true;
+                    listener.getLogger().println("ActiveMQ subscription ready: destination=" + localTopic);
+                    onSubscribed.run().get();
+                    deadline = System.currentTimeMillis() + (pd.getTimeout() != null ? pd.getTimeout()
+                            : ActiveMQSubscriberProviderData.DEFAULT_TIMEOUT_IN_MINUTES) * 60 * 1000L;
+                }
 
                 Message message;
                 do {
@@ -600,14 +617,28 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                 Thread.currentThread().interrupt();
                 setLastError(e);
                 return null;
+            } catch (ExecutionException e) {
+                setLastError(e);
+                return null;
+            } catch (RuntimeException e) {
+                if (onSubscribed == null) {
+                    throw e;
+                }
+                setLastError(e);
+                return null;
             } catch (IOException | JMSException e) {
                 setLastError(e);
+                if (bodyStarted) {
+                    // The request may already have been sent. Never replay its body.
+                    return null;
+                }
                 long remaining = deadline - new Date().getTime();
                 log.log(Level.WARNING, "Exception establishing JMS subscription while waiting for message"
                         + (remaining > 0 ? "; will retry." : "; out of time, giving up."), e);
                 listener.getLogger().println("Exception establishing JMS subscription while waiting for message: "
                         + e.getMessage() + (remaining > 0 ? " Retrying..." : ""));
             } finally {
+                boolean interrupted = Thread.interrupted();
                 if (consumer != null) {
                     try {
                         consumer.close();
@@ -619,6 +650,9 @@ public class ActiveMqMessagingWorker extends JMSMessagingWorker {
                         connection.close();
                     } catch (Exception e) {
                     }
+                }
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
                 }
             }
 

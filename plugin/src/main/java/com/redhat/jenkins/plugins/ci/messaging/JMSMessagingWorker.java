@@ -25,7 +25,10 @@ package com.redhat.jenkins.plugins.ci.messaging;
 
 import static com.redhat.jenkins.plugins.ci.CIBuildTrigger.findTrigger;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,6 +42,12 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 
 public abstract class JMSMessagingWorker {
+    /** Starts the Pipeline body at readiness and returns its completion. */
+    @FunctionalInterface
+    public interface SubscribedCallback {
+        Future<Void> run() throws IOException, InterruptedException, ExecutionException;
+    }
+
     public static final String MESSAGECONTENTFIELD = "message-content";
     public String jobname;
     private static final Logger log = Logger.getLogger(JMSMessagingWorker.class.getName());
@@ -85,6 +94,15 @@ public abstract class JMSMessagingWorker {
     public abstract SendResult sendMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata);
 
     public abstract String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace);
+
+    public String waitForMessage(Run<?, ?> run, TaskListener listener, ProviderData pdata, FilePath workspace,
+            SubscribedCallback onSubscribed) {
+        throw new UnsupportedOperationException("This messaging worker does not support subscribe-before-send.");
+    }
+
+    /** Provider-specific wakeup in addition to interrupting the receiver thread. */
+    public void cancelWait() {
+    }
 
     public void trigger(String jobname, String messageSummary, Map<String, String> envVars) {
         CIBuildTrigger trigger = findTrigger(jobname);
