@@ -24,7 +24,7 @@
 package com.redhat.jenkins.plugins.ci.integration;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,11 +40,11 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty;
 import org.jenkinsci.plugins.workflow.multibranch.JobPropertyStep;
-import org.jenkinsci.test.acceptance.docker.DockerClassRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import com.redhat.jenkins.plugins.ci.CIBuildTrigger;
 import com.redhat.jenkins.plugins.ci.CIMessageNotifier;
@@ -66,13 +66,14 @@ import hudson.model.TextParameterValue;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.tasks.Shell;
 
+@WithJenkins
 public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIntegrationTest {
 
-    @ClassRule
-    public static DockerClassRule<KafkaContainer> docker = new DockerClassRule<>(KafkaContainer.class);
+    @RegisterExtension
+    public static final DockerClassExtension<KafkaContainer> docker = new DockerClassExtension<>(KafkaContainer.class);
     private static KafkaContainer kafka = null;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception, IOException, InterruptedException {
         kafka = docker.create();
         if (!waitForProviderToBeReady(kafka.getCid(), "Kafka Server started (kafka.server.KafkaRaftServer)")) {
@@ -90,7 +91,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         logger.capture(5000);
     }
 
-    @After
+    @AfterEach
     public void after() throws IOException, InterruptedException {
         kafka.close();
     }
@@ -147,8 +148,8 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
     @Override
     protected boolean additionalWaitForReceiverToBeReadyCheck(String jobname, int occurrences) {
-        if ((testName.getMethodName().equals("testWaitForCIMessageStepWithMessageTooLong") && occurrences == 2)
-                || (testName.getMethodName().equals("testWaitForCIMessagePipelineWithMessageTooLong")
+        if ((testName.equals("testWaitForCIMessageStepWithMessageTooLong") && occurrences == 2)
+                || (testName.equals("testWaitForCIMessagePipelineWithMessageTooLong")
                         && occurrences == 2)) {
             return true;
         }
@@ -179,7 +180,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        j.assertLogContains("\"topic\":\"" + testName.getMethodName() + "\",\"partition\":0", jobA.getLastBuild());
+        j.assertLogContains("\"topic\":\"" + testName + "\",\"partition\":0", jobA.getLastBuild());
 
         jobA.delete();
         jobB.delete();
@@ -209,7 +210,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         waitUntilTriggeredBuildCompletes(jobA, 2);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        assertEquals("Latest build number", 2, jobA.getLastBuild().getNumber());
+        assertEquals(2, jobA.getLastBuild().getNumber(), "Latest build number");
 
         jobA.delete();
         jobB.delete();
@@ -244,7 +245,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         waitUntilTriggeredBuildCompletes(jobA, 2);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        assertEquals("Latest build number", 2, jobA.getLastBuild().getNumber());
+        assertEquals(2, jobA.getLastBuild().getNumber(), "Latest build number");
 
         jobA.delete();
         jobB.delete();
@@ -275,7 +276,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         waitUntilTriggeredBuildCompletes(jobA, 2);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        assertEquals("Latest build number", 2, jobA.getLastBuild().getNumber());
+        assertEquals(2, jobA.getLastBuild().getNumber(), "Latest build number");
 
         jobA.delete();
         jobB.delete();
@@ -284,7 +285,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     @Test
     public void testEnvVariablesWithPipelineWaitForMsg() throws Exception {
         WorkflowJob jobA = j.jenkins.createProject(WorkflowJob.class, "wait");
-        ProviderData pd = getSubscriberProviderData(testName.getMethodName(), "CI_MESSAGE_TEST", false);
+        ProviderData pd = getSubscriberProviderData(testName, "CI_MESSAGE_TEST", false);
         String postStatements = "echo \"CI_MESSAGE_TEST = \" + CI_MESSAGE_TEST  \n"
                 + "  if (env.CI_MESSAGE_TEST == null) {\n" + "    error(\"CI_MESSAGE_TEST not set\")\n" + "  }\n"
                 + "  echo \"CI_MESSAGE_TEST_RECORD = \" + env.CI_MESSAGE_TEST_RECORD  \n"
@@ -336,7 +337,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         j.buildAndAssertSuccess(jobA);
         waitForReceiverToBeReady(jobA.getDisplayName());
-        assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
+        assertEquals(1, getCurrentThreadCountForName("CIBuildTrigger.*"), "CIBuildTrigger count");
 
         j.configRoundtrip(jobA);
 
@@ -348,7 +349,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
             Thread.sleep(500);
         }
         printThreadsWithName("CIBuildTrigger.*");
-        assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
+        assertEquals(1, getCurrentThreadCountForName("CIBuildTrigger.*"), "CIBuildTrigger count");
 
         // checks: [[expectedValue: '0.0234', field: 'CI_STATUS2']]
         String randomNumber = "123456789";
@@ -359,10 +360,10 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         }
 
         waitUntilTriggeredBuildCompletes(jobA, 5);
-        assertEquals("there are not 5 builds", 5, jobA.getLastBuild().getNumber());
+        assertEquals(5, jobA.getLastBuild().getNumber(), "there are not 5 builds");
 
         printThreadsWithName("CIBuildTrigger.*");
-        assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
+        assertEquals(1, getCurrentThreadCountForName("CIBuildTrigger.*"), "CIBuildTrigger count");
 
         pd = getSubscriberProviderData(new MsgCheck(MESSAGE_CHECK_FIELD, MESSAGE_CHECK_VALUE));
         t = new CIBuildTrigger(false, Collections.singletonList(pd));
@@ -379,13 +380,13 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         }
 
         waitUntilTriggeredBuildCompletes(jobA, 9);
-        assertEquals("there are not 9 builds", 9, jobA.getLastBuild().getNumber());
+        assertEquals(9, jobA.getLastBuild().getNumber(), "there are not 9 builds");
 
         for (int i = 1; i < 8; i++) {
             j.assertBuildStatusSuccess(jobA.getBuildByNumber(i));
         }
         printThreadsWithName("CIBuildTrigger.*");
-        assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
+        assertEquals(1, getCurrentThreadCountForName("CIBuildTrigger.*"), "CIBuildTrigger count");
 
         jobA.delete();
         jobB.delete();
@@ -398,7 +399,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         jobA.getBuildersList().add(new Shell("echo $" + DEFAULT_VARIABLE_NAME + "_RECORD"));
 
         FreeStyleProject jobB = j.createFreeStyleProject();
-        ProviderData pd = getPublisherProviderDataWithHeaders(DEFAULT_PROVIDER_NAME, testName.getMethodName(),
+        ProviderData pd = getPublisherProviderDataWithHeaders(DEFAULT_PROVIDER_NAME, testName,
                 "{\"msg\": \"with-headers\"}", "X-My-Header=myvalue\nX-Other=othervalue");
         jobB.getPublishersList().add(new CIMessageNotifier(pd));
 
@@ -420,7 +421,7 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
     public void testReceiveFilteredByHeaderChecks() throws Exception {
         List<HeaderCheck> headerChecks = Collections.singletonList(new HeaderCheck("X-Filter", "accept"));
         ProviderData subscriberPd = getSubscriberProviderDataWithHeaderChecks(DEFAULT_PROVIDER_NAME,
-                testName.getMethodName(), DEFAULT_VARIABLE_NAME, false, 60, headerChecks);
+                testName, DEFAULT_VARIABLE_NAME, false, 60, headerChecks);
 
         FreeStyleProject jobA = j.createFreeStyleProject();
         jobA.getBuildersList().add(new Shell("echo BUILD_NUMBER=$BUILD_NUMBER"));
@@ -431,21 +432,21 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
         // Send message with matching header -> should trigger
         FreeStyleProject jobB = j.createFreeStyleProject();
         jobB.getPublishersList().add(new CIMessageNotifier(getPublisherProviderDataWithHeaders(DEFAULT_PROVIDER_NAME,
-                testName.getMethodName(), "{\"msg\": \"accepted\"}", "X-Filter=accept")));
+                testName, "{\"msg\": \"accepted\"}", "X-Filter=accept")));
         j.buildAndAssertSuccess(jobB);
 
         waitUntilTriggeredBuildCompletes(jobA);
         j.assertBuildStatusSuccess(jobA.getLastBuild());
-        assertEquals("One build from message with matching header", 1, jobA.getLastBuild().getNumber());
+        assertEquals(1, jobA.getLastBuild().getNumber(), "One build from message with matching header");
 
         // Send message without matching header -> should not trigger
         FreeStyleProject jobC = j.createFreeStyleProject();
         jobC.getPublishersList().add(new CIMessageNotifier(
-                getPublisherProviderData(DEFAULT_PROVIDER_NAME, testName.getMethodName(), "{\"msg\": \"ignored\"}")));
+                getPublisherProviderData(DEFAULT_PROVIDER_NAME, testName, "{\"msg\": \"ignored\"}")));
         j.buildAndAssertSuccess(jobC);
 
         Thread.sleep(4000);
-        assertEquals("Still one build; message without header should not trigger", 1, jobA.getLastBuild().getNumber());
+        assertEquals(1, jobA.getLastBuild().getNumber(), "Still one build; message without header should not trigger");
 
         jobA.delete();
         jobB.delete();

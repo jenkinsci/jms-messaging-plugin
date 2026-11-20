@@ -17,9 +17,10 @@ import java.util.Date;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.MockedStatic;
 
 import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
@@ -32,12 +33,15 @@ import hudson.util.FormValidation;
  * use {@code JKS}. No PEM or keystore files are required. {@link JenkinsRule} loads the plugin so localized
  * {@code Messages} resolve. {@link CredentialLookup} is stubbed with {@link MockedStatic} for the credential-id path.
  */
+@WithJenkins
 public class CertificateExpiryCheckerTest {
 
     private static final String TEST_KEYSTORE_TYPE = "JKS";
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    @BeforeEach
+    void startJenkins(JenkinsRule j) {
+        // Loading the plugin makes its localized Messages available to these tests.
+    }
 
     private static KeyStore newEmptyTestKeyStore() throws Exception {
         KeyStore ks = KeyStore.getInstance(TEST_KEYSTORE_TYPE);
