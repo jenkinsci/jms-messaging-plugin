@@ -152,10 +152,34 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
                         && occurrences == 2)) {
             return true;
         }
+        String subscription = "subscribe job " + jobname + " to topic [";
+        List<String> topics = new ArrayList<>();
+        for (String message : logger.getMessages()) {
+            int subscriptionStart = message.indexOf(subscription);
+            if (subscriptionStart >= 0) {
+                int topicStart = subscriptionStart + subscription.length();
+                int topicEnd = message.indexOf(']', topicStart);
+                if (topicEnd > topicStart) {
+                    String topic = message.substring(topicStart, topicEnd);
+                    if (!topics.contains(topic)) {
+                        topics.add(topic);
+                    }
+                }
+            }
+        }
+        // Pipeline wait steps subscribe directly through a KafkaConsumer, so they do not emit the
+        // worker's "subscribe job" message. Their integration topics use the test method name.
+        if (topics.isEmpty()) {
+            topics.add(testName.getMethodName());
+        }
+
         int count = 0;
         for (String s : logger.getMessages()) {
-            if (s.contains("Resetting offset for partition")) {
-                count++;
+            for (String topic : topics) {
+                if (s.contains("Resetting offset for partition " + topic + "-")) {
+                    count++;
+                    break;
+                }
             }
         }
         if (count >= occurrences) {
@@ -336,12 +360,15 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         j.buildAndAssertSuccess(jobA);
         waitForReceiverToBeReady(jobA.getDisplayName());
+        long triggerThreadId = CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId();
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
         j.configRoundtrip(jobA);
 
         j.buildAndAssertSuccess(jobA);
-        waitForReceiverToBeReady(jobA.getDisplayName(), 3, true);
+        waitForReceiverToBeReady(jobA.getDisplayName());
+        assertEquals("trigger thread should be kept when pipeline properties are unchanged", triggerThreadId,
+                CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId());
 
         // Wait for threads to disappear.
         for (int i = 0; i < 60 && getCurrentThreadCountForName("CIBuildTrigger.*") > 1; i++) {
