@@ -170,7 +170,14 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
     public void stop() {
         super.stop();
         if (job != null) {
-            stopTriggerThreads(job.getFullName());
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            boolean jenkinsStopping = jenkins == null || jenkins.isQuietingDown() || jenkins.isTerminating();
+            if (job instanceof WorkflowJob && !((WorkflowJob) job).isDisabled() && !jenkinsStopping) {
+                // Pipeline job properties remove and re-add triggers while a build runs.
+                // Keep the listener available for startTriggerThreads() to reuse it.
+                return;
+            }
+            stopTriggerThreads(job.getFullName(), null);
         } else {
             log.fine("job is null! Not stopping trigger thread!");
         }
@@ -180,8 +187,14 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         stopTriggerThreads(fullName, null);
     }
 
+    static void forceStop(String fullName) {
+        if (locks.containsKey(fullName)) {
+            stopTriggerThreads(fullName, null);
+        }
+    }
+
     public void rename(String oldFullName) {
-        stopTriggerThreads(oldFullName);
+        force(oldFullName);
         startTriggerThreads();
     }
 
@@ -209,7 +222,9 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         try {
             List<CITriggerThread> threads = locks.computeIfAbsent(fullName, o -> new ArrayList<>());
             synchronized (threads) {
-                if (stopTriggerThreads(fullName) == null && providers != null) {
+                // Pipeline properties may restart an unchanged trigger on every run.
+                // Keep its listener alive to avoid missing messages during a restart.
+                if (stopTriggerThreads(fullName, getComparisonThreads()) == null && providers != null) {
                     int instance = 1;
                     for (ProviderData pd : providers) {
                         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
@@ -232,12 +247,8 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         }
     }
 
-    private List<CITriggerThread> stopTriggerThreads(String fullName) {
-        return stopTriggerThreads(fullName, null);
-        // return stopTriggerThreads(fullName, getComparisonThreads());
-    }
-
-    private List<CITriggerThread> stopTriggerThreads(String fullName, List<CITriggerThread> comparisonThreads) {
+    private static List<CITriggerThread> stopTriggerThreads(String fullName,
+            List<CITriggerThread> comparisonThreads) {
         List<CITriggerThread> threads = locks.computeIfAbsent(fullName, o -> new ArrayList<>());
         synchronized (threads) {
             // If threads are the same we have start/stop sequence, so don't bother stopping.
@@ -246,7 +257,7 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
                     ListIterator<CITriggerThread> iter = comparisonThreads.listIterator();
                     while (iter.hasNext()) {
                         Thread t = iter.next();
-                        if (thread.equals(t)) {
+                        if (thread.isAlive() && thread.equals(t)) {
                             log.info("Already have thread " + thread.getId() + "...");
                             iter.remove();
                             break;
@@ -272,20 +283,18 @@ public class CIBuildTrigger extends Trigger<Job<?, ?>> {
         return null;
     }
 
-    @SuppressWarnings("unused")
     private List<CITriggerThread> getComparisonThreads() {
         if (providers != null && job != null) {
             List<CITriggerThread> threads = new ArrayList<>();
             int instance = 1;
             for (ProviderData pd : providers) {
                 JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(pd.getName());
-                // We create a new thread here only to be able to
-                // use .equals() to compare.
-                // The thread is never started.
+                // Use the factory so this comparison thread has the same provider-specific class as the live thread.
+                // The comparison thread is never started.
                 if (provider == null)
-                    throw new NullPointerException("No such provider configured for name: '" + pd.getName()
-                            + "' on job named '" + job.getFullName() + "'");
-                CITriggerThread thread = new CITriggerThread(provider, pd, job.getFullName(), null, instance);
+                    return null;
+                CITriggerThread thread = CITriggerThreadFactory.createCITriggerThread(provider, pd, job.getFullName(),
+                        this, instance);
                 threads.add(thread);
                 instance++;
             }
