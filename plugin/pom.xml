@@ -68,6 +68,12 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <!-- ActiveMQ 6.4.0 requires SLF4J 2.0.20, newer than the Jenkins baseline BOM. -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>2.0.20</version>
+            </dependency>
             <!-- workflow-api needs scm-api; branch-api (test classpath) requires >= 724 -->
             <dependency>
                 <groupId>org.jenkins-ci.plugins</groupId>
@@ -87,7 +93,7 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-amqp</artifactId>
-            <version>6.3.2</version>
+            <version>6.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.rabbitmq</groupId>
@@ -163,6 +169,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jackson2-api</artifactId>
+            <version>2.22.4-449.v4ee9f4ec4123</version>
         </dependency>
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
