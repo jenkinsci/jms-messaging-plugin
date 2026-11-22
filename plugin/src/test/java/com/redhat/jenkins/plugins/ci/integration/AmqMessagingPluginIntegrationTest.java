@@ -206,13 +206,16 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         j.buildAndAssertSuccess(jobA);
         waitForReceiverToBeReady(jobA.getDisplayName());
+        long initialTriggerThreadId = CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId();
         assertEquals("ActiveMQ.*Task- count", 1, getCurrentThreadCountForName("ActiveMQ.*Task-.*"));
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
         j.configRoundtrip(jobA);
 
         j.buildAndAssertSuccess(jobA);
-        waitForReceiverToBeReady(jobA.getDisplayName(), 3);
+        waitForReceiverToBeReady(jobA.getDisplayName());
+        assertEquals("trigger thread should be kept when pipeline properties are unchanged", initialTriggerThreadId,
+                CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId());
 
         // Wait for threads to disappear.
         for (int i = 0; i < 60 && getCurrentThreadCountForName("ActiveMQ.*Task-.*") > 1; i++) {
@@ -245,7 +248,11 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
                 Collections.singletonList(new PipelineTriggersJobProperty(Collections.singletonList(t))));
         jobA.setDefinition(new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n"
                 + Snippetizer.object2Groovy(s) + "\nnode('built-in') {\n sleep 1\n}", false));
-        scheduleAwaitStep(jobA, 10);
+        String receiverTerm = "Job '" + jobA.getFullName() + "' waiting to receive message";
+        int previousReceiverLogs = Collections.frequency(logger.getMessages(), receiverTerm);
+        jobA.scheduleBuild2(0).waitForStart();
+        waitForReceiverToBeReady(jobA.getFullName(), previousReceiverLogs + 1, true);
+        long triggerThreadId = CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId();
 
         for (int i = 0; i < 3; i++) {
             QueueTaskFuture<WorkflowRun> build = jobB.scheduleBuild2(0,
@@ -255,6 +262,8 @@ public class AmqMessagingPluginIntegrationTest extends SharedMessagingPluginInte
 
         waitUntilTriggeredBuildCompletes(jobA, 9);
         assertEquals("there are not 9 builds", 9, jobA.getLastBuild().getNumber());
+        assertEquals("trigger thread should be kept when pipeline properties are unchanged", triggerThreadId,
+                CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId());
 
         for (int i = 1; i < 8; i++) {
             j.assertBuildStatusSuccess(jobA.getBuildByNumber(i));

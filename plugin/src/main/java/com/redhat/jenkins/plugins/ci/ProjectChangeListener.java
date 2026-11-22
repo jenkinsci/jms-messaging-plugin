@@ -64,8 +64,10 @@ public class ProjectChangeListener extends ItemListener {
                 }
             }
         } else {
-            // No CIBuildTrigger configured for this job - this is normal, just skip it
-            log.fine("No CIBuildTrigger found for job " + item.getFullName() + ", skipping.");
+            // Pipeline job-property updates stop triggers before adding their replacements.
+            // If the update leaves no trigger configured, clean up its retained listener now.
+            log.fine("No CIBuildTrigger found for job " + item.getFullName() + ".");
+            CIBuildTrigger.forceStop(item.getFullName());
         }
     }
 }

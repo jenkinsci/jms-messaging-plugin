@@ -85,6 +85,8 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
                 new NoneAuthenticationMethod())));
 
         logger.record("com.redhat.jenkins.plugins.ci.messaging.KafkaMessagingWorker", Level.INFO);
+        logger.record("org.apache.kafka.clients.consumer.internals.ClassicKafkaConsumer", Level.INFO);
+        logger.record("org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker", Level.INFO);
         logger.record("org.apache.kafka.clients.consumer.internals.SubscriptionState", Level.INFO);
         logger.quiet();
         logger.capture(5000);
@@ -152,16 +154,73 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
                         && occurrences == 2)) {
             return true;
         }
+        String subscription = "Subscribing job '" + jobname + "' to ";
+        String consumerSubscription = "Subscribed to topic(s): ";
+        List<String> topics = new ArrayList<>();
+        for (String message : logger.getMessages()) {
+            int subscriptionStart = message.indexOf(subscription);
+            if (subscriptionStart >= 0) {
+                int topicStart = subscriptionStart + subscription.length();
+                int topicEnd = message.indexOf(" topic.", topicStart);
+                if (topicEnd > topicStart) {
+                    String topic = message.substring(topicStart, topicEnd);
+                    if (!topics.contains(topic)) {
+                        topics.add(topic);
+                    }
+                }
+            }
+
+            int consumerSubscriptionStart = message.indexOf(consumerSubscription);
+            if (consumerSubscriptionStart >= 0) {
+                String subscribedTopics = message.substring(consumerSubscriptionStart + consumerSubscription.length())
+                        .trim();
+                for (String topic : subscribedTopics.split(",\\s*")) {
+                    if (!topic.isEmpty() && !topics.contains(topic)) {
+                        topics.add(topic);
+                    }
+                }
+            }
+        }
+        // Pipeline wait steps subscribe directly through a KafkaConsumer, so they do not emit the
+        // worker's "subscribe job" message. Their integration topics use the test method name.
+        if (topics.isEmpty()) {
+            topics.add(testName.getMethodName());
+        }
+
         int count = 0;
         for (String s : logger.getMessages()) {
-            if (s.contains("Resetting offset for partition")) {
-                count++;
+            for (String topic : topics) {
+                if (s.contains("Adding newly assigned partitions: [" + topic + "-")) {
+                    count++;
+                    break;
+                }
             }
         }
         if (count >= occurrences) {
             return true;
         }
         return false;
+    }
+
+    private int countTopicAssignments(String topic) {
+        String term = "Adding newly assigned partitions: [" + topic + "-";
+        int count = 0;
+        for (String message : logger.getMessages()) {
+            if (message.contains(term)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void waitForTopicAssignments(String topic, int occurrences) throws Exception {
+        for (int i = 0; i < 150; i++) {
+            if (countTopicAssignments(topic) >= occurrences) {
+                return;
+            }
+            Thread.sleep(200);
+        }
+        throw new Exception("Kafka receiver for topic '" + topic + "' was not assigned");
     }
 
     @Test
@@ -336,12 +395,15 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
 
         j.buildAndAssertSuccess(jobA);
         waitForReceiverToBeReady(jobA.getDisplayName());
+        long triggerThreadId = CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId();
         assertEquals("CIBuildTrigger count", 1, getCurrentThreadCountForName("CIBuildTrigger.*"));
 
         j.configRoundtrip(jobA);
 
         j.buildAndAssertSuccess(jobA);
-        waitForReceiverToBeReady(jobA.getDisplayName(), 3, true);
+        waitForReceiverToBeReady(jobA.getDisplayName());
+        assertEquals("trigger thread should be kept when pipeline properties are unchanged", triggerThreadId,
+                CIBuildTrigger.locks.get(jobA.getFullName()).get(0).getId());
 
         // Wait for threads to disappear.
         for (int i = 0; i < 60 && getCurrentThreadCountForName("CIBuildTrigger.*") > 1; i++) {
@@ -370,7 +432,13 @@ public class KafkaMessagingPluginIntegrationTest extends SharedMessagingPluginIn
                 Collections.singletonList(new PipelineTriggersJobProperty(Collections.singletonList(t))));
         jobA.setDefinition(new CpsFlowDefinition("def number = currentBuild.getNumber().toString()\n"
                 + Snippetizer.object2Groovy(s) + "\nnode('built-in') {\n sleep 1\n}", false));
-        scheduleAwaitStep(jobA, 8, true);
+        String receiverTerm = "Job '" + jobA.getFullName() + "' waiting to receive message";
+        int previousReceiverLogs = Collections.frequency(logger.getMessages(), receiverTerm);
+        String topic = testName.getMethodName();
+        int previousAssignments = countTopicAssignments(topic);
+        jobA.scheduleBuild2(0).waitForStart();
+        waitForReceiverToBeReady(jobA.getFullName(), previousReceiverLogs + 1, true);
+        waitForTopicAssignments(topic, previousAssignments + 1);
 
         for (int i = 0; i < 3; i++) {
             QueueTaskFuture<WorkflowRun> build = jobB.scheduleBuild2(0,
