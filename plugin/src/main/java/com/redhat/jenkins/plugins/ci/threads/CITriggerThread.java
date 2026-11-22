@@ -25,6 +25,7 @@ package com.redhat.jenkins.plugins.ci.threads;
 
 import static java.util.logging.Level.SEVERE;
 
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,6 +45,7 @@ public class CITriggerThread extends Thread {
     private final JMSMessagingProvider messagingProvider;
     private final String jobname;
     private final CIBuildTrigger cibt;
+    private final Boolean noSquash;
     private final ProviderData providerData;
     protected final JMSMessagingWorker messagingWorker;
 
@@ -53,6 +55,7 @@ public class CITriggerThread extends Thread {
         this.providerData = providerData;
         this.jobname = jobname;
         this.cibt = cibt;
+        this.noSquash = cibt == null ? null : cibt.getNoSquash();
         this.messagingWorker = messagingProvider.createWorker(providerData, this.jobname);
 
         setName("CIBuildTrigger-" + jobname + "-" + instance + "-" + messagingProvider.getClass().getSimpleName());
@@ -116,15 +119,13 @@ public class CITriggerThread extends Thread {
         CITriggerThread thread = (CITriggerThread) o;
 
         return new EqualsBuilder().append(messagingProvider, thread.messagingProvider)
-                .append(providerData, thread.providerData).append(jobname, thread.jobname).isEquals();
+                .append(providerData, thread.providerData).append(jobname, thread.jobname)
+                .append(noSquash, thread.noSquash).isEquals();
     }
 
     @Override
     public int hashCode() {
-        int result = messagingWorker != null ? messagingWorker.hashCode() : 0;
-        result = 31 * result + (providerData != null ? providerData.hashCode() : 0);
-        result = 31 * result + (jobname != null ? jobname.hashCode() : 0);
-        return result;
+        return Objects.hash(messagingProvider, providerData, jobname, noSquash);
     }
 
 }
