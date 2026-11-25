@@ -85,6 +85,8 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
     static final String DEFAULT_TOPIC = "io.jenkins";
     KafkaConsumer<String, String> consumer;
     private volatile Consumer<String, String> waitingConsumer;
+    /** Remembers a cancellation that arrives before the consumer exists, where wakeup() would be a no-op. */
+    private volatile boolean cancelRequested;
 
     public KafkaMessagingWorker(JMSMessagingProvider messagingProvider, KafkaProviderData pdata, String jobname) {
         super(messagingProvider, pdata.getOverrides(), jobname);
@@ -365,10 +367,14 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             long waitMillis = TimeUnit.MINUTES.toMillis(minutes);
             long readinessDeadline = System.currentTimeMillis() + waitMillis;
             List<ConsumerRecord<String, String>> initial = new ArrayList<>();
-            while (receiver.assignment().isEmpty() && System.currentTimeMillis() < readinessDeadline) {
+            while (receiver.assignment().isEmpty() && !cancelRequested
+                    && System.currentTimeMillis() < readinessDeadline) {
                 receiver.poll(
                         Duration.ofMillis(Math.min(100, Math.max(1, readinessDeadline - System.currentTimeMillis()))))
                         .forEach(initial::add);
+            }
+            if (cancelRequested) {
+                throw new InterruptedException("Kafka subscription was cancelled before its body started.");
             }
             if (receiver.assignment().isEmpty()) {
                 setLastError(new TimeoutException("Timed out waiting for Kafka partition assignment."));
@@ -386,7 +392,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
             ConsumerRecord<String, String> response = firstMatching(initial, pd);
             boolean bodyFinished = false;
             long responseDeadline = Long.MAX_VALUE;
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!Thread.currentThread().isInterrupted() && !cancelRequested) {
                 if (body.isDone()) {
                     body.get();
                     if (!bodyFinished) {
@@ -395,11 +401,12 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
                     }
                     if (response != null) {
                         listener.getLogger().println("Received a message: " + response);
-                        String value = storeKafkaResponse(run, listener, pd, workspace, response);
+                        // Commit first: if the commit fails (e.g. after a rebalance), nothing has been
+                        // added to the build yet and the step fails without a half-stored response.
                         receiver.commitSync(
                                 Collections.singletonMap(new TopicPartition(response.topic(), response.partition()),
                                         new OffsetAndMetadata(response.offset() + 1)));
-                        return value;
+                        return storeKafkaResponse(run, listener, pd, workspace, response);
                     }
                     if (System.currentTimeMillis() >= responseDeadline) {
                         listener.getLogger().println("Timed out waiting for message!");
@@ -474,6 +481,7 @@ public class KafkaMessagingWorker extends JMSMessagingWorker {
 
     @Override
     public void cancelWait() {
+        cancelRequested = true;
         Consumer<String, String> receiver = waitingConsumer;
         if (receiver != null) {
             try {

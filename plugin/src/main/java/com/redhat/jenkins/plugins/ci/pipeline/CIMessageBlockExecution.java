@@ -52,6 +52,9 @@ final class CIMessageBlockExecution extends StepExecution {
             throw new AbortException("withCIMessage requires subscriber provider data.");
         }
         JMSMessagingProvider provider = GlobalCIConfiguration.get().getProvider(providerData.getName());
+        if (provider == null) {
+            throw new AbortException("withCIMessage provider '" + providerData.getName() + "' was not found.");
+        }
         boolean supported = (provider instanceof RabbitMQMessagingProvider
                 && providerData instanceof RabbitMQSubscriberProviderData)
                 || (provider instanceof ActiveMqMessagingProvider

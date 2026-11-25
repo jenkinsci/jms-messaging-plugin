@@ -10,6 +10,10 @@
   <p>ActiveMQ: queue consumers or non-durable topic subscriptions are established before the body.</p>
   <p>Kafka: partition assignment and initial offsets are resolved before the body. Polling
     continues during the body; the matching response offset is committed after successful completion.</p>
+  <p>Responses are not correlated with the request automatically. Any message that arrives between the
+    subscription becoming ready and the request being sent can be returned unless it is filtered out; use
+    <code>checks</code> (and <code>headerChecks</code> for Kafka) with a unique correlation ID when the
+    destination can carry unrelated messages.</p>
   <p>An active subscription cannot
     resume after a Jenkins restart, so the step fails explicitly without replaying its body.</p>
 </div>

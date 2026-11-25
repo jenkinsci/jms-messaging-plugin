@@ -166,9 +166,51 @@ public class KafkaReadySubscriptionTest {
         assertEquals(6L, consumer.commits.get(partition).offset());
     }
 
+    @Test
+    public void cancelBeforeConsumerExistsStopsBeforeStartingBody() {
+        worker.cancelWait();
+        AtomicBoolean called = new AtomicBoolean();
+        assertNull(worker.waitForMessage(run, TaskListener.NULL, data, null, () -> {
+            called.set(true);
+            return CompletableFuture.completedFuture(null);
+        }));
+        // The cancellation is reported by interrupting the waiting thread; clear it for later tests.
+        assertTrue(Thread.interrupted());
+        assertFalse(called.get());
+        assertNotNull(worker.getLastError());
+        assertTrue(consumer.closed());
+        assertTrue(consumer.commits.isEmpty());
+    }
+
+    @Test
+    public void commitFailureDoesNotStoreTheResponse() {
+        data.setVariable("MSG");
+        consumer.failCommit = true;
+        assertNull(worker.waitForMessage(run, TaskListener.NULL, data, null, () -> {
+            consumer.schedulePollTask(() -> consumer.addRecord(response(4, "{\"result\":\"ok\"}")));
+            return CompletableFuture.completedFuture(null);
+        }));
+        assertNotNull(worker.getLastError());
+        verify(run, never()).addAction(any());
+        assertTrue(consumer.closed());
+    }
+
+    @Test
+    public void storesTheResponseOnlyAfterTheOffsetIsCommitted() {
+        data.setVariable("MSG");
+        String result = worker.waitForMessage(run, TaskListener.NULL, data, null, () -> {
+            consumer.schedulePollTask(() -> consumer.addRecord(response(4, "{\"result\":\"ok\"}")));
+            return CompletableFuture.completedFuture(null);
+        });
+        assertEquals("{\"result\":\"ok\"}", result);
+        assertEquals(5L, consumer.commits.get(partition).offset());
+        verify(run, times(1)).addAction(any());
+    }
+
     private static class RecordingConsumer extends MockConsumer<String, String> {
         private final Map<TopicPartition, OffsetAndMetadata> commits = new HashMap<>();
         private int polls;
+        private boolean failCommit;
 
         RecordingConsumer() {
             super("latest");
@@ -182,6 +224,9 @@ public class KafkaReadySubscriptionTest {
 
         @Override
         public synchronized void commitSync(Map<TopicPartition, OffsetAndMetadata> offsets) {
+            if (failCommit) {
+                throw new org.apache.kafka.clients.consumer.CommitFailedException();
+            }
             commits.putAll(offsets);
             super.commitSync(offsets);
         }

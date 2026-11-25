@@ -268,6 +268,12 @@ receiving the request must publish its response using the agreed routing key;
 the request-side queue and its binding must already exist. Use a unique response
 routing key per exchange or add correlation checks with a suitable queue layout.
 
+`withCIMessage` does not correlate a response with the request it was sent for.
+Any message that reaches the response destination between the subscription becoming ready and the
+body sending its request (for example, a stray message on a shared Kafka topic) can be returned
+as the response unless it is filtered out. When the destination can carry unrelated messages, use
+`checks` or, for Kafka, `headerChecks` with a unique correlation ID so only the intended response matches.
+
 The `timeout` above, in minutes, starts **after the body completes**. A response
 arriving during the body is retained and can satisfy the wait immediately. Wrap
 the step in Pipeline `timeout` to bound setup, body execution, and response wait

@@ -150,6 +150,20 @@ public class CIMessageSubscriberBlockTest {
     }
 
     @Test
+    public void reportsAnUnknownProviderNameBeforeStartingBody() throws Exception {
+        WorkflowJob job = job("");
+        GlobalCIConfiguration.get().setConfigs(Collections.emptyList());
+        job.setDefinition(new CpsFlowDefinition(
+                "node { withCIMessage(providerData: "
+                        + "[$class: 'RabbitMQSubscriberProviderData', name: 'missing']) { echo 'BODY_MUST_NOT_RUN' } }",
+                true));
+        WorkflowRun build = j.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0));
+        j.assertLogContains("withCIMessage provider 'missing' was not found.", build);
+        j.assertLogNotContains("requires matching", build);
+        j.assertLogNotContains("BODY_MUST_NOT_RUN", build);
+    }
+
+    @Test
     public void activeMQAndKafkaExecuteTheSamePipelineBlockContract() throws Exception {
         JMSMessagingProvider[] providers = { mock(ActiveMqMessagingProvider.class),
                 mock(KafkaMessagingProvider.class) };

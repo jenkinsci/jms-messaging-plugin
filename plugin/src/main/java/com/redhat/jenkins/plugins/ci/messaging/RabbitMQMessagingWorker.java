@@ -570,6 +570,8 @@ public class RabbitMQMessagingWorker extends JMSMessagingWorker {
         } else {
             // The queue is not set anywhere, let's use random queue
             if (StringUtils.isEmpty(queueName)) {
+                // Reset where the flag is set, so a stale value never survives a reused worker.
+                temporaryQueueCreated = false;
                 queueName = UUID.randomUUID().toString();
                 channel.queueDeclare(queueName, false, true, true, null);
                 temporaryQueueCreated = true;
