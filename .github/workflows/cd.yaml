@@ -1,6 +1,14 @@
 name: cd
 on:
   workflow_dispatch:
+    inputs:
+      validate_only:
+        required: false
+        type: boolean
+        description: |
+          Run validation with release drafter only
+          → Skip the release job (dry run)
+        default: false
   # Automatic release on every successful ci.jenkins.io build of the default
   # branch is intentionally DISABLED for now: releases are triggered manually
   # via the "Run workflow" button (workflow_dispatch) above. To enable
@@ -16,4 +24,8 @@ permissions:
 jobs:
   maven-cd:
     uses: jenkins-infra/github-reusable-workflows/.github/workflows/maven-cd.yml@v1
-    secrets: inherit
+    with:
+      validate_only: ${{ inputs.validate_only == true }}
+    secrets:
+      MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+      MAVEN_TOKEN: ${{ secrets.MAVEN_TOKEN }}
