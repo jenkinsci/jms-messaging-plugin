@@ -1,0 +1,19 @@
+name: cd
+on:
+  workflow_dispatch:
+  # Automatic release on every successful ci.jenkins.io build of the default
+  # branch is intentionally DISABLED for now: releases are triggered manually
+  # via the "Run workflow" button (workflow_dispatch) above. To enable
+  # fully-automated continuous delivery later, uncomment the block below.
+  # check_run:
+  #   types:
+  #     - completed
+
+permissions:
+  checks: read
+  contents: write
+
+jobs:
+  maven-cd:
+    uses: jenkins-infra/github-reusable-workflows/.github/workflows/maven-cd.yml@v1
+    secrets: inherit

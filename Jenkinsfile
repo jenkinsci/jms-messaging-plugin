@@ -5,5 +5,5 @@ buildPlugin(
   useContainerAgent: false, // Set to `false` if you need to use Docker for containerized tests
   timeout: 180,
   configurations: [
-    [platform: 'linux', jdk: 21],
+    [platform: 'docker && linux', jdk: 21],
 ])
