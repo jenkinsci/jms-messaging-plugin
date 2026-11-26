@@ -1,0 +1,25 @@
+name: Autolabel pull requests
+# Applies changelog labels to pull requests automatically, using the
+# release-drafter autolabeler rules from the shared jenkinsci/.github config.
+# This only labels PRs (disable-releaser: true) — it never drafts or cuts a
+# release. Maintainers can still add/adjust labels by hand.
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  autolabel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@d1a19e60e81a7e650d00a7de9277f87e439117ea # v7.11.0
+        with:
+          disable-releaser: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
